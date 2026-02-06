@@ -43,7 +43,7 @@ development_status:
   # Epic 1: Fondation, Authentification & Gestion des chantiers
   epic-1: in-progress
   1-1-initialisation-du-projet-et-deploiement: done
-  1-2-authentification-et-protection-des-routes: backlog
+  1-2-authentification-et-protection-des-routes: done
   1-3-layout-principal-bottom-navigation-et-theme: backlog
   1-4-creation-d-un-chantier: backlog
   1-5-ecran-d-accueil-liste-et-cartes-des-chantiers: backlog
