@@ -1,6 +1,6 @@
 # Story 1.1: Initialisation du projet et déploiement
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -69,14 +69,14 @@ Afin que nous disposions d'une base déployée avec un pipeline CI/CD fonctionne
   - [x] 5.2 Configurer le workflow pour s'exécuter sur push et PR vers main
   - [x] 5.3 Utiliser Node.js >= 20.19 (requis par Vite 7)
   - [x] 5.4 Ajouter le script `lint` dans package.json (ESLint)
-  - [ ] 5.5 Vérifier que le pipeline passe sur un push initial
+  - [x] 5.5 Vérifier que le pipeline passe sur un push initial
 
 - [x] Task 6 — Déploiement Vercel (AC: #3)
   - [x] 6.1 Initialiser le repo Git et pousser vers GitHub
-  - [ ] 6.2 Connecter le repo à Vercel (site statique SPA)
-  - [ ] 6.3 Configurer le build command (`npm run build`) et output directory (`dist`)
+  - [x] 6.2 Connecter le repo à Vercel (site statique SPA)
+  - [x] 6.3 Configurer le build command (`npm run build`) et output directory (`dist`)
   - [x] 6.4 Configurer les rewrites SPA (toutes les routes vers index.html)
-  - [ ] 6.5 Vérifier l'accès HTTPS et la page minimale fonctionnelle
+  - [x] 6.5 Vérifier l'accès HTTPS et la page minimale fonctionnelle
 
 ## Dev Notes
 
