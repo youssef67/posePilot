@@ -1,0 +1,103 @@
+# generated: 2026-02-06
+# project: posePilot
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-06
+project: posePilot
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Fondation, Authentification & Gestion des chantiers
+  epic-1: in-progress
+  1-1-initialisation-du-projet-et-deploiement: in-progress
+  1-2-authentification-et-protection-des-routes: backlog
+  1-3-layout-principal-bottom-navigation-et-theme: backlog
+  1-4-creation-d-un-chantier: backlog
+  1-5-ecran-d-accueil-liste-et-cartes-des-chantiers: backlog
+  1-6-gestion-du-cycle-de-vie-d-un-chantier: backlog
+  1-7-pwa-installation-et-mode-standalone: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Configuration & Structure de chantier
+  epic-2: backlog
+  2-1-creation-de-plots-et-definition-des-taches: backlog
+  2-2-variantes-d-appartement-avec-pieces-et-taches: backlog
+  2-3-documents-par-defaut-dans-les-variantes: backlog
+  2-4-creation-de-lots-avec-heritage-automatique: backlog
+  2-5-ajout-de-lots-en-batch: backlog
+  2-6-flag-tma-et-personnalisation-de-lot-individuel: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Navigation terrain & Suivi d'avancement
+  epic-3: backlog
+  3-1-navigation-hierarchique-et-breadcrumb: backlog
+  3-2-ecran-piece-taches-et-tap-cycle: backlog
+  3-3-grilles-de-cartes-colorees-et-agregation: backlog
+  3-4-swipe-entre-pieces: backlog
+  3-5-recherche-par-numero-de-lot: backlog
+  3-6-filtres-de-vues: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Notes, Photos & Collaboration
+  epic-4: backlog
+  4-1-creation-de-notes-texte-avec-flag-bloquant: backlog
+  4-2-photos-depuis-la-camera-sur-les-notes: backlog
+  4-3-partage-photo-contextualise: backlog
+  4-4-fil-d-activite-quoi-de-neuf: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Gestion des Documents PDF
+  epic-5: backlog
+  5-1-upload-visualisation-et-gestion-de-documents-pdf: backlog
+  5-2-types-de-documents-personnalises-et-gestion-par-lot: backlog
+  5-3-recapitulatif-et-indicateurs-de-documents-manquants: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Besoins, Livraisons & Inventaire
+  epic-6: backlog
+  6-1-besoins-creation-gestion-et-transformation-en-livraison: backlog
+  6-2-livraisons-creation-directe-et-cycle-de-vie: backlog
+  6-3-livraisons-documents-bc-et-bl: backlog
+  6-4-vue-globale-des-livraisons-filtree-par-statut: backlog
+  6-5-gestion-d-inventaire-avec-localisation: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Metres, Plinthes & Indicateurs intelligents
+  epic-7: backlog
+  7-1-saisie-et-agregation-des-metres: backlog
+  7-2-suivi-du-statut-des-plinthes: backlog
+  7-3-indicateurs-intelligents-et-aide-a-la-decision: backlog
+  epic-7-retrospective: optional

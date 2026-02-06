@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(node -e:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsr:*)",
+      "Bash(npx @tanstack/router-cli generate:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm test:*)",
+      "Bash(git -C /Users/youssef/Developer/posePilot init:*)",
+      "Bash(git -C /Users/youssef/Developer/posePilot remote add origin:*)",
+      "Bash(git -C /Users/youssef/Developer/posePilot status -u)",
+      "Bash(git -C /Users/youssef/Developer/posePilot add .)",
+      "Bash(git -C /Users/youssef/Developer/posePilot status --short)"
+    ]
+  }
+}

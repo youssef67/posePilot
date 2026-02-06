@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>posePilot — Design Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Poppins', sans-serif; background: #0f172a; color: #f8fafc; }
+
+  /* Navigation */
+  .top-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #1e293b; border-bottom: 1px solid #334155;
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .top-nav h1 { font-size: 18px; font-weight: 600; color: #f8fafc; }
+  .top-nav .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .top-nav .nav-links a {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    text-decoration: none; color: #94a3b8; border: 1px solid #334155;
+    transition: all 0.2s;
+  }
+  .top-nav .nav-links a:hover, .top-nav .nav-links a.active {
+    color: #f8fafc; background: #1E3A5F; border-color: #1E3A5F;
+  }
+
+  /* Sections */
+  .section {
+    display: none; padding: 80px 24px 40px;
+    max-width: 420px; margin: 0 auto;
+  }
+  .section.active { display: block; }
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #f8fafc;
+  }
+  .section-desc {
+    font-size: 13px; color: #94a3b8; margin-bottom: 24px; line-height: 1.6;
+  }
+
+  /* Phone Frame */
+  .phone-frame {
+    width: 375px; max-width: 100%; margin: 0 auto 32px;
+    border-radius: 32px; overflow: hidden;
+    border: 3px solid #334155; background: #fff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .phone-frame.dark { background: #111827; }
+
+  /* ============================================ */
+  /* DIRECTION A — Compact Cards, Left Border     */
+  /* ============================================ */
+  .da-header {
+    background: #1E3A5F; padding: 16px; color: #fff;
+  }
+  .da-header h2 { font-size: 16px; font-weight: 600; }
+  .da-header .da-sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .da-body { padding: 12px; background: #F5F5F5; min-height: 500px; }
+  .da-search {
+    width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0;
+    font-family: 'Poppins', sans-serif; font-size: 13px; margin-bottom: 12px;
+    background: #fff; color: #1a1a2e;
+  }
+  .da-card {
+    background: #fff; border-radius: 12px; padding: 14px;
+    margin-bottom: 8px; border-left: 4px solid #9CA3AF;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .da-card.green { border-left-color: #10B981; }
+  .da-card.orange { border-left-color: #F59E0B; }
+  .da-card.red { border-left-color: #EF4444; }
+  .da-card .da-card-title { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+  .da-card .da-card-meta { font-size: 11px; color: #6B7280; margin-top: 2px; }
+  .da-card .da-counter { font-size: 12px; font-weight: 600; color: #1E3A5F; text-align: right; }
+  .da-card .da-counter small { display: block; font-size: 10px; font-weight: 400; color: #6B7280; }
+  .da-bottom-nav {
+    display: flex; background: #fff; border-top: 1px solid #e2e8f0;
+    padding: 10px 0 14px;
+  }
+  .da-bottom-nav .da-nav-item {
+    flex: 1; text-align: center; font-size: 10px; color: #6B7280;
+  }
+  .da-bottom-nav .da-nav-item.active { color: #1E3A5F; font-weight: 600; }
+  .da-bottom-nav .da-nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+  /* ============================================ */
+  /* DIRECTION B — Spacious Tiles, Circle Progress */
+  /* ============================================ */
+  .db-header {
+    background: linear-gradient(135deg, #1E3A5F, #2d5a8e); padding: 20px 16px; color: #fff;
+  }
+  .db-header h2 { font-size: 18px; font-weight: 600; }
+  .db-header .db-sub { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+  .db-body { padding: 16px; background: #F8FAFC; min-height: 500px; }
+  .db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .db-tile {
+    background: #fff; border-radius: 16px; padding: 16px; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .db-circle {
+    width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  .db-circle.green { background: #10B981; }
+  .db-circle.orange { background: #F59E0B; }
+  .db-circle.gray { background: #9CA3AF; }
+  .db-circle.mixed {
+    background: conic-gradient(#10B981 0% 40%, #F59E0B 40% 70%, #9CA3AF 70% 100%);
+    color: #1a1a2e; font-size: 13px;
+  }
+  .db-tile-title { font-size: 13px; font-weight: 500; color: #1a1a2e; }
+  .db-tile-meta { font-size: 11px; color: #6B7280; margin-top: 2px; }
+
+  /* ============================================ */
+  /* DIRECTION C — List-First WhatsApp Style      */
+  /* ============================================ */
+  .dc-header {
+    background: #1E3A5F; padding: 14px 16px; color: #fff;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dc-header h2 { font-size: 16px; font-weight: 600; }
+  .dc-header .dc-icon { font-size: 20px; opacity: 0.8; }
+  .dc-body { background: #fff; min-height: 500px; }
+  .dc-list-item {
+    padding: 14px 16px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .dc-avatar {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .dc-avatar.blue { background: #1E3A5F; }
+  .dc-avatar.green { background: #10B981; }
+  .dc-avatar.orange { background: #F59E0B; }
+  .dc-list-content { flex: 1; }
+  .dc-list-title { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+  .dc-list-sub { font-size: 12px; color: #6B7280; margin-top: 1px; }
+  .dc-badge {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px;
+    color: #fff;
+  }
+  .dc-badge.green { background: #10B981; }
+  .dc-badge.orange { background: #F59E0B; }
+  .dc-badge.gray { background: #9CA3AF; }
+  .dc-fab {
+    position: absolute; bottom: 70px; right: 20px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #1E3A5F; color: #fff; font-size: 24px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+  }
+
+  /* ============================================ */
+  /* DIRECTION D — Bold Status, Grid Tasks        */
+  /* ============================================ */
+  .dd-header {
+    background: #1a1a2e; padding: 16px; color: #fff;
+  }
+  .dd-header h2 { font-size: 15px; font-weight: 600; }
+  .dd-breadcrumb { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+  .dd-body { padding: 12px; background: #F5F5F5; min-height: 500px; }
+  .dd-room-header {
+    background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .dd-room-name { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+  .dd-room-nav { font-size: 12px; color: #6B7280; }
+  .dd-tasks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .dd-task-btn {
+    padding: 16px 12px; border-radius: 12px; text-align: center;
+    font-size: 13px; font-weight: 500; border: none; cursor: pointer;
+  }
+  .dd-task-btn.done { background: #10B981; color: #fff; }
+  .dd-task-btn.progress { background: #F59E0B; color: #fff; }
+  .dd-task-btn.todo { background: #e2e8f0; color: #64748b; }
+  .dd-task-btn .dd-task-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .dd-note-section {
+    background: #fff; border-radius: 12px; padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .dd-note-title { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; }
+  .dd-note-item {
+    padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+    font-size: 12px; color: #374151;
+  }
+  .dd-note-item.blocking { border-left: 3px solid #EF4444; padding-left: 8px; }
+  .dd-note-item .dd-note-author { font-size: 10px; color: #9CA3AF; }
+
+  /* ============================================ */
+  /* DIRECTION E — Minimal Clean                  */
+  /* ============================================ */
+  .de-header {
+    background: #fff; padding: 16px; border-bottom: 1px solid #f1f5f9;
+  }
+  .de-header h2 { font-size: 18px; font-weight: 600; color: #1a1a2e; }
+  .de-header .de-sub { font-size: 12px; color: #9CA3AF; }
+  .de-body { padding: 16px; background: #fff; min-height: 500px; }
+  .de-card {
+    border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .de-card .de-dot {
+    width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
+  }
+  .de-dot.green { background: #10B981; }
+  .de-dot.orange { background: #F59E0B; }
+  .de-dot.gray { background: #d1d5db; }
+  .de-card-left { display: flex; align-items: center; }
+  .de-card-text .de-card-title { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+  .de-card-text .de-card-meta { font-size: 11px; color: #9CA3AF; }
+  .de-progress-bar {
+    width: 60px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;
+  }
+  .de-progress-fill { height: 100%; border-radius: 2px; }
+  .de-progress-fill.high { background: #10B981; }
+  .de-progress-fill.mid { background: #F59E0B; }
+  .de-progress-fill.low { background: #9CA3AF; }
+
+  /* ============================================ */
+  /* DIRECTION F — Dark Professional              */
+  /* ============================================ */
+  .df-header {
+    background: #0f172a; padding: 16px; color: #f8fafc;
+    border-bottom: 1px solid #1e293b;
+  }
+  .df-header h2 { font-size: 16px; font-weight: 600; }
+  .df-header .df-sub { font-size: 11px; color: #64748b; }
+  .df-body { padding: 12px; background: #111827; min-height: 500px; }
+  .df-card {
+    background: #1e293b; border-radius: 12px; padding: 14px;
+    margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .df-card-title { font-size: 14px; font-weight: 500; color: #f1f5f9; }
+  .df-card-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .df-status {
+    width: 8px; height: 40px; border-radius: 4px; margin-right: 12px; flex-shrink: 0;
+  }
+  .df-status.green { background: #10B981; box-shadow: 0 0 8px rgba(16,185,129,0.3); }
+  .df-status.orange { background: #F59E0B; box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+  .df-status.gray { background: #4b5563; }
+  .df-status.red { background: #EF4444; box-shadow: 0 0 8px rgba(239,68,68,0.3); }
+  .df-card-left { display: flex; align-items: center; }
+  .df-counter { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+  .df-counter small { font-size: 10px; color: #64748b; display: block; }
+  .df-bottom-nav {
+    display: flex; background: #0f172a; border-top: 1px solid #1e293b;
+    padding: 10px 0 14px;
+  }
+  .df-bottom-nav .df-nav-item {
+    flex: 1; text-align: center; font-size: 10px; color: #64748b;
+  }
+  .df-bottom-nav .df-nav-item.active { color: #3B82F6; font-weight: 600; }
+  .df-nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+  /* Comparison section */
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    max-width: 860px; margin: 0 auto;
+  }
+  .compare-grid .phone-frame { margin-bottom: 16px; }
+  .compare-label {
+    text-align: center; font-size: 13px; font-weight: 600;
+    color: #94a3b8; margin-bottom: 8px;
+  }
+
+  /* Overview grid */
+  .overview-section {
+    display: none; padding: 80px 24px 40px;
+    max-width: 900px; margin: 0 auto;
+  }
+  .overview-section.active { display: block; }
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+  .overview-item { text-align: center; }
+  .overview-item .phone-frame { margin: 0 auto 12px; width: 320px; }
+  .overview-label { font-size: 14px; font-weight: 600; color: #f8fafc; margin-bottom: 4px; }
+  .overview-desc { font-size: 12px; color: #94a3b8; }
+
+  /* Relative for FAB */
+  .phone-inner { position: relative; }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <h1>posePilot — Directions</h1>
+  <div class="nav-links">
+    <a href="#" onclick="showSection('overview')" class="active" id="nav-overview">Vue d'ensemble</a>
+    <a href="#" onclick="showSection('a')" id="nav-a">A</a>
+    <a href="#" onclick="showSection('b')" id="nav-b">B</a>
+    <a href="#" onclick="showSection('c')" id="nav-c">C</a>
+    <a href="#" onclick="showSection('d')" id="nav-d">D</a>
+    <a href="#" onclick="showSection('e')" id="nav-e">E</a>
+    <a href="#" onclick="showSection('f')" id="nav-f">F</a>
+    <a href="#" onclick="showSection('compare')" id="nav-compare">Comparer</a>
+  </div>
+</nav>
+
+<!-- ========== OVERVIEW ========== -->
+<div class="overview-section active" id="section-overview">
+  <h2 class="section-title">6 Directions de Design</h2>
+  <p class="section-desc">Chaque direction utilise les mêmes fondations (Poppins, bleu foncé, palette sémantique) mais avec un traitement visuel différent. Clique sur une lettre pour voir le détail.</p>
+  <div class="overview-grid">
+
+    <!-- A mini -->
+    <div class="overview-item" onclick="showSection('a')" style="cursor:pointer">
+      <div class="phone-frame" style="width:280px">
+        <div class="da-header"><h2>Résidence Les Oliviers</h2><div class="da-sub">Plot A — Étage 2</div></div>
+        <div class="da-body" style="min-height:200px;padding:8px">
+          <div class="da-card green"><div><div class="da-card-title">Lot 201</div></div><div class="da-counter">6/6<small>fait</small></div></div>
+          <div class="da-card orange"><div><div class="da-card-title">Lot 202</div></div><div class="da-counter">3/6<small>en cours</small></div></div>
+          <div class="da-card"><div><div class="da-card-title">Lot 203</div></div><div class="da-counter">0/6<small>à faire</small></div></div>
+        </div>
+      </div>
+      <div class="overview-label">A — Compact Cards</div>
+      <div class="overview-desc">Bordure gauche colorée, listes denses, bottom nav</div>
+    </div>
+
+    <!-- B mini -->
+    <div class="overview-item" onclick="showSection('b')" style="cursor:pointer">
+      <div class="phone-frame" style="width:280px">
+        <div class="db-header"><h2>Mes Chantiers</h2><div class="db-sub">4 chantiers actifs</div></div>
+        <div class="db-body" style="min-height:200px;padding:10px">
+          <div class="db-grid">
+            <div class="db-tile"><div class="db-circle mixed" style="width:44px;height:44px;font-size:11px">67%</div><div class="db-tile-title" style="font-size:11px">Les Oliviers</div></div>
+            <div class="db-tile"><div class="db-circle orange" style="width:44px;height:44px;font-size:11px">23%</div><div class="db-tile-title" style="font-size:11px">Les Cèdres</div></div>
+            <div class="db-tile"><div class="db-circle gray" style="width:44px;height:44px;font-size:11px">0%</div><div class="db-tile-title" style="font-size:11px">Rés. Duval</div></div>
+            <div class="db-tile"><div class="db-circle green" style="width:44px;height:44px;font-size:11px">100</div><div class="db-tile-title" style="font-size:11px">Les Pins</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="overview-label">B — Spacious Tiles</div>
+      <div class="overview-desc">Cartes larges, cercles de progression, aéré</div>
+    </div>
+
+    <!-- C mini -->
+    <div class="overview-item" onclick="showSection('c')" style="cursor:pointer">
+      <div class="phone-frame" style="width:280px">
+        <div class="dc-header"><h2>posePilot</h2><div class="dc-icon">🔍</div></div>
+        <div class="dc-body" style="min-height:200px">
+          <div class="dc-list-item"><div class="dc-avatar blue">OL</div><div class="dc-list-content"><div class="dc-list-title" style="font-size:12px">Les Oliviers</div><div class="dc-list-sub" style="font-size:10px">67% • 3 plots</div></div><div class="dc-badge green">67%</div></div>
+          <div class="dc-list-item"><div class="dc-avatar orange">CE</div><div class="dc-list-content"><div class="dc-list-title" style="font-size:12px">Les Cèdres</div><div class="dc-list-sub" style="font-size:10px">23% • 2 plots</div></div><div class="dc-badge orange">23%</div></div>
+        </div>
+      </div>
+      <div class="overview-label">C — List WhatsApp</div>
+      <div class="overview-desc">Style WhatsApp, avatars, badges, FAB</div>
+    </div>
+
+    <!-- D mini -->
+    <div class="overview-item" onclick="showSection('d')" style="cursor:pointer">
+      <div class="phone-frame" style="width:280px">
+        <div class="dd-header"><div class="dd-breadcrumb">Oliviers › Plot A › É2 › Lot 203</div><h2>Séjour</h2></div>
+        <div class="dd-body" style="min-height:200px;padding:8px">
+          <div class="dd-tasks-grid">
+            <div class="dd-task-btn done" style="padding:10px 8px;font-size:11px"><span class="dd-task-icon">✓</span>Ragréage</div>
+            <div class="dd-task-btn done" style="padding:10px 8px;font-size:11px"><span class="dd-task-icon">✓</span>Phonique</div>
+            <div class="dd-task-btn progress" style="padding:10px 8px;font-size:11px"><span class="dd-task-icon">◐</span>Pose</div>
+            <div class="dd-task-btn todo" style="padding:10px 8px;font-size:11px"><span class="dd-task-icon">○</span>Plinthes</div>
+          </div>
+        </div>
+      </div>
+      <div class="overview-label">D — Bold Grid Tasks</div>
+      <div class="overview-desc">Tâches en grille de gros boutons, breadcrumb, écran pièce</div>
+    </div>
+
+    <!-- E mini -->
+    <div class="overview-item" onclick="showSection('e')" style="cursor:pointer">
+      <div class="phone-frame" style="width:280px">
+        <div class="de-header"><h2 style="font-size:15px">Étage 2</h2><div class="de-sub">Plot A — Les Oliviers</div></div>
+        <div class="de-body" style="min-height:200px;padding:10px">
+          <div class="de-card"><div class="de-card-left"><div class="de-dot green"></div><div class="de-card-text"><div class="de-card-title" style="font-size:12px">Lot 201</div><div class="de-card-meta">6/6 fait</div></div></div><div class="de-progress-bar"><div class="de-progress-fill high" style="width:100%"></div></div></div>
+          <div class="de-card"><div class="de-card-left"><div class="de-dot orange"></div><div class="de-card-text"><div class="de-card-title" style="font-size:12px">Lot 202</div><div class="de-card-meta">3/6 en cours</div></div></div><div class="de-progress-bar"><div class="de-progress-fill mid" style="width:50%"></div></div></div>
+        </div>
+      </div>
+      <div class="overview-label">E — Minimal Clean</div>
+      <div class="overview-desc">Ultra-épuré, bordures fines, barres de progression, dots</div>
+    </div>
+
+    <!-- F mini -->
+    <div class="overview-item" onclick="showSection('f')" style="cursor:pointer">
+      <div class="phone-frame dark" style="width:280px">
+        <div class="df-header"><h2>Étage 2</h2><div class="df-sub">Plot A — Les Oliviers</div></div>
+        <div class="df-body" style="min-height:200px;padding:8px">
+          <div class="df-card"><div class="df-card-left"><div class="df-status green" style="height:30px"></div><div><div class="df-card-title" style="font-size:12px">Lot 201</div><div class="df-card-meta">Type A</div></div></div><div class="df-counter" style="font-size:11px">6/6<small>fait</small></div></div>
+          <div class="df-card"><div class="df-card-left"><div class="df-status orange" style="height:30px"></div><div><div class="df-card-title" style="font-size:12px">Lot 202</div><div class="df-card-meta">Type B</div></div></div><div class="df-counter" style="font-size:11px">3/6<small>en cours</small></div></div>
+          <div class="df-card"><div class="df-card-left"><div class="df-status red" style="height:30px"></div><div><div class="df-card-title" style="font-size:12px">Lot 203</div><div class="df-card-meta">Type A • ⚠ Bloqué</div></div></div><div class="df-counter" style="font-size:11px">1/6<small>bloqué</small></div></div>
+        </div>
+      </div>
+      <div class="overview-label">F — Dark Professional</div>
+      <div class="overview-desc">Thème sombre, barres lumineuses, glow sur statuts</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== DIRECTION A ========== -->
+<div class="section" id="section-a">
+  <h2 class="section-title">Direction A — Compact Cards</h2>
+  <p class="section-desc">Listes denses avec bordure gauche colorée. Navigation en bas. Recherche toujours visible. Information-first, densité maximale. Chaque carte porte son statut et son compteur.</p>
+
+  <div class="phone-frame">
+    <div class="da-header">
+      <h2>Résidence Les Oliviers</h2>
+      <div class="da-sub">Plot A — Étage 2 • 8 lots</div>
+    </div>
+    <div class="da-body">
+      <input class="da-search" placeholder="🔍 Rechercher un lot..." />
+      <div class="da-card green">
+        <div><div class="da-card-title">Lot 201 — Type A</div><div class="da-card-meta">Séjour • Chambre • SDB • WC</div></div>
+        <div class="da-counter">6/6<small>fait</small></div>
+      </div>
+      <div class="da-card green">
+        <div><div class="da-card-title">Lot 202 — Type B</div><div class="da-card-meta">Séjour • Chambre • SDB/WC</div></div>
+        <div class="da-counter">5/5<small>fait</small></div>
+      </div>
+      <div class="da-card orange">
+        <div><div class="da-card-title">Lot 203 — Type A</div><div class="da-card-meta">Séjour • Chambre • SDB • WC</div></div>
+        <div class="da-counter">3/6<small>en cours</small></div>
+      </div>
+      <div class="da-card orange">
+        <div><div class="da-card-title">Lot 204 — Type A • TMA</div><div class="da-card-meta">Séjour • Chambre • SDB • WC</div></div>
+        <div class="da-counter">2/6<small>en cours</small></div>
+      </div>
+      <div class="da-card red">
+        <div><div class="da-card-title">Lot 205 — Type B</div><div class="da-card-meta">⚠ 1 blocage • Séjour • Chambre</div></div>
+        <div class="da-counter">1/5<small>bloqué</small></div>
+      </div>
+      <div class="da-card">
+        <div><div class="da-card-title">Lot 206 — Type A</div><div class="da-card-meta">Séjour • Chambre • SDB • WC</div></div>
+        <div class="da-counter">0/6<small>à faire</small></div>
+      </div>
+      <div class="da-card">
+        <div><div class="da-card-title">Lot 207 — Type B</div><div class="da-card-meta">Séjour • Chambre • SDB/WC</div></div>
+        <div class="da-counter">0/5<small>à faire</small></div>
+      </div>
+      <div class="da-card">
+        <div><div class="da-card-title">Lot 208 — Type A</div><div class="da-card-meta">📄 Docs manquants • Séjour • Chambre</div></div>
+        <div class="da-counter">0/6<small>à faire</small></div>
+      </div>
+    </div>
+    <div class="da-bottom-nav">
+      <div class="da-nav-item active"><span class="da-nav-icon">🏗</span>Chantiers</div>
+      <div class="da-nav-item"><span class="da-nav-icon">📦</span>Livraisons</div>
+      <div class="da-nav-item"><span class="da-nav-icon">🔔</span>Nouveau</div>
+      <div class="da-nav-item"><span class="da-nav-icon">⚙</span>Config</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DIRECTION B ========== -->
+<div class="section" id="section-b">
+  <h2 class="section-title">Direction B — Spacious Tiles</h2>
+  <p class="section-desc">Cartes larges en grille 2 colonnes. Cercles de progression colorés. Aéré et visuel. L'avancement saute aux yeux. Idéal pour la vue d'ensemble de Youssef.</p>
+
+  <div class="phone-frame">
+    <div class="db-header">
+      <h2>Mes Chantiers</h2>
+      <div class="db-sub">4 chantiers actifs</div>
+    </div>
+    <div class="db-body">
+      <div class="db-grid">
+        <div class="db-tile">
+          <div class="db-circle mixed">67%</div>
+          <div class="db-tile-title">Rés. Les Oliviers</div>
+          <div class="db-tile-meta">3 plots • 80 lots</div>
+        </div>
+        <div class="db-tile">
+          <div class="db-circle orange">23%</div>
+          <div class="db-tile-title">Rés. Les Cèdres</div>
+          <div class="db-tile-meta">2 plots • 45 lots</div>
+        </div>
+        <div class="db-tile">
+          <div class="db-circle gray" style="font-size: 13px;">0%</div>
+          <div class="db-tile-title">Rés. Duval</div>
+          <div class="db-tile-meta" style="color: #F59E0B;">Léger • 3 livraisons</div>
+        </div>
+        <div class="db-tile">
+          <div class="db-circle green">✓</div>
+          <div class="db-tile-title">Les Pins</div>
+          <div class="db-tile-meta" style="color: #10B981;">Terminé</div>
+        </div>
+      </div>
+      <div style="margin-top: 16px; background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+        <div style="font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px;">📦 Livraisons à venir</div>
+        <div style="font-size: 12px; color: #6B7280; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">Colle flex — Les Oliviers — <span style="color:#F59E0B">Prévu 8 fév</span></div>
+        <div style="font-size: 12px; color: #6B7280; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">Joint gris — Rés. Duval — <span style="color:#F59E0B">Prévu 10 fév</span></div>
+        <div style="font-size: 12px; color: #6B7280; padding: 4px 0;">Carrelage 60x60 — Les Cèdres — <span style="color:#9CA3AF">Commandé</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DIRECTION C ========== -->
+<div class="section" id="section-c">
+  <h2 class="section-title">Direction C — List WhatsApp</h2>
+  <p class="section-desc">Style messagerie : avatars avec initiales, listes verticales, badges de statut compacts, bouton d'action flottant. Familier pour Bruno, zéro apprentissage.</p>
+
+  <div class="phone-frame">
+    <div class="phone-inner">
+      <div class="dc-header"><h2>posePilot</h2><div class="dc-icon">🔍</div></div>
+      <div class="dc-body">
+        <div class="dc-list-item">
+          <div class="dc-avatar blue">OL</div>
+          <div class="dc-list-content">
+            <div class="dc-list-title">Résidence Les Oliviers</div>
+            <div class="dc-list-sub">3 plots • 80 lots • Bruno a mis à jour 8 lots hier</div>
+          </div>
+          <div class="dc-badge green">67%</div>
+        </div>
+        <div class="dc-list-item">
+          <div class="dc-avatar orange">CE</div>
+          <div class="dc-list-content">
+            <div class="dc-list-title">Résidence Les Cèdres</div>
+            <div class="dc-list-sub">2 plots • 45 lots • 1 blocage signalé</div>
+          </div>
+          <div class="dc-badge orange">23%</div>
+        </div>
+        <div class="dc-list-item">
+          <div class="dc-avatar" style="background:#6B7280">DU</div>
+          <div class="dc-list-content">
+            <div class="dc-list-title">Rénovation Duval</div>
+            <div class="dc-list-sub">Léger • 3 livraisons • 1 besoin en attente</div>
+          </div>
+          <div class="dc-badge gray">Léger</div>
+        </div>
+        <div class="dc-list-item">
+          <div class="dc-avatar green">PI</div>
+          <div class="dc-list-content">
+            <div class="dc-list-title">Résidence Les Pins</div>
+            <div class="dc-list-sub">Terminé le 28 jan</div>
+          </div>
+          <div class="dc-badge green">100%</div>
+        </div>
+        <div style="padding: 16px;">
+          <div style="font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px;">🔔 Quoi de neuf</div>
+          <div style="font-size: 12px; color: #6B7280; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">Bruno a validé 8 lots sur Les Oliviers — <span style="color: #9CA3AF;">il y a 2h</span></div>
+          <div style="font-size: 12px; color: #EF4444; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">⚠ Blocage signalé lot 305 Les Cèdres — <span style="color: #9CA3AF;">hier</span></div>
+          <div style="font-size: 12px; color: #6B7280; padding: 6px 0;">Livraison reçue : joint gris Duval — <span style="color: #9CA3AF;">hier</span></div>
+        </div>
+      </div>
+      <div class="dc-fab">+</div>
+      <div class="da-bottom-nav">
+        <div class="da-nav-item active"><span class="da-nav-icon">🏗</span>Chantiers</div>
+        <div class="da-nav-item"><span class="da-nav-icon">📦</span>Livraisons</div>
+        <div class="da-nav-item"><span class="da-nav-icon">🔔</span>Activité</div>
+        <div class="da-nav-item"><span class="da-nav-icon">⚙</span>Réglages</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DIRECTION D ========== -->
+<div class="section" id="section-d">
+  <h2 class="section-title">Direction D — Bold Grid Tasks</h2>
+  <p class="section-desc">L'écran pièce avec des tâches en grille de gros boutons. Breadcrumb pour le contexte. Notes intégrées en bas. Conçu pour les gros doigts de Bruno — chaque bouton est une cible facile.</p>
+
+  <div class="phone-frame">
+    <div class="dd-header">
+      <div class="dd-breadcrumb">Oliviers › Plot A › Étage 2 › Lot 203</div>
+      <h2>Séjour</h2>
+    </div>
+    <div class="dd-body">
+      <div class="dd-room-header">
+        <div class="dd-room-name">◀ Séjour ▶</div>
+        <div class="dd-room-nav">2/4 pièces</div>
+      </div>
+      <div class="dd-tasks-grid">
+        <div class="dd-task-btn done"><span class="dd-task-icon">✓</span>Ragréage</div>
+        <div class="dd-task-btn done"><span class="dd-task-icon">✓</span>Phonique</div>
+        <div class="dd-task-btn progress"><span class="dd-task-icon">◐</span>Pose</div>
+        <div class="dd-task-btn todo"><span class="dd-task-icon">○</span>Plinthes</div>
+        <div class="dd-task-btn todo"><span class="dd-task-icon">○</span>Joints</div>
+        <div class="dd-task-btn todo"><span class="dd-task-icon">○</span>Silicone</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <div style="flex:1; background: #1E3A5F; color: #fff; border-radius: 12px; padding: 12px; text-align: center; font-size: 13px; font-weight: 500;">📷 Photo</div>
+        <div style="flex:1; background: #1E3A5F; color: #fff; border-radius: 12px; padding: 12px; text-align: center; font-size: 13px; font-weight: 500;">📝 Note</div>
+      </div>
+      <div class="dd-note-section">
+        <div class="dd-note-title">Notes (2)</div>
+        <div class="dd-note-item blocking">
+          Support fissuré coin gauche — photo jointe<br>
+          <span class="dd-note-author">Bruno • hier 14:30 • ⚠ Bloquant</span>
+        </div>
+        <div class="dd-note-item">
+          Ragréage terminé, prêt pour phonique<br>
+          <span class="dd-note-author">Bruno • 3 fév 9:15</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DIRECTION E ========== -->
+<div class="section" id="section-e">
+  <h2 class="section-title">Direction E — Minimal Clean</h2>
+  <p class="section-desc">Ultra-épuré. Fond blanc, bordures fines, dots de couleur discrets, barres de progression minimalistes. L'information est là, sans aucun bruit visuel. Pour ceux qui veulent le maximum de clarté.</p>
+
+  <div class="phone-frame">
+    <div class="de-header">
+      <h2>Étage 2</h2>
+      <div class="de-sub">Plot A — Résidence Les Oliviers</div>
+    </div>
+    <div class="de-body">
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <div style="padding: 6px 14px; border-radius: 20px; background: #1E3A5F; color: #fff; font-size: 12px; font-weight: 500;">Tous</div>
+        <div style="padding: 6px 14px; border-radius: 20px; background: #f1f5f9; color: #64748b; font-size: 12px;">En cours</div>
+        <div style="padding: 6px 14px; border-radius: 20px; background: #f1f5f9; color: #64748b; font-size: 12px;">Terminés</div>
+        <div style="padding: 6px 14px; border-radius: 20px; background: #f1f5f9; color: #64748b; font-size: 12px;">Alertes</div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot green"></div><div class="de-card-text"><div class="de-card-title">Lot 201</div><div class="de-card-meta">Type A • 6/6 fait</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill high" style="width:100%"></div></div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot green"></div><div class="de-card-text"><div class="de-card-title">Lot 202</div><div class="de-card-meta">Type B • 5/5 fait</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill high" style="width:100%"></div></div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot orange"></div><div class="de-card-text"><div class="de-card-title">Lot 203</div><div class="de-card-meta">Type A • 3/6 en cours</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill mid" style="width:50%"></div></div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot orange"></div><div class="de-card-text"><div class="de-card-title">Lot 204</div><div class="de-card-meta">Type A • TMA • 2/6 en cours</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill mid" style="width:33%"></div></div>
+      </div>
+      <div class="de-card" style="border-color: #fecaca;">
+        <div class="de-card-left"><div class="de-dot" style="background:#EF4444"></div><div class="de-card-text"><div class="de-card-title">Lot 205</div><div class="de-card-meta" style="color:#EF4444">Type B • ⚠ 1 blocage</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill" style="width:20%;background:#EF4444"></div></div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot gray"></div><div class="de-card-text"><div class="de-card-title">Lot 206</div><div class="de-card-meta">Type A • 0/6 à faire</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill low" style="width:0%"></div></div>
+      </div>
+      <div class="de-card">
+        <div class="de-card-left"><div class="de-dot gray"></div><div class="de-card-text"><div class="de-card-title">Lot 207</div><div class="de-card-meta">Type B • 📄 Docs manquants</div></div></div>
+        <div class="de-progress-bar"><div class="de-progress-fill low" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DIRECTION F ========== -->
+<div class="section" id="section-f">
+  <h2 class="section-title">Direction F — Dark Professional</h2>
+  <p class="section-desc">Thème sombre par défaut. Barres de statut lumineuses avec effet glow. Dense et professionnel. Idéal pour les conditions de faible luminosité (sous-sol) et pour un look premium.</p>
+
+  <div class="phone-frame dark">
+    <div class="df-header">
+      <h2>Étage 2 — Plot A</h2>
+      <div class="df-sub">Résidence Les Oliviers • 8 lots</div>
+    </div>
+    <div class="df-body">
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <div style="padding: 6px 14px; border-radius: 20px; background: #1E3A5F; color: #fff; font-size: 12px; font-weight: 500;">Tous (8)</div>
+        <div style="padding: 6px 14px; border-radius: 20px; background: #1e293b; color: #64748b; font-size: 12px;">En cours (2)</div>
+        <div style="padding: 6px 14px; border-radius: 20px; background: #1e293b; color: #64748b; font-size: 12px;">⚠ (1)</div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status green"></div><div><div class="df-card-title">Lot 201</div><div class="df-card-meta">Type A • 4 pièces</div></div></div>
+        <div class="df-counter">6/6<small>fait</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status green"></div><div><div class="df-card-title">Lot 202</div><div class="df-card-meta">Type B • 3 pièces</div></div></div>
+        <div class="df-counter">5/5<small>fait</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status orange"></div><div><div class="df-card-title">Lot 203</div><div class="df-card-meta">Type A • 4 pièces</div></div></div>
+        <div class="df-counter">3/6<small>en cours</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status orange"></div><div><div class="df-card-title">Lot 204</div><div class="df-card-meta">Type A • TMA • 4 pièces</div></div></div>
+        <div class="df-counter">2/6<small>en cours</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status red"></div><div><div class="df-card-title">Lot 205</div><div class="df-card-meta">Type B • ⚠ Support fissuré SDB</div></div></div>
+        <div class="df-counter">1/5<small>bloqué</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status gray"></div><div><div class="df-card-title">Lot 206</div><div class="df-card-meta">Type A • 4 pièces</div></div></div>
+        <div class="df-counter">0/6<small>à faire</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status gray"></div><div><div class="df-card-title">Lot 207</div><div class="df-card-meta">Type B • 📄 Docs manquants</div></div></div>
+        <div class="df-counter">0/5<small>à faire</small></div>
+      </div>
+      <div class="df-card">
+        <div class="df-card-left"><div class="df-status gray"></div><div><div class="df-card-title">Lot 208</div><div class="df-card-meta">Type A • 4 pièces</div></div></div>
+        <div class="df-counter">0/6<small>à faire</small></div>
+      </div>
+    </div>
+    <div class="df-bottom-nav">
+      <div class="df-nav-item active"><span class="df-nav-icon">🏗</span>Chantiers</div>
+      <div class="df-nav-item"><span class="df-nav-icon">📦</span>Livraisons</div>
+      <div class="df-nav-item"><span class="df-nav-icon">🔔</span>Activité</div>
+      <div class="df-nav-item"><span class="df-nav-icon">⚙</span>Réglages</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== COMPARE ========== -->
+<div class="overview-section" id="section-compare">
+  <h2 class="section-title">Comparaison côte à côte</h2>
+  <p class="section-desc">Compare les directions deux par deux pour identifier tes préférences.</p>
+  <div class="compare-grid">
+    <div>
+      <div class="compare-label">A — Compact Cards</div>
+      <div class="phone-frame" style="width:100%">
+        <div class="da-header"><h2>Étage 2</h2><div class="da-sub">Plot A • 8 lots</div></div>
+        <div class="da-body" style="min-height:300px">
+          <div class="da-card green"><div><div class="da-card-title">Lot 201</div><div class="da-card-meta">Type A</div></div><div class="da-counter">6/6<small>fait</small></div></div>
+          <div class="da-card orange"><div><div class="da-card-title">Lot 203</div><div class="da-card-meta">Type A</div></div><div class="da-counter">3/6<small>en cours</small></div></div>
+          <div class="da-card red"><div><div class="da-card-title">Lot 205</div><div class="da-card-meta">⚠ Bloqué</div></div><div class="da-counter">1/5<small>bloqué</small></div></div>
+          <div class="da-card"><div><div class="da-card-title">Lot 206</div><div class="da-card-meta">Type A</div></div><div class="da-counter">0/6<small>à faire</small></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">F — Dark Professional</div>
+      <div class="phone-frame dark" style="width:100%">
+        <div class="df-header"><h2>Étage 2</h2><div class="df-sub">Plot A • 8 lots</div></div>
+        <div class="df-body" style="min-height:300px">
+          <div class="df-card"><div class="df-card-left"><div class="df-status green"></div><div><div class="df-card-title">Lot 201</div><div class="df-card-meta">Type A</div></div></div><div class="df-counter">6/6<small>fait</small></div></div>
+          <div class="df-card"><div class="df-card-left"><div class="df-status orange"></div><div><div class="df-card-title">Lot 203</div><div class="df-card-meta">Type A</div></div></div><div class="df-counter">3/6<small>en cours</small></div></div>
+          <div class="df-card"><div class="df-card-left"><div class="df-status red"></div><div><div class="df-card-title">Lot 205</div><div class="df-card-meta">⚠ Bloqué</div></div></div><div class="df-counter">1/5<small>bloqué</small></div></div>
+          <div class="df-card"><div class="df-card-left"><div class="df-status gray"></div><div><div class="df-card-title">Lot 206</div><div class="df-card-meta">Type A</div></div></div><div class="df-counter">0/6<small>à faire</small></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">C — List WhatsApp</div>
+      <div class="phone-frame" style="width:100%">
+        <div class="dc-header"><h2>posePilot</h2><div class="dc-icon">🔍</div></div>
+        <div class="dc-body" style="min-height:300px">
+          <div class="dc-list-item"><div class="dc-avatar blue">OL</div><div class="dc-list-content"><div class="dc-list-title">Les Oliviers</div><div class="dc-list-sub">67% • 3 plots</div></div><div class="dc-badge green">67%</div></div>
+          <div class="dc-list-item"><div class="dc-avatar orange">CE</div><div class="dc-list-content"><div class="dc-list-title">Les Cèdres</div><div class="dc-list-sub">23% • 1 blocage</div></div><div class="dc-badge orange">23%</div></div>
+          <div class="dc-list-item"><div class="dc-avatar" style="background:#6B7280">DU</div><div class="dc-list-content"><div class="dc-list-title">Rénov. Duval</div><div class="dc-list-sub">Léger • 3 livraisons</div></div><div class="dc-badge gray">Léger</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-label">E — Minimal Clean</div>
+      <div class="phone-frame" style="width:100%">
+        <div class="de-header"><h2>Étage 2</h2><div class="de-sub">Plot A — Les Oliviers</div></div>
+        <div class="de-body" style="min-height:300px;padding:12px">
+          <div class="de-card"><div class="de-card-left"><div class="de-dot green"></div><div class="de-card-text"><div class="de-card-title">Lot 201</div><div class="de-card-meta">6/6 fait</div></div></div><div class="de-progress-bar"><div class="de-progress-fill high" style="width:100%"></div></div></div>
+          <div class="de-card"><div class="de-card-left"><div class="de-dot orange"></div><div class="de-card-text"><div class="de-card-title">Lot 203</div><div class="de-card-meta">3/6 en cours</div></div></div><div class="de-progress-bar"><div class="de-progress-fill mid" style="width:50%"></div></div></div>
+          <div class="de-card" style="border-color:#fecaca"><div class="de-card-left"><div class="de-dot" style="background:#EF4444"></div><div class="de-card-text"><div class="de-card-title">Lot 205</div><div class="de-card-meta" style="color:#EF4444">⚠ Bloqué</div></div></div><div class="de-progress-bar"><div class="de-progress-fill" style="width:20%;background:#EF4444"></div></div></div>
+          <div class="de-card"><div class="de-card-left"><div class="de-dot gray"></div><div class="de-card-text"><div class="de-card-title">Lot 206</div><div class="de-card-meta">0/6 à faire</div></div></div><div class="de-progress-bar"><div class="de-progress-fill low" style="width:0%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section, .overview-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const section = document.getElementById('section-' + id);
+  const nav = document.getElementById('nav-' + id);
+  if (section) section.classList.add('active');
+  if (nav) nav.classList.add('active');
+}
+</script>
+
+</body>
+</html>
