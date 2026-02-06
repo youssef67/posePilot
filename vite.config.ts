@@ -7,7 +7,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [
-    TanStackRouterVite({ quoteStyle: 'single' }),
+    TanStackRouterVite({ quoteStyle: 'single', routeFileIgnorePattern: '.*\\.test\\.tsx?$' }),
     react(),
     tailwindcss(),
     VitePWA({

@@ -1,6 +1,6 @@
 # Story 1.1: Initialisation du projet et déploiement
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -268,12 +268,14 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-06: Implémentation complète Story 1-1. Initialisation projet, structure, thème, CI/CD, push GitHub.
+- 2026-02-06: Code review — 8 issues trouvées (2 HIGH, 4 MEDIUM, 2 LOW). 7 corrigées automatiquement. 1 LOW restante (L2: police Poppins CDN-only pour PWA offline).
 
 ### File List
 
 - .env.example
 - .github/workflows/ci.yml
 - .gitignore
+- README.md
 - components.json
 - eslint.config.js
 - index.html
@@ -300,7 +302,6 @@ Claude Opus 4.6
 - src/types/database.ts
 - src/types/enums.ts
 - src/utils/.gitkeep
-- src/utils/cn.ts
 - tsconfig.app.json
 - tsconfig.json
 - tsconfig.node.json
