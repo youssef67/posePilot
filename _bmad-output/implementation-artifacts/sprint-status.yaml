@@ -41,63 +41,63 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Fondation, Authentification & Gestion des chantiers
-  epic-1: in-progress
+  epic-1: done
   1-1-initialisation-du-projet-et-deploiement: done
   1-2-authentification-et-protection-des-routes: done
-  1-3-layout-principal-bottom-navigation-et-theme: backlog
-  1-4-creation-d-un-chantier: backlog
-  1-5-ecran-d-accueil-liste-et-cartes-des-chantiers: backlog
-  1-6-gestion-du-cycle-de-vie-d-un-chantier: backlog
-  1-7-pwa-installation-et-mode-standalone: backlog
-  epic-1-retrospective: optional
+  1-3-layout-principal-bottom-navigation-et-theme: done
+  1-4-creation-d-un-chantier: done
+  1-5-ecran-d-accueil-liste-et-cartes-des-chantiers: done
+  1-6-gestion-du-cycle-de-vie-d-un-chantier: done
+  1-7-pwa-installation-et-mode-standalone: done
+  epic-1-retrospective: done
 
   # Epic 2: Configuration & Structure de chantier
-  epic-2: backlog
-  2-1-creation-de-plots-et-definition-des-taches: backlog
-  2-2-variantes-d-appartement-avec-pieces-et-taches: backlog
-  2-3-documents-par-defaut-dans-les-variantes: backlog
-  2-4-creation-de-lots-avec-heritage-automatique: backlog
-  2-5-ajout-de-lots-en-batch: backlog
-  2-6-flag-tma-et-personnalisation-de-lot-individuel: backlog
-  epic-2-retrospective: optional
+  epic-2: done
+  2-1-creation-de-plots-et-definition-des-taches: done
+  2-2-variantes-d-appartement-avec-pieces-et-taches: done
+  2-3-documents-par-defaut-dans-les-variantes: done
+  2-4-creation-de-lots-avec-heritage-automatique: done
+  2-5-ajout-de-lots-en-batch: done
+  2-6-flag-tma-et-personnalisation-de-lot-individuel: done
+  epic-2-retrospective: done
 
   # Epic 3: Navigation terrain & Suivi d'avancement
-  epic-3: backlog
-  3-1-navigation-hierarchique-et-breadcrumb: backlog
-  3-2-ecran-piece-taches-et-tap-cycle: backlog
-  3-3-grilles-de-cartes-colorees-et-agregation: backlog
-  3-4-swipe-entre-pieces: backlog
-  3-5-recherche-par-numero-de-lot: backlog
-  3-6-filtres-de-vues: backlog
-  epic-3-retrospective: optional
+  epic-3: done
+  3-1-navigation-hierarchique-et-breadcrumb: done
+  3-2-ecran-piece-taches-et-tap-cycle: done
+  3-3-grilles-de-cartes-colorees-et-agregation: done
+  3-4-swipe-entre-pieces: done
+  3-5-recherche-par-numero-de-lot: done
+  3-6-filtres-de-vues: done
+  epic-3-retrospective: done
 
   # Epic 4: Notes, Photos & Collaboration
-  epic-4: backlog
-  4-1-creation-de-notes-texte-avec-flag-bloquant: backlog
-  4-2-photos-depuis-la-camera-sur-les-notes: backlog
-  4-3-partage-photo-contextualise: backlog
-  4-4-fil-d-activite-quoi-de-neuf: backlog
-  epic-4-retrospective: optional
+  epic-4: done
+  4-1-creation-de-notes-texte-avec-flag-bloquant: done
+  4-2-photos-depuis-la-camera-sur-les-notes: done
+  4-3-partage-photo-contextualise: done
+  4-4-fil-d-activite-quoi-de-neuf: done
+  epic-4-retrospective: done
 
   # Epic 5: Gestion des Documents PDF
-  epic-5: backlog
-  5-1-upload-visualisation-et-gestion-de-documents-pdf: backlog
-  5-2-types-de-documents-personnalises-et-gestion-par-lot: backlog
-  5-3-recapitulatif-et-indicateurs-de-documents-manquants: backlog
-  epic-5-retrospective: optional
+  epic-5: done
+  5-1-upload-visualisation-et-gestion-de-documents-pdf: done
+  5-2-types-de-documents-personnalises-et-gestion-par-lot: done
+  5-3-recapitulatif-et-indicateurs-de-documents-manquants: done
+  epic-5-retrospective: done
 
   # Epic 6: Besoins, Livraisons & Inventaire
-  epic-6: backlog
-  6-1-besoins-creation-gestion-et-transformation-en-livraison: backlog
-  6-2-livraisons-creation-directe-et-cycle-de-vie: backlog
-  6-3-livraisons-documents-bc-et-bl: backlog
-  6-4-vue-globale-des-livraisons-filtree-par-statut: backlog
-  6-5-gestion-d-inventaire-avec-localisation: backlog
+  epic-6: done
+  6-1-besoins-creation-gestion-et-transformation-en-livraison: done
+  6-2-livraisons-creation-directe-et-cycle-de-vie: done
+  6-3-livraisons-documents-bc-et-bl: done
+  6-4-vue-globale-des-livraisons-filtree-par-statut: done
+  6-5-gestion-d-inventaire-avec-localisation: done
   epic-6-retrospective: optional
 
   # Epic 7: Metres, Plinthes & Indicateurs intelligents
-  epic-7: backlog
-  7-1-saisie-et-agregation-des-metres: backlog
-  7-2-suivi-du-statut-des-plinthes: backlog
-  7-3-indicateurs-intelligents-et-aide-a-la-decision: backlog
+  epic-7: done
+  7-1-saisie-et-agregation-des-metres: done
+  7-2-suivi-du-statut-des-plinthes: done
+  7-3-indicateurs-intelligents-et-aide-a-la-decision: done
   epic-7-retrospective: optional

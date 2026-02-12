@@ -1,0 +1,61 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+interface UploadLotDocumentInput {
+  file: File
+  documentId: string
+  lotId: string
+  onProgress?: (percent: number) => void
+}
+
+export function useUploadLotDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ file, documentId, lotId, onProgress }: UploadLotDocumentInput): Promise<string> => {
+      if (file.type !== 'application/pdf') {
+        throw new Error('Seuls les fichiers PDF sont acceptés')
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error('Le fichier dépasse la taille maximale de 50 Mo')
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Non authentifié')
+
+      // Phase 1: Upload to storage (0–80%)
+      onProgress?.(0)
+      const filePath = `${user.id}/${lotId}/${documentId}_${Date.now()}.pdf`
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, { contentType: 'application/pdf' })
+      if (uploadError) throw uploadError
+
+      onProgress?.(80)
+
+      // Phase 2: Update lot_documents with file_url + file_name (80–100%)
+      const { error: updateError } = await supabase
+        .from('lot_documents')
+        .update({ file_url: filePath, file_name: file.name } as Record<string, unknown>)
+        .eq('id', documentId)
+      if (updateError) {
+        // Cleanup orphan file
+        await supabase.storage.from('documents').remove([filePath])
+        throw updateError
+      }
+
+      onProgress?.(100)
+      return filePath
+    },
+    onSuccess: () => {
+      toast.success('Document uploadé')
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'upload")
+    },
+    onSettled: (_data, _error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['lot-documents', variables?.lotId] })
+    },
+  })
+}

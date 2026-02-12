@@ -20,3 +20,10 @@ export const DeliveryStatus = {
   LIVRE: 'livre',
 } as const
 export type DeliveryStatus = (typeof DeliveryStatus)[keyof typeof DeliveryStatus]
+
+export const PlinthStatus = {
+  NON_COMMANDEES: 'non_commandees',
+  COMMANDEES: 'commandees',
+  FACONNEES: 'faconnees',
+} as const
+export type PlinthStatus = (typeof PlinthStatus)[keyof typeof PlinthStatus]

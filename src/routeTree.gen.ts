@@ -13,6 +13,22 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedLivraisonsRouteImport } from './routes/_authenticated/livraisons'
+import { Route as AuthenticatedActiviteRouteImport } from './routes/_authenticated/activite'
+import { Route as AuthenticatedChantiersNouveauRouteImport } from './routes/_authenticated/chantiers/nouveau'
+import { Route as AuthenticatedChantiersChantierIdRouteImport } from './routes/_authenticated/chantiers/$chantierId'
+import { Route as AuthenticatedChantiersChantierIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/index'
+import { Route as AuthenticatedChantiersChantierIdLivraisonsRouteImport } from './routes/_authenticated/chantiers/$chantierId/livraisons'
+import { Route as AuthenticatedChantiersChantierIdInventaireRouteImport } from './routes/_authenticated/chantiers/$chantierId/inventaire'
+import { Route as AuthenticatedChantiersChantierIdBesoinsRouteImport } from './routes/_authenticated/chantiers/$chantierId/besoins'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/index'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/index'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/variantes.$varianteId'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId/index'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId/$pieceId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -33,35 +49,233 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLivraisonsRoute = AuthenticatedLivraisonsRouteImport.update({
+  id: '/livraisons',
+  path: '/livraisons',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedActiviteRoute = AuthenticatedActiviteRouteImport.update({
+  id: '/activite',
+  path: '/activite',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedChantiersNouveauRoute =
+  AuthenticatedChantiersNouveauRouteImport.update({
+    id: '/chantiers/nouveau',
+    path: '/chantiers/nouveau',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdRoute =
+  AuthenticatedChantiersChantierIdRouteImport.update({
+    id: '/chantiers/$chantierId',
+    path: '/chantiers/$chantierId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdIndexRoute =
+  AuthenticatedChantiersChantierIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdLivraisonsRoute =
+  AuthenticatedChantiersChantierIdLivraisonsRouteImport.update({
+    id: '/livraisons',
+    path: '/livraisons',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdInventaireRoute =
+  AuthenticatedChantiersChantierIdInventaireRouteImport.update({
+    id: '/inventaire',
+    path: '/inventaire',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdBesoinsRoute =
+  AuthenticatedChantiersChantierIdBesoinsRouteImport.update({
+    id: '/besoins',
+    path: '/besoins',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdRouteImport.update({
+    id: '/plots/$plotId',
+    path: '/plots/$plotId',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedChantiersChantierIdPlotsPlotIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteImport.update({
+    id: '/$etageId',
+    path: '/$etageId',
+    getParentRoute: () => AuthenticatedChantiersChantierIdPlotsPlotIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () =>
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRouteImport.update(
+    {
+      id: '/variantes/$varianteId',
+      path: '/variantes/$varianteId',
+      getParentRoute: () => AuthenticatedChantiersChantierIdPlotsPlotIdRoute,
+    } as any,
+  )
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteImport.update({
+    id: '/$lotId',
+    path: '/$lotId',
+    getParentRoute: () =>
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute,
+  } as any)
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRouteImport.update(
+    {
+      id: '/',
+      path: '/',
+      getParentRoute: () =>
+        AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute,
+    } as any,
+  )
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRouteImport.update(
+    {
+      id: '/$pieceId',
+      path: '/$pieceId',
+      getParentRoute: () =>
+        AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute,
+    } as any,
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/activite': typeof AuthenticatedActiviteRoute
+  '/livraisons': typeof AuthenticatedLivraisonsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdRouteWithChildren
+  '/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
+  '/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
+  '/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
+  '/chantiers/$chantierId/': typeof AuthenticatedChantiersChantierIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren
+  '/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren
+  '/chantiers/$chantierId/plots/$plotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/activite': typeof AuthenticatedActiviteRoute
+  '/livraisons': typeof AuthenticatedLivraisonsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
+  '/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
+  '/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
+  '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/activite': typeof AuthenticatedActiviteRoute
+  '/_authenticated/livraisons': typeof AuthenticatedLivraisonsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdRouteWithChildren
+  '/_authenticated/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
+  '/_authenticated/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/_authenticated/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
+  '/_authenticated/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
+  '/_authenticated/chantiers/$chantierId/': typeof AuthenticatedChantiersChantierIdIndexRoute
+  '/_authenticated/chantiers/$chantierId/plots/$plotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/settings'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/activite'
+    | '/livraisons'
+    | '/settings'
+    | '/chantiers/$chantierId'
+    | '/chantiers/nouveau'
+    | '/chantiers/$chantierId/besoins'
+    | '/chantiers/$chantierId/inventaire'
+    | '/chantiers/$chantierId/livraisons'
+    | '/chantiers/$chantierId/'
+    | '/chantiers/$chantierId/plots/$plotId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId'
+    | '/chantiers/$chantierId/plots/$plotId/'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+    | '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/settings' | '/'
+  to:
+    | '/login'
+    | '/activite'
+    | '/livraisons'
+    | '/settings'
+    | '/'
+    | '/chantiers/nouveau'
+    | '/chantiers/$chantierId/besoins'
+    | '/chantiers/$chantierId/inventaire'
+    | '/chantiers/$chantierId/livraisons'
+    | '/chantiers/$chantierId'
+    | '/chantiers/$chantierId/plots/$plotId'
+    | '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/activite'
+    | '/_authenticated/livraisons'
     | '/_authenticated/settings'
     | '/_authenticated/'
+    | '/_authenticated/chantiers/$chantierId'
+    | '/_authenticated/chantiers/nouveau'
+    | '/_authenticated/chantiers/$chantierId/besoins'
+    | '/_authenticated/chantiers/$chantierId/inventaire'
+    | '/_authenticated/chantiers/$chantierId/livraisons'
+    | '/_authenticated/chantiers/$chantierId/'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -99,17 +313,222 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/livraisons': {
+      id: '/_authenticated/livraisons'
+      path: '/livraisons'
+      fullPath: '/livraisons'
+      preLoaderRoute: typeof AuthenticatedLivraisonsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/activite': {
+      id: '/_authenticated/activite'
+      path: '/activite'
+      fullPath: '/activite'
+      preLoaderRoute: typeof AuthenticatedActiviteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/chantiers/nouveau': {
+      id: '/_authenticated/chantiers/nouveau'
+      path: '/chantiers/nouveau'
+      fullPath: '/chantiers/nouveau'
+      preLoaderRoute: typeof AuthenticatedChantiersNouveauRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/chantiers/$chantierId': {
+      id: '/_authenticated/chantiers/$chantierId'
+      path: '/chantiers/$chantierId'
+      fullPath: '/chantiers/$chantierId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/chantiers/$chantierId/': {
+      id: '/_authenticated/chantiers/$chantierId/'
+      path: '/'
+      fullPath: '/chantiers/$chantierId/'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdIndexRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/livraisons': {
+      id: '/_authenticated/chantiers/$chantierId/livraisons'
+      path: '/livraisons'
+      fullPath: '/chantiers/$chantierId/livraisons'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdLivraisonsRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/inventaire': {
+      id: '/_authenticated/chantiers/$chantierId/inventaire'
+      path: '/inventaire'
+      fullPath: '/chantiers/$chantierId/inventaire'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdInventaireRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/besoins': {
+      id: '/_authenticated/chantiers/$chantierId/besoins'
+      path: '/besoins'
+      fullPath: '/chantiers/$chantierId/besoins'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdBesoinsRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId'
+      path: '/plots/$plotId'
+      fullPath: '/chantiers/$chantierId/plots/$plotId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/'
+      path: '/'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId'
+      path: '/$etageId'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/'
+      path: '/'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId/'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
+      path: '/variantes/$varianteId'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+      path: '/$lotId'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/'
+      path: '/'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
+      path: '/$pieceId'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute
+    }
   }
 }
 
+interface AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteChildren {
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute
+}
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteChildren: AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteChildren =
+  {
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute,
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRoute,
+  }
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute._addFileChildren(
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteChildren,
+  )
+
+interface AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren {
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
+}
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren: AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren =
+  {
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren,
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute,
+  }
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute._addFileChildren(
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren,
+  )
+
+interface AuthenticatedChantiersChantierIdPlotsPlotIdRouteChildren {
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren
+  AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
+  AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
+}
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdRouteChildren: AuthenticatedChantiersChantierIdPlotsPlotIdRouteChildren =
+  {
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren,
+    AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute,
+    AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute,
+  }
+
+const AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren =
+  AuthenticatedChantiersChantierIdPlotsPlotIdRoute._addFileChildren(
+    AuthenticatedChantiersChantierIdPlotsPlotIdRouteChildren,
+  )
+
+interface AuthenticatedChantiersChantierIdRouteChildren {
+  AuthenticatedChantiersChantierIdBesoinsRoute: typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  AuthenticatedChantiersChantierIdInventaireRoute: typeof AuthenticatedChantiersChantierIdInventaireRoute
+  AuthenticatedChantiersChantierIdLivraisonsRoute: typeof AuthenticatedChantiersChantierIdLivraisonsRoute
+  AuthenticatedChantiersChantierIdIndexRoute: typeof AuthenticatedChantiersChantierIdIndexRoute
+  AuthenticatedChantiersChantierIdPlotsPlotIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren
+}
+
+const AuthenticatedChantiersChantierIdRouteChildren: AuthenticatedChantiersChantierIdRouteChildren =
+  {
+    AuthenticatedChantiersChantierIdBesoinsRoute:
+      AuthenticatedChantiersChantierIdBesoinsRoute,
+    AuthenticatedChantiersChantierIdInventaireRoute:
+      AuthenticatedChantiersChantierIdInventaireRoute,
+    AuthenticatedChantiersChantierIdLivraisonsRoute:
+      AuthenticatedChantiersChantierIdLivraisonsRoute,
+    AuthenticatedChantiersChantierIdIndexRoute:
+      AuthenticatedChantiersChantierIdIndexRoute,
+    AuthenticatedChantiersChantierIdPlotsPlotIdRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren,
+  }
+
+const AuthenticatedChantiersChantierIdRouteWithChildren =
+  AuthenticatedChantiersChantierIdRoute._addFileChildren(
+    AuthenticatedChantiersChantierIdRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
+  AuthenticatedActiviteRoute: typeof AuthenticatedActiviteRoute
+  AuthenticatedLivraisonsRoute: typeof AuthenticatedLivraisonsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedChantiersChantierIdRoute: typeof AuthenticatedChantiersChantierIdRouteWithChildren
+  AuthenticatedChantiersNouveauRoute: typeof AuthenticatedChantiersNouveauRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedActiviteRoute: AuthenticatedActiviteRoute,
+  AuthenticatedLivraisonsRoute: AuthenticatedLivraisonsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedChantiersChantierIdRoute:
+    AuthenticatedChantiersChantierIdRouteWithChildren,
+  AuthenticatedChantiersNouveauRoute: AuthenticatedChantiersNouveauRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
