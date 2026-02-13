@@ -1,5 +1,11 @@
-import { Package } from 'lucide-react'
+import { MoreVertical, Package, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { useAuth } from '@/lib/auth'
 import type { Besoin } from '@/types/database'
@@ -9,6 +15,8 @@ interface BesoinsListProps {
   isLoading: boolean
   onOpenSheet: () => void
   onCommander: (besoin: Besoin) => void
+  onEdit?: (besoin: Besoin) => void
+  onDelete?: (besoin: Besoin) => void
 }
 
 function getAuthorInitial(
@@ -23,7 +31,8 @@ function getAuthorInitial(
   return '?'
 }
 
-export function BesoinsList({ besoins, isLoading, onOpenSheet, onCommander }: BesoinsListProps) {
+export function BesoinsList({ besoins, isLoading, onOpenSheet, onCommander, onEdit, onDelete }: BesoinsListProps) {
+  const hasActions = !!(onEdit || onDelete)
   const { user } = useAuth()
 
   if (isLoading) {
@@ -47,9 +56,34 @@ export function BesoinsList({ besoins, isLoading, onOpenSheet, onCommander }: Be
             key={besoin.id}
             className="rounded-lg border border-border p-4"
           >
-            <p className="text-sm font-medium text-foreground">
-              {besoin.description}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">
+                {besoin.description}
+              </p>
+              {hasActions && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Actions">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {onEdit && (
+                      <DropdownMenuItem onSelect={() => onEdit(besoin)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Modifier
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <DropdownMenuItem className="text-destructive" onSelect={() => onDelete(besoin)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
                 {getAuthorInitial(besoin.created_by, user?.id, user?.email ?? undefined)}

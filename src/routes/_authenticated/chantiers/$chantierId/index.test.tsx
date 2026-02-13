@@ -31,6 +31,23 @@ vi.mock('@/lib/mutations/useUpdateChantierStatus', () => ({
   }),
 }))
 
+const mockUpdateBesoinMutate = vi.fn()
+const mockDeleteBesoinMutate = vi.fn()
+
+vi.mock('@/lib/mutations/useUpdateBesoin', () => ({
+  useUpdateBesoin: () => ({
+    mutate: mockUpdateBesoinMutate,
+    isPending: false,
+  }),
+}))
+
+vi.mock('@/lib/mutations/useDeleteBesoin', () => ({
+  useDeleteBesoin: () => ({
+    mutate: mockDeleteBesoinMutate,
+    isPending: false,
+  }),
+}))
+
 vi.mock('@/lib/mutations/useCreatePlot', () => ({
   useCreatePlot: () => ({
     mutate: mockCreatePlotMutate,
@@ -551,7 +568,8 @@ describe('ChantierIndexPage — complet livraisons button', () => {
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    expect(screen.getByRole('link', { name: /Livraisons/i })).toBeInTheDocument()
+    const links = screen.getAllByRole('link', { name: /Livraisons/i })
+    expect(links.length).toBeGreaterThanOrEqual(1)
   })
 
   it('Livraisons link points to correct route', async () => {
@@ -559,10 +577,10 @@ describe('ChantierIndexPage — complet livraisons button', () => {
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    expect(screen.getByRole('link', { name: /Livraisons/i })).toHaveAttribute(
-      'href',
-      '/chantiers/chantier-1/livraisons',
-    )
+    const links = screen.getAllByRole('link', { name: /Livraisons/i })
+    const chantierLink = links.find(l => l.getAttribute('href')?.includes('/chantiers/chantier-1/livraisons'))
+    expect(chantierLink).toBeDefined()
+    expect(chantierLink).toHaveAttribute('href', '/chantiers/chantier-1/livraisons')
   })
 })
 
@@ -667,5 +685,64 @@ describe('ChantierIndexPage — ChantierIndicators integration', () => {
     expect(screen.getByText(/Livraisons prévues/)).toBeInTheDocument()
     // No "lots prêts" for léger
     expect(screen.queryByText(/lot.*prêt.*carreler/)).not.toBeInTheDocument()
+  })
+})
+
+const mockBesoinsForActions = [
+  {
+    id: 'b-action',
+    chantier_id: 'chantier-2',
+    description: 'Joint gris 5kg',
+    livraison_id: null,
+    created_at: '2026-02-10T10:00:00Z',
+    created_by: 'user-1',
+  },
+]
+
+describe('ChantierIndexPage — léger besoin edit/delete', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(supabase.channel).mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    } as never)
+  })
+
+  it('opens edit sheet from DropdownMenu in léger section', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForActions)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Joint gris 5kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Modifier'))
+
+    expect(await screen.findByText('Modifier le besoin')).toBeInTheDocument()
+    const textarea = screen.getByLabelText('Description du besoin (édition)') as HTMLTextAreaElement
+    expect(textarea.value).toBe('Joint gris 5kg')
+  })
+
+  it('opens delete dialog from DropdownMenu in léger section', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForActions)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Joint gris 5kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Supprimer'))
+
+    expect(await screen.findByText('Supprimer ce besoin ?')).toBeInTheDocument()
+  })
+
+  it('complet chantier does not show besoin DropdownMenu inline', async () => {
+    setupMockSupabase(mockChantierComplet, mockPlots)
+    renderRoute('chantier-1')
+
+    await screen.findByText('Plot A')
+    // Complet chantier uses link to /besoins page, no inline BesoinsList with actions
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument()
   })
 })

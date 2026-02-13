@@ -26,6 +26,8 @@ import { Fab } from '@/components/Fab'
 import { BesoinsList } from '@/components/BesoinsList'
 import { useRealtimeBesoins } from '@/lib/subscriptions/useRealtimeBesoins'
 import { useCreateBesoin } from '@/lib/mutations/useCreateBesoin'
+import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
+import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
 import { useBesoins } from '@/lib/queries/useBesoins'
 import { useChantier } from '@/lib/queries/useChantier'
@@ -43,6 +45,8 @@ function BesoinsPage() {
   const { data: besoins, isLoading } = useBesoins(chantierId)
   useRealtimeBesoins(chantierId)
   const createBesoin = useCreateBesoin()
+  const updateBesoin = useUpdateBesoin()
+  const deleteBesoin = useDeleteBesoin()
   const transformBesoin = useTransformBesoinToLivraison()
 
   const [showSheet, setShowSheet] = useState(false)
@@ -50,6 +54,14 @@ function BesoinsPage() {
   const [descError, setDescError] = useState('')
   const [showCommanderDialog, setShowCommanderDialog] = useState(false)
   const [besoinToCommand, setBesoinToCommand] = useState<Besoin | null>(null)
+
+  const [besoinToEdit, setBesoinToEdit] = useState<Besoin | null>(null)
+  const [showEditSheet, setShowEditSheet] = useState(false)
+  const [editDescription, setEditDescription] = useState('')
+  const [editDescError, setEditDescError] = useState('')
+
+  const [besoinToDelete, setBesoinToDelete] = useState<Besoin | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   function handleOpenSheet() {
     setDescription('')
@@ -71,6 +83,53 @@ function BesoinsPage() {
           toast('Besoin créé')
         },
         onError: () => toast.error('Erreur lors de la création du besoin'),
+      },
+    )
+  }
+
+  function handleEdit(besoin: Besoin) {
+    setBesoinToEdit(besoin)
+    setEditDescription(besoin.description)
+    setEditDescError('')
+    setShowEditSheet(true)
+  }
+
+  function handleConfirmEdit() {
+    const trimmed = editDescription.trim()
+    if (!trimmed) {
+      setEditDescError('La description est requise')
+      return
+    }
+    if (!besoinToEdit) return
+    updateBesoin.mutate(
+      { id: besoinToEdit.id, chantierId, description: trimmed },
+      {
+        onSuccess: () => {
+          setShowEditSheet(false)
+          setBesoinToEdit(null)
+          toast('Besoin modifié')
+        },
+        onError: () => toast.error('Erreur lors de la modification du besoin'),
+      },
+    )
+  }
+
+  function handleDelete(besoin: Besoin) {
+    setBesoinToDelete(besoin)
+    setShowDeleteDialog(true)
+  }
+
+  function handleConfirmDelete() {
+    if (!besoinToDelete) return
+    deleteBesoin.mutate(
+      { id: besoinToDelete.id, chantierId },
+      {
+        onSuccess: () => {
+          setShowDeleteDialog(false)
+          setBesoinToDelete(null)
+          toast('Besoin supprimé')
+        },
+        onError: () => toast.error('Erreur lors de la suppression'),
       },
     )
   }
@@ -122,6 +181,8 @@ function BesoinsPage() {
           isLoading={isLoading}
           onOpenSheet={handleOpenSheet}
           onCommander={handleCommander}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
 
         <Fab onClick={handleOpenSheet} />
@@ -162,6 +223,56 @@ function BesoinsPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <Sheet open={showEditSheet} onOpenChange={setShowEditSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Modifier le besoin</SheetTitle>
+            <SheetDescription>Modifiez la description du besoin.</SheetDescription>
+          </SheetHeader>
+          <div className="px-4">
+            <Textarea
+              value={editDescription}
+              onChange={(e) => {
+                setEditDescription(e.target.value)
+                if (editDescError) setEditDescError('')
+              }}
+              aria-label="Description du besoin (édition)"
+              aria-invalid={!!editDescError}
+              rows={3}
+            />
+            {editDescError && (
+              <p className="text-sm text-destructive mt-1">{editDescError}</p>
+            )}
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleConfirmEdit}
+              disabled={updateBesoin.isPending}
+              className="w-full"
+            >
+              Enregistrer
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce besoin ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le besoin &laquo;{besoinToDelete?.description}&raquo; sera supprimé définitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showCommanderDialog} onOpenChange={setShowCommanderDialog}>
         <AlertDialogContent>

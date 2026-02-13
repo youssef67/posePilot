@@ -177,7 +177,7 @@ export type Database = {
       task_status: 'not_started' | 'in_progress' | 'done'
       delivery_status: 'commande' | 'prevu' | 'livre'
       plinth_status: 'non_commandees' | 'commandees' | 'faconnees'
-      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'livraison_created' | 'livraison_status_changed' | 'inventaire_added' | 'inventaire_updated'
+      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'besoin_updated' | 'besoin_deleted' | 'livraison_created' | 'livraison_status_changed' | 'inventaire_added' | 'inventaire_updated'
     }
     CompositeTypes: { [_ in never]: never }
   }

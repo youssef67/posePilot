@@ -87,12 +87,16 @@ development_status:
   epic-5-retrospective: done
 
   # Epic 6: Besoins, Livraisons & Inventaire
-  epic-6: done
+  epic-6: in-progress
   6-1-besoins-creation-gestion-et-transformation-en-livraison: done
   6-2-livraisons-creation-directe-et-cycle-de-vie: done
   6-3-livraisons-documents-bc-et-bl: done
   6-4-vue-globale-des-livraisons-filtree-par-statut: done
   6-5-gestion-d-inventaire-avec-localisation: done
+  6-6-edition-et-suppression-des-besoins: done
+  6-7-fournisseur-et-edition-des-livraisons: backlog
+  6-8-commande-groupee-de-besoins: backlog
+  6-9-suppression-de-livraisons: backlog
   epic-6-retrospective: optional
 
   # Epic 7: Metres, Plinthes & Indicateurs intelligents

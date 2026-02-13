@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Clock, Circle, MessageSquare, Camera, AlertTriangle, Package, ShoppingCart, Truck } from 'lucide-react'
+import { Bell, CheckCircle2, Clock, Circle, MessageSquare, Camera, AlertTriangle, Package, Pencil, ShoppingCart, Trash2, Truck } from 'lucide-react'
 import type { ActivityLog } from '@/types/database'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { groupByDay } from '@/lib/utils/groupByDay'
@@ -27,6 +27,10 @@ function getEventIcon(entry: ActivityLog) {
       return <Package className="h-5 w-5 text-[#9CA3AF]" />
     case 'besoin_ordered':
       return <ShoppingCart className="h-5 w-5 text-[#F59E0B]" />
+    case 'besoin_updated':
+      return <Pencil className="h-5 w-5 text-[#3B82F6]" />
+    case 'besoin_deleted':
+      return <Trash2 className="h-5 w-5 text-[#EF4444]" />
     case 'livraison_created':
       return <Truck className="h-5 w-5 text-[#F59E0B]" />
     case 'livraison_status_changed':
@@ -64,6 +68,10 @@ function getActivityDescription(entry: ActivityLog): string {
       return `${name} a ajouté un besoin`
     case 'besoin_ordered':
       return `${name} a commandé un besoin`
+    case 'besoin_updated':
+      return `${name} a modifié un besoin`
+    case 'besoin_deleted':
+      return `${name} a supprimé un besoin`
     case 'livraison_created':
       return `${name} a créé une livraison`
     case 'livraison_status_changed':

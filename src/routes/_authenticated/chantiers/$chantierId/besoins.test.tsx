@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import {
   createRouter,
   createMemoryHistory,
@@ -19,6 +20,27 @@ vi.mock('@/lib/supabase', () => ({
     }),
     removeChannel: vi.fn(),
   },
+}))
+
+const mockUpdateBesoinMutate = vi.fn()
+const mockDeleteBesoinMutate = vi.fn()
+
+vi.mock('@/lib/mutations/useUpdateBesoin', () => ({
+  useUpdateBesoin: () => ({
+    mutate: mockUpdateBesoinMutate,
+    isPending: false,
+  }),
+}))
+
+vi.mock('@/lib/mutations/useDeleteBesoin', () => ({
+  useDeleteBesoin: () => ({
+    mutate: mockDeleteBesoinMutate,
+    isPending: false,
+  }),
+}))
+
+vi.mock('@/lib/utils/formatRelativeTime', () => ({
+  formatRelativeTime: () => 'il y a 2h',
 }))
 
 import { supabase } from '@/lib/supabase'
@@ -157,6 +179,119 @@ describe('BesoinsPage', () => {
     expect(screen.getByRole('link', { name: 'Retour' })).toHaveAttribute(
       'href',
       '/chantiers/abc-123',
+    )
+  })
+})
+
+const mockBesoinsForActions = [
+  {
+    id: 'b1',
+    chantier_id: 'abc-123',
+    description: 'Colle pour faïence 20kg',
+    livraison_id: null,
+    created_at: '2026-02-10T10:00:00Z',
+    created_by: 'user-1',
+  },
+]
+
+describe('BesoinsPage — Edit and Delete', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(supabase.channel).mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    } as never)
+  })
+
+  it('opens edit sheet with pre-filled description', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockBesoinsForActions)
+    renderRoute('abc-123')
+
+    await screen.findByText('Colle pour faïence 20kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Modifier'))
+
+    expect(await screen.findByText('Modifier le besoin')).toBeInTheDocument()
+    const textarea = screen.getByLabelText('Description du besoin (édition)') as HTMLTextAreaElement
+    expect(textarea.value).toBe('Colle pour faïence 20kg')
+  })
+
+  it('shows validation error when submitting empty description', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockBesoinsForActions)
+    renderRoute('abc-123')
+
+    await screen.findByText('Colle pour faïence 20kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Modifier'))
+
+    await screen.findByText('Modifier le besoin')
+    const textarea = screen.getByLabelText('Description du besoin (édition)')
+    await user.clear(textarea)
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByText('La description est requise')).toBeInTheDocument()
+    expect(mockUpdateBesoinMutate).not.toHaveBeenCalled()
+  })
+
+  it('calls useUpdateBesoin on valid edit submission', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockBesoinsForActions)
+    renderRoute('abc-123')
+
+    await screen.findByText('Colle pour faïence 20kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Modifier'))
+
+    await screen.findByText('Modifier le besoin')
+    const textarea = screen.getByLabelText('Description du besoin (édition)')
+    await user.clear(textarea)
+    await user.type(textarea, 'Colle modifiée')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(mockUpdateBesoinMutate).toHaveBeenCalledWith(
+      { id: 'b1', chantierId: 'abc-123', description: 'Colle modifiée' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+  })
+
+  it('shows delete confirmation dialog', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockBesoinsForActions)
+    renderRoute('abc-123')
+
+    await screen.findByText('Colle pour faïence 20kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Supprimer'))
+
+    expect(await screen.findByText('Supprimer ce besoin ?')).toBeInTheDocument()
+  })
+
+  it('calls useDeleteBesoin on delete confirmation', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockBesoinsForActions)
+    renderRoute('abc-123')
+
+    await screen.findByText('Colle pour faïence 20kg')
+    const actionBtn = screen.getByRole('button', { name: 'Actions' })
+    await user.click(actionBtn)
+    await user.click(await screen.findByText('Supprimer'))
+
+    await screen.findByText('Supprimer ce besoin ?')
+    // The AlertDialogAction button that says "Supprimer" inside the dialog
+    const dialogButtons = screen.getAllByRole('button', { name: 'Supprimer' })
+    const confirmBtn = dialogButtons[dialogButtons.length - 1]
+    await user.click(confirmBtn)
+
+    expect(mockDeleteBesoinMutate).toHaveBeenCalledWith(
+      { id: 'b1', chantierId: 'abc-123' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })
 })
