@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, EllipsisVertical, GripVertical, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Plus, Trash2, X, CheckSquare } from 'lucide-react'
+import { SortableTaskList } from '@/components/SortableTaskList'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,6 +34,8 @@ import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
 import { findLotsPretsACarreler } from '@/lib/utils/computeChantierIndicators'
 import { useUpdatePlotTasks } from '@/lib/mutations/useUpdatePlotTasks'
 import { useDeletePlot } from '@/lib/mutations/useDeletePlot'
+import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
+import { useDuplicatePlot } from '@/lib/mutations/useDuplicatePlot'
 import { useVariantes } from '@/lib/queries/useVariantes'
 import { useCreateVariante } from '@/lib/mutations/useCreateVariante'
 import { useLots } from '@/lib/queries/useLots'
@@ -42,10 +45,13 @@ import { useCreateBatchLots } from '@/lib/mutations/useCreateBatchLots'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StatusCard, STATUS_COLORS } from '@/components/StatusCard'
 import { computeStatus } from '@/lib/utils/computeStatus'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
@@ -79,7 +85,12 @@ function PlotIndexPage() {
   useRealtimeLots(plotId)
   const createLot = useCreateLot()
   const createBatchLots = useCreateBatchLots()
+  const deleteLots = useDeleteLots()
 
+  const duplicatePlot = useDuplicatePlot()
+  const [showDuplicateSheet, setShowDuplicateSheet] = useState(false)
+  const [duplicatePlotName, setDuplicatePlotName] = useState('')
+  const [duplicateNameError, setDuplicateNameError] = useState('')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [newTask, setNewTask] = useState('')
   const [showCreateVarianteSheet, setShowCreateVarianteSheet] = useState(false)
@@ -101,6 +112,9 @@ function PlotIndexPage() {
   const [batchCodeError, setBatchCodeError] = useState('')
   const [batchVarianteError, setBatchVarianteError] = useState('')
   const [batchEtageError, setBatchEtageError] = useState('')
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedLotIds, setSelectedLotIds] = useState<Set<string>>(new Set())
+  const [showDeleteLotsDialog, setShowDeleteLotsDialog] = useState(false)
 
   const plot = plots?.find((p) => p.id === plotId)
 
@@ -138,6 +152,34 @@ function PlotIndexPage() {
         onError: () => {
           toast.error('Erreur lors de la suppression du plot')
         },
+      },
+    )
+  }
+
+  function handleOpenDuplicateSheet() {
+    setDuplicatePlotName('')
+    setDuplicateNameError('')
+    setShowDuplicateSheet(true)
+  }
+
+  function handleDuplicatePlot() {
+    const trimmed = duplicatePlotName.trim()
+    if (!trimmed) {
+      setDuplicateNameError('Le nom du plot est requis')
+      return
+    }
+    duplicatePlot.mutate(
+      { sourcePlotId: plotId, chantierId, newPlotNom: trimmed },
+      {
+        onSuccess: (newPlotId) => {
+          setShowDuplicateSheet(false)
+          toast('Plot dupliqué')
+          navigate({
+            to: '/chantiers/$chantierId/plots/$plotId',
+            params: { chantierId, plotId: newPlotId },
+          })
+        },
+        onError: () => toast.error('Erreur lors de la duplication'),
       },
     )
   }
@@ -233,6 +275,45 @@ function PlotIndexPage() {
   }
 
   const batchCodes = parseCodes(batchCodesInput)
+
+  function toggleLotSelection(lotId: string) {
+    setSelectedLotIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(lotId)) next.delete(lotId)
+      else next.add(lotId)
+      return next
+    })
+  }
+
+  function exitSelectionMode() {
+    setSelectionMode(false)
+    setSelectedLotIds(new Set())
+  }
+
+  const selectedLotsHaveContent = useMemo(() => {
+    if (!lots || selectedLotIds.size === 0) return false
+    return lots.some(
+      (lot) => selectedLotIds.has(lot.id) && ((lot.pieces?.[0]?.count ?? 0) > 0 || lot.progress_total > 0),
+    )
+  }, [lots, selectedLotIds])
+
+  function handleDeleteSelectedLots() {
+    if (selectedLotIds.size === 0) return
+    deleteLots.mutate(
+      { lotIds: Array.from(selectedLotIds), plotId },
+      {
+        onSuccess: () => {
+          toast(`${selectedLotIds.size} lot${selectedLotIds.size > 1 ? 's' : ''} supprimé${selectedLotIds.size > 1 ? 's' : ''}`)
+          exitSelectionMode()
+          setShowDeleteLotsDialog(false)
+        },
+        onError: () => {
+          toast.error('Erreur lors de la suppression des lots')
+          setShowDeleteLotsDialog(false)
+        },
+      },
+    )
+  }
 
   function validateBatchCodes(codes: string[]): string | null {
     if (codes.length === 0) {
@@ -434,6 +515,15 @@ function PlotIndexPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                handleOpenDuplicateSheet()
+              }}
+            >
+              <Copy className="mr-2 size-4" />
+              Dupliquer le plot
+            </DropdownMenuItem>
+            <DropdownMenuItem
               variant="destructive"
               onSelect={(e) => {
                 e.preventDefault()
@@ -501,24 +591,36 @@ function PlotIndexPage() {
 
         {plot.task_definitions.length > 0 ? (
           <div className="border border-border rounded-lg divide-y divide-border mb-4">
-            {plot.task_definitions.map((task, index) => (
-              <div
-                key={`${task}-${index}`}
-                className="flex items-center gap-3 px-3 py-2.5"
-              >
-                <GripVertical className="size-4 text-muted-foreground shrink-0" />
-                <span className="flex-1 text-sm text-foreground">{task}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => handleRemoveTask(index)}
-                  aria-label={`Supprimer ${task}`}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ))}
+            <SortableTaskList
+              items={plot.task_definitions.map((task, index) => ({ task, index }))}
+              keyExtractor={(item) => `${item.task}-${item.index}`}
+              onReorder={(reordered) => {
+                updateTasks.mutate({
+                  plotId,
+                  chantierId,
+                  taskDefinitions: reordered.map((item) => item.task),
+                })
+              }}
+              renderItem={(item, { attributes, listeners }) => (
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <button type="button" {...attributes} {...listeners} className="touch-none">
+                    <GripVertical className="size-4 text-muted-foreground shrink-0 cursor-grab" />
+                  </button>
+                  <span className="flex-1 text-sm text-foreground">{item.task}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    onClick={() => handleRemoveTask(
+                      plot.task_definitions.indexOf(item.task)
+                    )}
+                    aria-label={`Supprimer ${item.task}`}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              )}
+            />
           </div>
         ) : (
           <p className="text-sm text-muted-foreground mb-4">
@@ -603,9 +705,38 @@ function PlotIndexPage() {
       <div className="border-t border-border" />
 
       <div className="p-4">
-        <h2 className="text-base font-semibold text-foreground mb-3">
-          Lots{lots && lots.length > 0 ? ` (${lots.length})` : ''}
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-foreground">
+            Lots{lots && lots.length > 0 ? ` (${lots.length})` : ''}
+          </h2>
+          {lots && lots.length > 0 && (
+            selectionMode ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {selectedLotIds.size} sélectionné{selectedLotIds.size > 1 ? 's' : ''}
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedLotIds.size === 0}
+                  onClick={() => setShowDeleteLotsDialog(true)}
+                >
+                  <Trash2 className="mr-1 size-4" />
+                  Supprimer
+                </Button>
+                <Button variant="ghost" size="sm" onClick={exitSelectionMode}>
+                  <X className="mr-1 size-4" />
+                  Annuler
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setSelectionMode(true)}>
+                <CheckSquare className="mr-1 size-4" />
+                Sélectionner
+              </Button>
+            )
+          )}
+        </div>
 
         {lots && lots.length > 0 ? (
           <div className="space-y-4 mb-4">
@@ -618,21 +749,32 @@ function PlotIndexPage() {
                   {etageLots.map((lot) => {
                     const pieceCount = lot.pieces?.[0]?.count ?? 0
                     return (
-                      <StatusCard
-                        key={lot.id}
-                        title={`Lot ${lot.code}`}
-                        subtitle={`${lot.variantes?.nom ?? 'Variante'} · ${pieceCount} pièce${pieceCount !== 1 ? 's' : ''}`}
-                        statusColor={STATUS_COLORS[computeStatus(lot.progress_done, lot.progress_total)]}
-                        indicator={`${lot.progress_done}/${lot.progress_total}`}
-                        isBlocked={lot.has_blocking_note}
-                        badge={lot.is_tma ? <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px]">TMA</Badge> : undefined}
-                        onClick={() =>
-                          navigate({
-                            to: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId',
-                            params: { chantierId, plotId, etageId: lot.etage_id, lotId: lot.id },
-                          })
-                        }
-                      />
+                      <div key={lot.id} className="flex items-center gap-2">
+                        {selectionMode && (
+                          <Checkbox
+                            checked={selectedLotIds.has(lot.id)}
+                            onCheckedChange={() => toggleLotSelection(lot.id)}
+                            aria-label={`Sélectionner lot ${lot.code}`}
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <StatusCard
+                            title={`Lot ${lot.code}`}
+                            subtitle={`${lot.variantes?.nom ?? 'Variante'} · ${pieceCount} pièce${pieceCount !== 1 ? 's' : ''}`}
+                            statusColor={STATUS_COLORS[computeStatus(lot.progress_done, lot.progress_total)]}
+                            indicator={`${lot.progress_done}/${lot.progress_total}`}
+                            isBlocked={lot.has_blocking_note}
+                            badge={lot.is_tma ? <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px]">TMA</Badge> : undefined}
+                            onClick={selectionMode
+                              ? () => toggleLotSelection(lot.id)
+                              : () => navigate({
+                                  to: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId',
+                                  params: { chantierId, plotId, etageId: lot.etage_id, lotId: lot.id },
+                                })
+                            }
+                          />
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -645,26 +787,28 @@ function PlotIndexPage() {
           </p>
         )}
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => setShowCreateLotSheet(true)}
-            disabled={!variantes || variantes.length === 0}
-          >
-            <Plus className="mr-1 size-4" />
-            Ajouter un lot
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => setShowBatchSheet(true)}
-            disabled={!variantes || variantes.length === 0}
-          >
-            <Plus className="mr-1 size-4" />
-            Ajouter en batch
-          </Button>
-        </div>
+        {!selectionMode && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowCreateLotSheet(true)}
+              disabled={!variantes || variantes.length === 0}
+            >
+              <Plus className="mr-1 size-4" />
+              Ajouter un lot
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowBatchSheet(true)}
+              disabled={!variantes || variantes.length === 0}
+            >
+              <Plus className="mr-1 size-4" />
+              Ajouter en batch
+            </Button>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -680,6 +824,30 @@ function PlotIndexPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={handleDeletePlot}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteLotsDialog} onOpenChange={setShowDeleteLotsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Supprimer {selectedLotIds.size} lot{selectedLotIds.size > 1 ? 's' : ''} ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedLotsHaveContent
+                ? `Attention : certains lots contiennent des pièces, tâches ou documents. Toutes ces données seront supprimées définitivement.`
+                : `${selectedLotIds.size > 1 ? 'Les lots sélectionnés seront supprimés' : 'Ce lot sera supprimé'} définitivement. Cette action est irréversible.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteSelectedLots}
             >
               Supprimer
             </AlertDialogAction>
@@ -941,6 +1109,44 @@ function PlotIndexPage() {
                 : 'Créer les lots'}
             </Button>
           </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showDuplicateSheet} onOpenChange={setShowDuplicateSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Dupliquer le plot</SheetTitle>
+            <SheetDescription>
+              Toutes les données seront copiées. Les tâches seront remises à zéro.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4">
+            <Input
+              placeholder="Nom du nouveau plot"
+              value={duplicatePlotName}
+              onChange={(e) => {
+                setDuplicatePlotName(e.target.value)
+                if (duplicateNameError) setDuplicateNameError('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleDuplicatePlot()
+              }}
+              aria-label="Nom du nouveau plot"
+              aria-invalid={!!duplicateNameError}
+            />
+            {duplicateNameError && (
+              <p className="text-sm text-destructive mt-1">{duplicateNameError}</p>
+            )}
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleDuplicatePlot}
+              disabled={duplicatePlot.isPending}
+              className="w-full"
+            >
+              Dupliquer
+            </Button>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
     </div>

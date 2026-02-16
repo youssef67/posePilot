@@ -79,18 +79,32 @@ describe('useUploadLotDocument', () => {
     )
   })
 
-  it('rejects non-PDF files with error toast', async () => {
+  it('accepts JPEG files', async () => {
+    mockUploadSuccess()
     const { wrapper } = createWrapper()
-    const nonPdfFile = new File(['img'], 'photo.jpg', { type: 'image/jpeg' })
+    const jpgFile = new File(['img'], 'photo.jpg', { type: 'image/jpeg' })
 
     const { result } = renderHook(() => useUploadLotDocument(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ file: nonPdfFile, documentId: 'doc-1', lotId: 'lot-1' })
+      result.current.mutate({ file: jpgFile, documentId: 'doc-1', lotId: 'lot-1' })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  })
+
+  it('rejects unsupported file types with error toast', async () => {
+    const { wrapper } = createWrapper()
+    const txtFile = new File(['text'], 'notes.txt', { type: 'text/plain' })
+
+    const { result } = renderHook(() => useUploadLotDocument(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({ file: txtFile, documentId: 'doc-1', lotId: 'lot-1' })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(toast.error).toHaveBeenCalledWith('Seuls les fichiers PDF sont acceptés')
+    expect(toast.error).toHaveBeenCalledWith('Format non supporté. Utilisez un PDF ou une image (JPEG, PNG, HEIC).')
   })
 
   it('rejects files exceeding 50MB', async () => {

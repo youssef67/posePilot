@@ -5,6 +5,7 @@ export interface TacheInfo {
   id: string
   nom: string
   status: string
+  position: number
 }
 
 export interface PieceInfo {
@@ -32,12 +33,19 @@ export function useLotsWithTaches(chantierId: string) {
       const { data, error } = await supabase
         .from('lots')
         .select(
-          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status))',
+          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position))',
         )
         .eq('plots.chantier_id', chantierId)
         .order('code')
       if (error) throw error
-      return data as unknown as LotWithTaches[]
+      // Sort taches by position client-side (PostgREST can't order 2nd-level nested)
+      const lots = data as unknown as LotWithTaches[]
+      for (const lot of lots) {
+        for (const piece of lot.pieces) {
+          piece.taches.sort((a, b) => a.position - b.position)
+        }
+      }
+      return lots
     },
     enabled: !!chantierId,
     staleTime: 30 * 1000,

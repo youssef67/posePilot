@@ -2,6 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
+const ACCEPTED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/heic',
+]
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+
 interface ReplaceLotDocumentInput {
   file: File
   documentId: string
@@ -15,10 +23,10 @@ export function useReplaceLotDocument() {
 
   return useMutation({
     mutationFn: async ({ file, documentId, lotId, oldFileUrl, onProgress }: ReplaceLotDocumentInput): Promise<string> => {
-      if (file.type !== 'application/pdf') {
-        throw new Error('Seuls les fichiers PDF sont acceptés')
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        throw new Error('Format non supporté. Utilisez un PDF ou une image (JPEG, PNG, HEIC).')
       }
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > MAX_FILE_SIZE) {
         throw new Error('Le fichier dépasse la taille maximale de 50 Mo')
       }
 
@@ -27,10 +35,11 @@ export function useReplaceLotDocument() {
 
       // Phase 1: Upload new file (0–60%)
       onProgress?.(0)
-      const filePath = `${user.id}/${lotId}/${documentId}_${Date.now()}.pdf`
+      const ext = file.name.split('.').pop() || (file.type.startsWith('image/') ? 'jpg' : 'pdf')
+      const filePath = `${user.id}/${lotId}/${documentId}_${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, file, { contentType: 'application/pdf' })
+        .upload(filePath, file, { contentType: file.type })
       if (uploadError) throw uploadError
 
       onProgress?.(60)

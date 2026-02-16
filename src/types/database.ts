@@ -163,6 +163,33 @@ export type Database = {
         }
         Relationships: []
       }
+      taches: {
+        Row: {
+          id: string
+          piece_id: string
+          nom: string
+          status: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          piece_id: string
+          nom: string
+          status?: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          piece_id?: string
+          nom?: string
+          status?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       [key: string]: {
         Row: Record<string, unknown>
         Insert: Record<string, unknown>
@@ -171,7 +198,21 @@ export type Database = {
       }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      reorder_taches: {
+        Args: {
+          p_tache_ids: string[]
+        }
+        Returns: undefined
+      }
+      duplicate_plot: {
+        Args: {
+          p_source_plot_id: string
+          p_new_plot_nom: string
+        }
+        Returns: string
+      }
+    }
     Enums: {
       chantier_type: 'complet' | 'leger'
       task_status: 'not_started' | 'in_progress' | 'done'

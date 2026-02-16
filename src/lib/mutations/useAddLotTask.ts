@@ -32,6 +32,7 @@ export function useAddLotTask() {
                       piece_id: pieceId,
                       nom,
                       status: 'not_started' as const,
+                      position: piece.taches.length,
                       created_at: new Date().toISOString(),
                     },
                   ],

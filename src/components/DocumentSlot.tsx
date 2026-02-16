@@ -91,7 +91,7 @@ export function DocumentSlot({ document: doc, lotId }: DocumentSlotProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept="application/pdf,image/jpeg,image/png,image/heic"
         className="hidden"
         onChange={handleFileSelect}
         data-testid={`file-input-${doc.id}`}

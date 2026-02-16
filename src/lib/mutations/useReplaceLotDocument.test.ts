@@ -81,7 +81,8 @@ describe('useReplaceLotDocument', () => {
     expect(toast.success).toHaveBeenCalledWith('Document remplacé')
   })
 
-  it('rejects non-PDF files', async () => {
+  it('accepts JPEG files', async () => {
+    mockReplaceSuccess()
     const { wrapper } = createWrapper()
     const jpgFile = new File(['img'], 'photo.jpg', { type: 'image/jpeg' })
 
@@ -91,8 +92,21 @@ describe('useReplaceLotDocument', () => {
       result.current.mutate({ ...baseInput, file: jpgFile })
     })
 
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  })
+
+  it('rejects unsupported file types', async () => {
+    const { wrapper } = createWrapper()
+    const txtFile = new File(['text'], 'notes.txt', { type: 'text/plain' })
+
+    const { result } = renderHook(() => useReplaceLotDocument(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({ ...baseInput, file: txtFile })
+    })
+
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(toast.error).toHaveBeenCalledWith('Seuls les fichiers PDF sont acceptés')
+    expect(toast.error).toHaveBeenCalledWith('Format non supporté. Utilisez un PDF ou une image (JPEG, PNG, HEIC).')
   })
 
   it('rejects files exceeding 50MB', async () => {

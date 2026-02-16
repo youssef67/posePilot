@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,26 @@ import { PlinthStatus } from '@/types/enums'
 import { useAddLotPiece } from '@/lib/mutations/useAddLotPiece'
 import { useAddLotTask } from '@/lib/mutations/useAddLotTask'
 import { useAddLotDocument } from '@/lib/mutations/useAddLotDocument'
+import { useUpdateLot } from '@/lib/mutations/useUpdateLot'
+import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useVariantes } from '@/lib/queries/useVariantes'
+import { useEtages } from '@/lib/queries/useEtages'
 import { DocumentSlot } from '@/components/DocumentSlot'
 import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
@@ -53,6 +73,18 @@ function LotIndexPage() {
   const addPiece = useAddLotPiece()
   const addTask = useAddLotTask()
   const addDocument = useAddLotDocument()
+  const updateLot = useUpdateLot()
+  const { data: variantes } = useVariantes(plotId)
+  const { data: allEtages } = useEtages(plotId)
+
+  const deleteLots = useDeleteLots()
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const [editMode, setEditMode] = useState(false)
+  const [editCode, setEditCode] = useState('')
+  const [editVarianteId, setEditVarianteId] = useState('')
+  const [editEtageId, setEditEtageId] = useState('')
+  const [editCodeError, setEditCodeError] = useState('')
 
   const [addPieceOpen, setAddPieceOpen] = useState(false)
   const [addPieceValue, setAddPieceValue] = useState('')
@@ -98,6 +130,74 @@ function LotIndexPage() {
   )
 
   const lot = lots?.find((l) => l.id === lotId)
+
+  function enterEditMode() {
+    if (!lot) return
+    setEditCode(lot.code)
+    setEditVarianteId(lot.variante_id)
+    setEditEtageId(lot.etage_id)
+    setEditCodeError('')
+    setEditMode(true)
+  }
+
+  function cancelEditMode() {
+    setEditMode(false)
+    setEditCodeError('')
+  }
+
+  function handleSaveEdit() {
+    if (!lot || updateLot.isPending) return
+    const trimmedCode = editCode.trim()
+    if (!trimmedCode) {
+      setEditCodeError('Le code est requis')
+      return
+    }
+    if (
+      trimmedCode.toLowerCase() !== lot.code.toLowerCase() &&
+      lots?.some((l) => l.id !== lotId && l.code.toLowerCase() === trimmedCode.toLowerCase())
+    ) {
+      setEditCodeError('Un lot avec ce code existe déjà')
+      return
+    }
+    const updates: { code?: string; varianteId?: string; etageId?: string } = {}
+    if (trimmedCode !== lot.code) updates.code = trimmedCode
+    if (editVarianteId !== lot.variante_id) updates.varianteId = editVarianteId
+    if (editEtageId !== lot.etage_id) updates.etageId = editEtageId
+
+    if (Object.keys(updates).length === 0) {
+      setEditMode(false)
+      return
+    }
+
+    updateLot.mutate(
+      { lotId, plotId, ...updates },
+      {
+        onSuccess: () => {
+          toast('Lot modifié')
+          setEditMode(false)
+        },
+        onError: () => toast.error('Erreur lors de la modification du lot'),
+      },
+    )
+  }
+
+  const lotHasContent = (pieces && pieces.length > 0) || (documents && documents.length > 0)
+
+  function handleDeleteLot() {
+    deleteLots.mutate(
+      { lotIds: [lotId], plotId },
+      {
+        onSuccess: () => {
+          toast('Lot supprimé')
+          navigate({
+            to: '/chantiers/$chantierId/plots/$plotId/$etageId',
+            params: { chantierId, plotId, etageId },
+          })
+        },
+        onError: () => toast.error('Erreur lors de la suppression du lot'),
+      },
+    )
+  }
 
   const missingDocs = useMemo(
     () => documents?.filter(d => d.is_required && !d.file_url) ?? [],
@@ -274,58 +374,135 @@ function LotIndexPage() {
             </Badge>
           )}
         </div>
-        <div className="size-9" />
+        {!editMode ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Options du lot">
+                <EllipsisVertical className="size-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); enterEditMode() }}>
+                <Pencil className="mr-2 size-4" />
+                Modifier le lot
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={(e) => { e.preventDefault(); setShowDeleteDialog(true) }}
+              >
+                <Trash2 className="mr-2 size-4" />
+                Supprimer le lot
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="size-9" />
+        )}
       </header>
 
       <BreadcrumbNav />
 
       <div className="px-4 py-2">
-        <p className="text-sm text-muted-foreground">
-          {lot.variantes?.nom ?? 'Variante'} · {lot.etages?.nom ?? 'Étage'}
-        </p>
-        <div className="flex items-center gap-2 mt-2">
-          <label
-            htmlFor="tma-switch"
-            className="text-sm font-medium text-foreground"
-          >
-            TMA
-          </label>
-          <Switch
-            id="tma-switch"
-            checked={lot.is_tma}
-            onCheckedChange={(checked) =>
-              toggleTma.mutate({ lotId, isTma: checked, plotId })
-            }
-          />
-        </div>
-        {lot.metrage_ml_total > 0 && (
-          <div className="flex items-center gap-2 mt-2">
-            <label
-              htmlFor="plinth-select"
-              className="text-sm font-medium text-foreground"
-            >
-              Plinthes
-            </label>
-            <Select
-              value={lot.plinth_status}
-              onValueChange={(value) =>
-                updatePlinthStatus.mutate({
-                  lotId,
-                  plinthStatus: value as PlinthStatus,
-                  plotId,
-                })
-              }
-            >
-              <SelectTrigger id="plinth-select" className="w-[180px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={PlinthStatus.NON_COMMANDEES}>Non commandées</SelectItem>
-                <SelectItem value={PlinthStatus.COMMANDEES}>Commandées</SelectItem>
-                <SelectItem value={PlinthStatus.FACONNEES}>Façonnées</SelectItem>
-              </SelectContent>
-            </Select>
+        {editMode ? (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="edit-code" className="text-xs font-medium text-muted-foreground">Code du lot</label>
+              <Input
+                id="edit-code"
+                value={editCode}
+                onChange={(e) => { setEditCode(e.target.value); setEditCodeError('') }}
+                className="h-9 mt-1"
+                aria-label="Code du lot"
+              />
+              {editCodeError && <p className="text-xs text-destructive mt-1">{editCodeError}</p>}
+            </div>
+            <div>
+              <label htmlFor="edit-variante" className="text-xs font-medium text-muted-foreground">Variante</label>
+              <Select value={editVarianteId} onValueChange={setEditVarianteId}>
+                <SelectTrigger id="edit-variante" className="w-full h-9 mt-1" aria-label="Variante">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {variantes?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="edit-etage" className="text-xs font-medium text-muted-foreground">Étage</label>
+              <Select value={editEtageId} onValueChange={setEditEtageId}>
+                <SelectTrigger id="edit-etage" className="w-full h-9 mt-1" aria-label="Étage">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {allEtages?.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveEdit} disabled={updateLot.isPending}>
+                <Check className="mr-1 size-4" />
+                Enregistrer
+              </Button>
+              <Button size="sm" variant="ghost" onClick={cancelEditMode}>
+                <X className="mr-1 size-4" />
+                Annuler
+              </Button>
+            </div>
           </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {lot.variantes?.nom ?? 'Variante'} · {lot.etages?.nom ?? 'Étage'}
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <label
+                htmlFor="tma-switch"
+                className="text-sm font-medium text-foreground"
+              >
+                TMA
+              </label>
+              <Switch
+                id="tma-switch"
+                checked={lot.is_tma}
+                onCheckedChange={(checked) =>
+                  toggleTma.mutate({ lotId, isTma: checked, plotId })
+                }
+              />
+            </div>
+            {lot.metrage_ml_total > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <label
+                  htmlFor="plinth-select"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Plinthes
+                </label>
+                <Select
+                  value={lot.plinth_status}
+                  onValueChange={(value) =>
+                    updatePlinthStatus.mutate({
+                      lotId,
+                      plinthStatus: value as PlinthStatus,
+                      plotId,
+                    })
+                  }
+                >
+                  <SelectTrigger id="plinth-select" className="w-[180px] h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PlinthStatus.NON_COMMANDEES}>Non commandées</SelectItem>
+                    <SelectItem value={PlinthStatus.COMMANDEES}>Commandées</SelectItem>
+                    <SelectItem value={PlinthStatus.FACONNEES}>Façonnées</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -590,6 +767,25 @@ function LotIndexPage() {
         lotId={lotId}
         initialPhoto={initialPhoto}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le lot {lot.code} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {lotHasContent
+                ? 'Attention : ce lot contient des pièces, tâches ou documents. Toutes ces données seront supprimées définitivement.'
+                : 'Ce lot sera supprimé définitivement. Cette action est irréversible.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteLot}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

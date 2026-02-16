@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera } from 'lucide-react'
+import { ArrowLeft, GripVertical, MessageSquare, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePieces } from '@/lib/queries/usePieces'
 import { useUpdateTaskStatus } from '@/lib/mutations/useUpdateTaskStatus'
+import { useReorderTaches } from '@/lib/mutations/useReorderTaches'
+import { SortableTaskList } from '@/components/SortableTaskList'
 import { useUpdatePieceMetrage } from '@/lib/mutations/useUpdatePieceMetrage'
 import { TapCycleButton } from '@/components/TapCycleButton'
 import { BreadcrumbNav } from '@/components/BreadcrumbNav'
@@ -178,6 +180,7 @@ function PiecePage() {
   const navigate = useNavigate()
   const { data: pieces, isLoading } = usePieces(lotId)
   const updateTaskStatus = useUpdateTaskStatus()
+  const reorderTaches = useReorderTaches()
   useRealtimeNotes(pieceId, 'piece')
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   const [noteFormOpen, setNoteFormOpen] = useState(false)
@@ -345,24 +348,35 @@ function PiecePage() {
 
         {piece.taches.length > 0 ? (
           <div className="border border-border rounded-lg divide-y divide-border">
-            {piece.taches.map((tache) => (
-              <div
-                key={tache.id}
-                className="flex items-center justify-between px-3 py-2.5"
-              >
-                <span className="text-sm text-foreground">{tache.nom}</span>
-                <TapCycleButton
-                  status={tache.status as TaskStatus}
-                  onCycle={(newStatus) =>
-                    updateTaskStatus.mutate({
-                      tacheId: tache.id,
-                      status: newStatus,
-                      lotId,
-                    })
-                  }
-                />
-              </div>
-            ))}
+            <SortableTaskList
+              items={piece.taches}
+              keyExtractor={(t) => t.id}
+              onReorder={(reordered) => {
+                reorderTaches.mutate({
+                  tacheIds: reordered.map((t) => t.id),
+                  lotId,
+                  pieceId,
+                })
+              }}
+              renderItem={(tache, { attributes, listeners }) => (
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <button type="button" {...attributes} {...listeners} className="touch-none">
+                    <GripVertical className="size-4 text-muted-foreground shrink-0 cursor-grab" />
+                  </button>
+                  <span className="flex-1 text-sm text-foreground">{tache.nom}</span>
+                  <TapCycleButton
+                    status={tache.status as TaskStatus}
+                    onCycle={(newStatus) =>
+                      updateTaskStatus.mutate({
+                        tacheId: tache.id,
+                        status: newStatus,
+                        lotId,
+                      })
+                    }
+                  />
+                </div>
+              )}
+            />
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">Aucune tâche</p>
