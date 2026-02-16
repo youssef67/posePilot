@@ -1,7 +1,7 @@
 import { Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DeliveryCard, DeliveryCardSkeleton } from '@/components/DeliveryCard'
-import type { Livraison } from '@/types/database'
+import type { Besoin, Livraison } from '@/types/database'
 
 interface LivraisonsListProps {
   livraisons: Livraison[] | undefined
@@ -10,6 +10,9 @@ interface LivraisonsListProps {
   onOpenSheet: () => void
   onMarquerPrevu: (id: string) => void
   onConfirmerLivraison: (id: string) => void
+  onEdit?: (livraison: Livraison) => void
+  onDelete?: (livraison: Livraison, linkedBesoins: Besoin[]) => void
+  besoinsMap?: Map<string, Besoin[]>
 }
 
 export function LivraisonsList({
@@ -19,6 +22,9 @@ export function LivraisonsList({
   onOpenSheet,
   onMarquerPrevu,
   onConfirmerLivraison,
+  onEdit,
+  onDelete,
+  besoinsMap,
 }: LivraisonsListProps) {
   if (isLoading) {
     return (
@@ -40,6 +46,9 @@ export function LivraisonsList({
             chantierId={chantierId}
             onMarquerPrevu={onMarquerPrevu}
             onConfirmerLivraison={onConfirmerLivraison}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            linkedBesoins={besoinsMap?.get(livraison.id)}
           />
         ))}
       </div>

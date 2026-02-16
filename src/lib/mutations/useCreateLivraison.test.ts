@@ -60,6 +60,7 @@ describe('useCreateLivraison', () => {
     expect(mockInsert).toHaveBeenCalledWith({
       chantier_id: 'ch1',
       description: 'Colle faïence',
+      fournisseur: null,
       status: 'commande',
       created_by: 'user-1',
     })
@@ -80,6 +81,38 @@ describe('useCreateLivraison', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.error?.message).toBe('Insert failed')
+  })
+
+  it('includes fournisseur in insert when provided', async () => {
+    const created = {
+      id: 'liv-new',
+      chantier_id: 'ch1',
+      description: 'Plinthes chêne',
+      fournisseur: 'Leroy Merlin',
+      status: 'commande',
+      date_prevue: null,
+      bc_file_url: null,
+      bc_file_name: null,
+      bl_file_url: null,
+      bl_file_name: null,
+      created_at: '2026-02-10T10:00:00Z',
+      created_by: 'user-1',
+    }
+    const mockSingle = vi.fn().mockResolvedValue({ data: created, error: null })
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as never)
+
+    const { result } = renderHook(() => useCreateLivraison(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({ chantierId: 'ch1', description: 'Plinthes chêne', fournisseur: 'Leroy Merlin' })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ fournisseur: 'Leroy Merlin' }),
+    )
   })
 
   it('applies optimistic update on mutate', async () => {

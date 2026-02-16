@@ -82,12 +82,42 @@ describe('useTransformBesoinToLivraison', () => {
     expect(mockLivraisonInsert).toHaveBeenCalledWith({
       chantier_id: 'ch1',
       description: 'Colle faïence 20kg',
+      fournisseur: null,
       status: 'commande',
       created_by: 'user-1',
     })
     expect(mockBesoinUpdate).toHaveBeenCalledWith({ livraison_id: 'liv1' })
     expect(mockBesoinEq).toHaveBeenCalledWith('id', 'b1')
     expect(result.current.data).toEqual(mockLivraison)
+  })
+
+  it('includes fournisseur in livraison insert when provided', async () => {
+    const mockLivraisonSingle = vi.fn().mockResolvedValue({ data: { ...mockLivraison, fournisseur: 'Point P' }, error: null })
+    const mockLivraisonSelect = vi.fn().mockReturnValue({ single: mockLivraisonSingle })
+    const mockLivraisonInsert = vi.fn().mockReturnValue({ select: mockLivraisonSelect })
+
+    const mockBesoinEq = vi.fn().mockResolvedValue({ error: null })
+    const mockBesoinUpdate = vi.fn().mockReturnValue({ eq: mockBesoinEq })
+
+    let callCount = 0
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'livraisons' && callCount === 0) {
+        callCount++
+        return { insert: mockLivraisonInsert } as never
+      }
+      return { update: mockBesoinUpdate } as never
+    })
+
+    const { result } = renderHook(() => useTransformBesoinToLivraison(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({ besoin: mockBesoin, fournisseur: 'Point P' })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockLivraisonInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ fournisseur: 'Point P' }),
+    )
   })
 
   it('returns error if livraison creation fails', async () => {

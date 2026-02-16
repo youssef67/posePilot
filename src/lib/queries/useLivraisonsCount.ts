@@ -14,5 +14,6 @@ export function useLivraisonsCount(chantierId: string) {
       return count ?? 0
     },
     enabled: !!chantierId,
+    placeholderData: 0,
   })
 }

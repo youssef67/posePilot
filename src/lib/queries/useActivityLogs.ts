@@ -16,5 +16,6 @@ export function useActivityLogs(userId: string) {
       return data as unknown as ActivityLog[]
     },
     enabled: !!userId,
+    placeholderData: [],
   })
 }

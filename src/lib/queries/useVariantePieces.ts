@@ -14,5 +14,6 @@ export function useVariantePieces(varianteId: string) {
       return data
     },
     enabled: !!varianteId,
+    placeholderData: [],
   })
 }

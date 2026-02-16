@@ -31,8 +31,17 @@ vi.mock('@/lib/mutations/useUpdateChantierStatus', () => ({
   }),
 }))
 
+const mockTransformBesoinMutate = vi.fn()
 const mockUpdateBesoinMutate = vi.fn()
 const mockDeleteBesoinMutate = vi.fn()
+const mockCreateGroupedLivraisonMutate = vi.fn()
+
+vi.mock('@/lib/mutations/useTransformBesoinToLivraison', () => ({
+  useTransformBesoinToLivraison: () => ({
+    mutate: mockTransformBesoinMutate,
+    isPending: false,
+  }),
+}))
 
 vi.mock('@/lib/mutations/useUpdateBesoin', () => ({
   useUpdateBesoin: () => ({
@@ -44,6 +53,13 @@ vi.mock('@/lib/mutations/useUpdateBesoin', () => ({
 vi.mock('@/lib/mutations/useDeleteBesoin', () => ({
   useDeleteBesoin: () => ({
     mutate: mockDeleteBesoinMutate,
+    isPending: false,
+  }),
+}))
+
+vi.mock('@/lib/mutations/useCreateGroupedLivraison', () => ({
+  useCreateGroupedLivraison: () => ({
+    mutate: mockCreateGroupedLivraisonMutate,
     isPending: false,
   }),
 }))
@@ -744,5 +760,148 @@ describe('ChantierIndexPage — léger besoin edit/delete', () => {
     await screen.findByText('Plot A')
     // Complet chantier uses link to /besoins page, no inline BesoinsList with actions
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument()
+  })
+})
+
+describe('ChantierIndexPage — léger Commander Sheet with fournisseur', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(supabase.channel).mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    } as never)
+  })
+
+  it('opens Commander Sheet with fournisseur input', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForActions)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Joint gris 5kg')
+    await user.click(screen.getByRole('button', { name: 'Commander' }))
+
+    expect(await screen.findByText('Commander ce besoin')).toBeInTheDocument()
+    expect(screen.getByLabelText('Fournisseur')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirmer la commande' })).toBeInTheDocument()
+  })
+
+  it('calls mutation without fournisseur when field is empty', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForActions)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Joint gris 5kg')
+    await user.click(screen.getByRole('button', { name: 'Commander' }))
+    await screen.findByText('Commander ce besoin')
+    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+
+    expect(mockTransformBesoinMutate).toHaveBeenCalledWith(
+      { besoin: mockBesoinsForActions[0], fournisseur: undefined },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+  })
+
+  it('calls mutation with fournisseur when field is filled', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForActions)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Joint gris 5kg')
+    await user.click(screen.getByRole('button', { name: 'Commander' }))
+    await screen.findByText('Commander ce besoin')
+
+    const fournisseurInput = screen.getByLabelText('Fournisseur')
+    await user.type(fournisseurInput, 'Point P')
+    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+
+    expect(mockTransformBesoinMutate).toHaveBeenCalledWith(
+      { besoin: mockBesoinsForActions[0], fournisseur: 'Point P' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+  })
+})
+
+const mockBesoinsForSelection = [
+  {
+    id: 'bs1',
+    chantier_id: 'chantier-2',
+    description: 'Colle carrelage 25kg',
+    livraison_id: null,
+    created_at: '2026-02-10T10:00:00Z',
+    created_by: 'user-1',
+  },
+  {
+    id: 'bs2',
+    chantier_id: 'chantier-2',
+    description: 'Croisillons 3mm',
+    livraison_id: null,
+    created_at: '2026-02-10T11:00:00Z',
+    created_by: 'user-1',
+  },
+]
+
+describe('ChantierIndexPage — léger grouped selection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(supabase.channel).mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    } as never)
+  })
+
+  it('shows "Sélectionner" button when 2+ besoins exist in léger', async () => {
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForSelection)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Colle carrelage 25kg')
+    expect(screen.getByRole('button', { name: 'Sélectionner' })).toBeInTheDocument()
+  })
+
+  it('enters selection mode with checkboxes in léger', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForSelection)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Colle carrelage 25kg')
+    await user.click(screen.getByRole('button', { name: 'Sélectionner' }))
+
+    // Checkboxes appear
+    expect(screen.getByLabelText('Sélectionner Colle carrelage 25kg')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sélectionner Croisillons 3mm')).toBeInTheDocument()
+  })
+
+  it('shows selection bar and calls grouped mutation on submit', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase(mockChantierLeger, [], [], [], [], mockBesoinsForSelection)
+    renderRoute('chantier-2')
+
+    await screen.findByText('Colle carrelage 25kg')
+    await user.click(screen.getByRole('button', { name: 'Sélectionner' }))
+
+    // Select both besoins
+    await user.click(screen.getByLabelText('Sélectionner Colle carrelage 25kg'))
+    await user.click(screen.getByLabelText('Sélectionner Croisillons 3mm'))
+
+    // Commander button shows count
+    expect(screen.getByRole('button', { name: 'Commander (2)' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Commander (2)' }))
+    await screen.findByText(/Commander 2 besoins/)
+
+    const textarea = screen.getByLabelText('Intitulé de la commande')
+    await user.type(textarea, 'Commande groupée léger')
+    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+
+    expect(mockCreateGroupedLivraisonMutate).toHaveBeenCalledWith(
+      {
+        chantierId: 'chantier-2',
+        besoinIds: expect.arrayContaining(['bs1', 'bs2']),
+        description: 'Commande groupée léger',
+        fournisseur: undefined,
+      },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
   })
 })

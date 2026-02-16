@@ -40,6 +40,7 @@ const baseLivraison = {
   chantier_id: 'ch1',
   description: 'Colle pour faïence 20kg',
   status: 'commande' as const,
+  fournisseur: null as string | null,
   date_prevue: null,
   bc_file_url: null,
   bc_file_name: null,
@@ -364,6 +365,239 @@ describe('DeliveryCard', () => {
       { wrapper: createWrapper() },
     )
     expect(screen.getByText('Bon de livraison')).toBeInTheDocument()
+  })
+
+  // Fournisseur display tests
+  it('displays fournisseur when non-null', () => {
+    render(
+      <DeliveryCard
+        livraison={{ ...baseLivraison, fournisseur: 'Leroy Merlin' }}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByText('Leroy Merlin')).toBeInTheDocument()
+  })
+
+  it('does not display fournisseur when null', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByText('Leroy Merlin')).not.toBeInTheDocument()
+  })
+
+  // DropdownMenu tests
+  it('shows DropdownMenu when onEdit provided and status is not livre', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByLabelText('Actions livraison')).toBeInTheDocument()
+  })
+
+  it('does not show DropdownMenu when status is livre', () => {
+    render(
+      <DeliveryCard
+        livraison={{ ...baseLivraison, status: 'livre', date_prevue: '2026-02-12' }}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByLabelText('Actions livraison')).not.toBeInTheDocument()
+  })
+
+  it('calls onEdit with livraison when "Modifier" is clicked', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onEdit={onEdit}
+      />,
+      { wrapper: createWrapper() },
+    )
+    await user.click(screen.getByLabelText('Actions livraison'))
+    await user.click(screen.getByText('Modifier'))
+    expect(onEdit).toHaveBeenCalledWith(baseLivraison)
+  })
+
+  // Linked besoins indicator + accordion
+  const mockLinkedBesoins = [
+    { id: 'b1', chantier_id: 'ch1', description: 'Colle faience', livraison_id: 'liv1', created_at: '2026-02-10T10:00:00Z', created_by: 'user-1' },
+    { id: 'b2', chantier_id: 'ch1', description: 'Joint gris 5kg', livraison_id: 'liv1', created_at: '2026-02-10T11:00:00Z', created_by: 'user-1' },
+    { id: 'b3', chantier_id: 'ch1', description: 'Carrelage 60x60', livraison_id: 'liv1', created_at: '2026-02-10T12:00:00Z', created_by: 'user-1' },
+  ]
+
+  it('shows "N besoins" indicator when linkedBesoins is non-empty', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        linkedBesoins={mockLinkedBesoins}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByText('3 besoins')).toBeInTheDocument()
+  })
+
+  it('does not show besoins indicator when linkedBesoins is empty', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        linkedBesoins={[]}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByText(/besoin/)).not.toBeInTheDocument()
+  })
+
+  it('does not show besoins indicator when linkedBesoins is undefined', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByText(/besoin/)).not.toBeInTheDocument()
+  })
+
+  it('expands accordion on click showing besoin descriptions and author', async () => {
+    const user = userEvent.setup()
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        linkedBesoins={mockLinkedBesoins}
+      />,
+      { wrapper: createWrapper() },
+    )
+    // Accordion collapsed initially
+    expect(screen.queryByText('Colle faience')).not.toBeInTheDocument()
+
+    // Click to expand
+    await user.click(screen.getByText('3 besoins'))
+
+    // Now besoin descriptions visible
+    expect(screen.getByText('Colle faience')).toBeInTheDocument()
+    expect(screen.getByText('Joint gris 5kg')).toBeInTheDocument()
+    expect(screen.getByText('Carrelage 60x60')).toBeInTheDocument()
+    // Author initial shown (Y for youssef@test.com since created_by matches user-1)
+    const details = screen.getAllByText(/Y · il y a 2h/)
+    expect(details.length).toBeGreaterThanOrEqual(3)
+  })
+
+  // Delete tests (Story 6.9)
+  it('shows "Supprimer" in DropdownMenu when onDelete provided and status is not livre', async () => {
+    const user = userEvent.setup()
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    await user.click(screen.getByLabelText('Actions livraison'))
+    expect(screen.getByText('Supprimer')).toBeInTheDocument()
+  })
+
+  it('does not show "Supprimer" when status is livre', () => {
+    render(
+      <DeliveryCard
+        livraison={{ ...baseLivraison, status: 'livre', date_prevue: '2026-02-12' }}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByLabelText('Actions livraison')).not.toBeInTheDocument()
+  })
+
+  it('calls onDelete with livraison and linkedBesoins when "Supprimer" clicked', async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onDelete={onDelete}
+        linkedBesoins={mockLinkedBesoins}
+      />,
+      { wrapper: createWrapper() },
+    )
+    await user.click(screen.getByLabelText('Actions livraison'))
+    await user.click(screen.getByText('Supprimer'))
+    expect(onDelete).toHaveBeenCalledWith(baseLivraison, mockLinkedBesoins)
+  })
+
+  it('shows separator when both onEdit and onDelete are provided', async () => {
+    const user = userEvent.setup()
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    await user.click(screen.getByLabelText('Actions livraison'))
+    expect(screen.getByText('Modifier')).toBeInTheDocument()
+    expect(screen.getByText('Supprimer')).toBeInTheDocument()
+    // DropdownMenuSeparator renders in a portal — query from document
+    expect(screen.getByRole('separator')).toBeInTheDocument()
+  })
+
+  it('shows singular "1 besoin" when only one linked besoin', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        linkedBesoins={[mockLinkedBesoins[0]]}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByText('1 besoin')).toBeInTheDocument()
   })
 })
 

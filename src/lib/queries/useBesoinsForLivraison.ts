@@ -1,19 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Besoin } from '@/types/database'
 
-export function useVarianteDocuments(varianteId: string) {
+export function useBesoinsForLivraison(livraisonId: string | null) {
   return useQuery({
-    queryKey: ['variante-documents', varianteId],
+    queryKey: ['besoins-for-livraison', livraisonId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('variante_documents')
+        .from('besoins')
         .select('*')
-        .eq('variante_id', varianteId)
+        .eq('livraison_id', livraisonId!)
         .order('created_at', { ascending: true })
+
       if (error) throw error
-      return data
+      return data as unknown as Besoin[]
     },
-    enabled: !!varianteId,
+    enabled: !!livraisonId,
     placeholderData: [],
   })
 }

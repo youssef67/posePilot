@@ -13,5 +13,6 @@ export function useAllPendingBesoinsCount() {
       if (error) throw error
       return count ?? 0
     },
+    placeholderData: 0,
   })
 }

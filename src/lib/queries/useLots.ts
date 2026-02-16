@@ -25,5 +25,6 @@ export function useLots(plotId: string) {
       return data as unknown as LotWithRelations[]
     },
     enabled: !!plotId,
+    placeholderData: [],
   })
 }

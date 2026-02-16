@@ -27,5 +27,6 @@ export function usePlots(chantierId: string) {
       return data as unknown as PlotRow[]
     },
     enabled: !!chantierId,
+    placeholderData: [],
   })
 }

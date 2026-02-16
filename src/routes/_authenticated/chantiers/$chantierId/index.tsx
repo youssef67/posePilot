@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Boxes, CheckCircle2, EllipsisVertical, Package, Plus, Trash2, Truck } from 'lucide-react'
+import { ArrowLeft, Boxes, CheckCircle2, EllipsisVertical, ListChecks, Package, Plus, Trash2, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -47,6 +47,7 @@ import { useCreateBesoin } from '@/lib/mutations/useCreateBesoin'
 import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
 import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
+import { useCreateGroupedLivraison } from '@/lib/mutations/useCreateGroupedLivraison'
 import { useUpdateChantierStatus } from '@/lib/mutations/useUpdateChantierStatus'
 import { useChantier } from '@/lib/queries/useChantier'
 import { useBesoins } from '@/lib/queries/useBesoins'
@@ -56,6 +57,7 @@ import { usePlots } from '@/lib/queries/usePlots'
 import { useLivraisonsCount } from '@/lib/queries/useLivraisonsCount'
 import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
 import { useInventaire } from '@/lib/queries/useInventaire'
+import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllBesoinsForChantier'
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import type { Besoin } from '@/types/database'
@@ -84,8 +86,11 @@ function ChantierIndexPage() {
   const createBesoin = useCreateBesoin()
   const updateBesoin = useUpdateBesoin()
   const deleteBesoin = useDeleteBesoin()
+  const { data: allLinkedBesoins } = useAllBesoinsForChantier(chantierId)
   const livraisonActions = useLivraisonActions(chantierId)
   const transformBesoin = useTransformBesoinToLivraison()
+  const besoinsMap = useMemo(() => buildBesoinsMap(allLinkedBesoins ?? []), [allLinkedBesoins])
+  const createGroupedLivraison = useCreateGroupedLivraison()
   const updateStatus = useUpdateChantierStatus()
 
   const lotsPretsACarreler = useMemo(
@@ -123,8 +128,9 @@ function ChantierIndexPage() {
   const [showBesoinSheet, setShowBesoinSheet] = useState(false)
   const [besoinDescription, setBesoinDescription] = useState('')
   const [besoinError, setBesoinError] = useState('')
-  const [showCommanderDialog, setShowCommanderDialog] = useState(false)
+  const [showCommanderSheet, setShowCommanderSheet] = useState(false)
   const [besoinToCommand, setBesoinToCommand] = useState<Besoin | null>(null)
+  const [commanderFournisseur, setCommanderFournisseur] = useState('')
 
   const [besoinToEdit, setBesoinToEdit] = useState<Besoin | null>(null)
   const [showEditBesoinSheet, setShowEditBesoinSheet] = useState(false)
@@ -133,6 +139,14 @@ function ChantierIndexPage() {
 
   const [besoinToDelete, setBesoinToDelete] = useState<Besoin | null>(null)
   const [showDeleteBesoinDialog, setShowDeleteBesoinDialog] = useState(false)
+
+  // Mode selection groupee (leger)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedBesoinIds, setSelectedBesoinIds] = useState<Set<string>>(new Set())
+  const [showGroupeSheet, setShowGroupeSheet] = useState(false)
+  const [groupeDescription, setGroupeDescription] = useState('')
+  const [groupeFournisseur, setGroupeFournisseur] = useState('')
+  const [groupeError, setGroupeError] = useState('')
 
   function handleTerminer() {
     updateStatus.mutate(
@@ -259,17 +273,19 @@ function ChantierIndexPage() {
 
   function handleCommander(besoin: Besoin) {
     setBesoinToCommand(besoin)
-    setShowCommanderDialog(true)
+    setCommanderFournisseur('')
+    setShowCommanderSheet(true)
   }
 
   function handleConfirmCommander() {
     if (!besoinToCommand) return
     transformBesoin.mutate(
-      { besoin: besoinToCommand },
+      { besoin: besoinToCommand, fournisseur: commanderFournisseur.trim() || undefined },
       {
         onSuccess: () => {
-          setShowCommanderDialog(false)
+          setShowCommanderSheet(false)
           setBesoinToCommand(null)
+          setCommanderFournisseur('')
           toast('Besoin commandé')
         },
         onError: () => {
@@ -278,6 +294,66 @@ function ChantierIndexPage() {
       },
     )
   }
+
+  // --- Selection groupee handlers ---
+  function handleLongPress(besoin: Besoin) {
+    setSelectionMode(true)
+    setSelectedBesoinIds(new Set([besoin.id]))
+  }
+
+  function handleToggleSelect(id: string) {
+    setSelectedBesoinIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      if (next.size === 0) setSelectionMode(false)
+      return next
+    })
+  }
+
+  function handleEnterSelectionMode() {
+    setSelectionMode(true)
+    setSelectedBesoinIds(new Set())
+  }
+
+  function handleCancelSelection() {
+    setSelectionMode(false)
+    setSelectedBesoinIds(new Set())
+  }
+
+  function handleOpenGroupeSheet() {
+    setGroupeDescription('')
+    setGroupeFournisseur('')
+    setGroupeError('')
+    setShowGroupeSheet(true)
+  }
+
+  function handleConfirmGroupe() {
+    const trimmed = groupeDescription.trim()
+    if (!trimmed) {
+      setGroupeError("L'intitulé de la commande est requis")
+      return
+    }
+    createGroupedLivraison.mutate(
+      {
+        chantierId,
+        besoinIds: Array.from(selectedBesoinIds),
+        description: trimmed,
+        fournisseur: groupeFournisseur.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setShowGroupeSheet(false)
+          setSelectionMode(false)
+          setSelectedBesoinIds(new Set())
+          toast('Commande créée')
+        },
+        onError: () => toast.error('Erreur lors de la commande'),
+      },
+    )
+  }
+
+  const showSelectButton = !selectionMode && besoins && besoins.length >= 2
 
   if (isLoading) {
     return (
@@ -385,9 +461,16 @@ function ChantierIndexPage() {
               livraisonsPrevues={livraisonsPrevues}
             />
 
-            <h2 className="text-base font-semibold text-foreground mb-3">
-              Besoins en attente{besoins && besoins.length > 0 ? ` (${besoins.length})` : ''}
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-foreground">
+                Besoins en attente{besoins && besoins.length > 0 ? ` (${besoins.length})` : ''}
+              </h2>
+              {showSelectButton && (
+                <Button variant="ghost" size="icon" onClick={handleEnterSelectionMode} aria-label="Sélectionner">
+                  <ListChecks className="size-5" />
+                </Button>
+              )}
+            </div>
 
             <BesoinsList
               besoins={besoins}
@@ -396,6 +479,10 @@ function ChantierIndexPage() {
               onCommander={handleCommander}
               onEdit={handleEditBesoin}
               onDelete={handleDeleteBesoin}
+              selectionMode={selectionMode}
+              selectedIds={selectedBesoinIds}
+              onToggleSelect={handleToggleSelect}
+              onLongPress={handleLongPress}
             />
 
             <h2 className="text-base font-semibold text-foreground mb-3 mt-6">
@@ -409,6 +496,9 @@ function ChantierIndexPage() {
               onOpenSheet={livraisonActions.handleOpenLivraisonSheet}
               onMarquerPrevu={livraisonActions.handleMarquerPrevu}
               onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
+              onEdit={livraisonActions.handleEditLivraison}
+              onDelete={livraisonActions.handleDeleteLivraison}
+              besoinsMap={besoinsMap}
             />
 
             <Fab
@@ -685,24 +775,111 @@ function ChantierIndexPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showCommanderDialog} onOpenChange={setShowCommanderDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Transformer ce besoin en commande ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Le besoin &laquo;{besoinToCommand?.description}&raquo; sera transformé en livraison au statut Commandé.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmCommander}>
-              Commander
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Sheet open={showCommanderSheet} onOpenChange={setShowCommanderSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Commander ce besoin</SheetTitle>
+            <SheetDescription>
+              Le besoin &laquo;{besoinToCommand?.description}&raquo; sera transformé en livraison.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4">
+            <Input
+              placeholder="Fournisseur (optionnel)"
+              value={commanderFournisseur}
+              onChange={(e) => setCommanderFournisseur(e.target.value)}
+              aria-label="Fournisseur"
+            />
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleConfirmCommander}
+              disabled={transformBesoin.isPending}
+              className="w-full"
+            >
+              Confirmer la commande
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <LivraisonSheets actions={livraisonActions} />
+
+      {/* Barre de selection groupee */}
+      {selectionMode && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background p-4 flex items-center justify-between gap-2" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+          <Button variant="ghost" onClick={handleCancelSelection}>
+            Annuler
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {selectedBesoinIds.size} sélectionné{selectedBesoinIds.size > 1 ? 's' : ''}
+          </span>
+          <Button onClick={handleOpenGroupeSheet} disabled={selectedBesoinIds.size === 0}>
+            Commander ({selectedBesoinIds.size})
+          </Button>
+        </div>
+      )}
+
+      {/* Sheet commande groupee */}
+      <Sheet open={showGroupeSheet} onOpenChange={setShowGroupeSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Commander {selectedBesoinIds.size} besoin{selectedBesoinIds.size > 1 ? 's' : ''}</SheetTitle>
+            <SheetDescription>
+              Créer une livraison regroupant les besoins sélectionnés.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 flex flex-col gap-3">
+            <div>
+              <label htmlFor="groupe-description-index" className="text-sm font-medium mb-1 block">
+                Intitulé de la commande
+              </label>
+              <Textarea
+                id="groupe-description-index"
+                value={groupeDescription}
+                onChange={(e) => {
+                  setGroupeDescription(e.target.value)
+                  if (groupeError) setGroupeError('')
+                }}
+                placeholder="Ex: Carrelage cuisine T2"
+                aria-invalid={!!groupeError}
+                rows={2}
+              />
+              {groupeError && (
+                <p className="text-sm text-destructive mt-1">{groupeError}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="groupe-fournisseur-index" className="text-sm font-medium mb-1 block">
+                Fournisseur
+              </label>
+              <Input
+                id="groupe-fournisseur-index"
+                value={groupeFournisseur}
+                onChange={(e) => setGroupeFournisseur(e.target.value)}
+                placeholder="Optionnel"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Besoins inclus :</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {besoins?.filter((b) => selectedBesoinIds.has(b.id)).map((b) => (
+                  <li key={b.id} className="truncate">• {b.description}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleConfirmGroupe}
+              disabled={createGroupedLivraison.isPending}
+              className="w-full"
+            >
+              Confirmer la commande
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

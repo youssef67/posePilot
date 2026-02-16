@@ -1,19 +1,23 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { Besoin } from '@/types/database'
+import { buildBesoinsMap } from './useAllBesoinsForChantier'
 
-export function useVarianteDocuments(varianteId: string) {
+export function useAllLinkedBesoins() {
   return useQuery({
-    queryKey: ['variante-documents', varianteId],
+    queryKey: ['all-linked-besoins'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('variante_documents')
+        .from('besoins')
         .select('*')
-        .eq('variante_id', varianteId)
+        .not('livraison_id', 'is', null)
         .order('created_at', { ascending: true })
+
       if (error) throw error
-      return data
+      return data as unknown as Besoin[]
     },
-    enabled: !!varianteId,
     placeholderData: [],
   })
 }
+
+export { buildBesoinsMap }

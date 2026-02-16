@@ -16,5 +16,6 @@ export function useLivraisons(chantierId: string) {
       return data as unknown as Livraison[]
     },
     enabled: !!chantierId,
+    placeholderData: [],
   })
 }

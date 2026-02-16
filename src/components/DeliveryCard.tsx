@@ -1,11 +1,14 @@
-import { Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, ChevronDown, ListChecks, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LivraisonDocumentSlot } from '@/components/LivraisonDocumentSlot'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { useAuth } from '@/lib/auth'
-import type { Livraison } from '@/types/database'
+import { cn } from '@/lib/utils'
+import type { Besoin, Livraison } from '@/types/database'
 
 const STATUS_CONFIG = {
   commande: { color: '#F59E0B', label: 'Commandé' },
@@ -36,13 +39,17 @@ interface DeliveryCardProps {
   chantierId: string
   onMarquerPrevu: (id: string) => void
   onConfirmerLivraison: (id: string) => void
+  onEdit?: (livraison: Livraison) => void
+  onDelete?: (livraison: Livraison, linkedBesoins: Besoin[]) => void
   chantierNom?: string
   highlighted?: boolean
+  linkedBesoins?: Besoin[]
 }
 
-export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, chantierNom, highlighted }: DeliveryCardProps) {
+export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
   const { user } = useAuth()
   const config = STATUS_CONFIG[livraison.status]
+  const [expanded, setExpanded] = useState(false)
 
   return (
     <Card className="relative overflow-hidden pl-2 py-4 min-h-[72px]">
@@ -54,15 +61,76 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
       <CardContent className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="font-semibold text-card-foreground truncate">{livraison.description}</span>
-          <span
-            className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: `${config.color}20`, color: config.color }}
-          >
-            {config.label}
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${config.color}20`, color: config.color }}
+            >
+              {config.label}
+            </span>
+            {(onEdit || onDelete) && livraison.status !== 'livre' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions livraison">
+                    <MoreVertical className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onEdit && (
+                    <DropdownMenuItem onClick={() => onEdit(livraison)}>
+                      <Pencil className="size-4 mr-2" />
+                      Modifier
+                    </DropdownMenuItem>
+                  )}
+                  {onEdit && onDelete && <DropdownMenuSeparator />}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      onClick={() => onDelete(livraison, linkedBesoins ?? [])}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="size-4 mr-2" />
+                      Supprimer
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
+        {livraison.fournisseur && (
+          <span className="text-sm text-muted-foreground">{livraison.fournisseur}</span>
+        )}
         {chantierNom && (
           <span className="text-xs text-muted-foreground">{chantierNom}</span>
+        )}
+        {linkedBesoins && linkedBesoins.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              aria-expanded={expanded}
+              aria-label={`${linkedBesoins.length} besoin${linkedBesoins.length > 1 ? 's' : ''} rattaché${linkedBesoins.length > 1 ? 's' : ''}`}
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              <span>{linkedBesoins.length} besoin{linkedBesoins.length > 1 ? 's' : ''}</span>
+              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
+            </button>
+            {expanded && (
+              <div className="space-y-1 pl-4 border-l-2 border-muted">
+                {linkedBesoins.map((b) => (
+                  <div key={b.id} className="text-sm">
+                    <span className="text-foreground">{b.description}</span>
+                    <span className="text-muted-foreground text-xs ml-2">
+                      {getAuthorInitial(b.created_by, user?.id, user?.email ?? undefined)}
+                      {' · '}
+                      {formatRelativeTime(b.created_at)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">

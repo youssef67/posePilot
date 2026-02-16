@@ -35,6 +35,10 @@ function getEventIcon(entry: ActivityLog) {
       return <Truck className="h-5 w-5 text-[#F59E0B]" />
     case 'livraison_status_changed':
       return <Truck className="h-5 w-5 text-[#3B82F6]" />
+    case 'livraison_updated':
+      return <Pencil className="h-5 w-5 text-[#3B82F6]" />
+    case 'livraison_deleted':
+      return <Trash2 className="h-5 w-5 text-[#EF4444]" />
   }
 }
 
@@ -76,6 +80,10 @@ function getActivityDescription(entry: ActivityLog): string {
       return `${name} a créé une livraison`
     case 'livraison_status_changed':
       return `${name} a mis à jour une livraison`
+    case 'livraison_updated':
+      return `${name} a modifié une livraison`
+    case 'livraison_deleted':
+      return `${name} a supprimé une livraison`
   }
 }
 

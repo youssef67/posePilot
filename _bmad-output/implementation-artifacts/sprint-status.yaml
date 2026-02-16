@@ -94,9 +94,9 @@ development_status:
   6-4-vue-globale-des-livraisons-filtree-par-statut: done
   6-5-gestion-d-inventaire-avec-localisation: done
   6-6-edition-et-suppression-des-besoins: done
-  6-7-fournisseur-et-edition-des-livraisons: backlog
-  6-8-commande-groupee-de-besoins: backlog
-  6-9-suppression-de-livraisons: backlog
+  6-7-fournisseur-et-edition-des-livraisons: done
+  6-8-commande-groupee-de-besoins: done
+  6-9-suppression-de-livraisons: review
   epic-6-retrospective: optional
 
   # Epic 7: Metres, Plinthes & Indicateurs intelligents

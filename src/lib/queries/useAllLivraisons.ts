@@ -18,5 +18,6 @@ export function useAllLivraisons() {
       if (error) throw error
       return data as unknown as LivraisonWithChantier[]
     },
+    placeholderData: [],
   })
 }

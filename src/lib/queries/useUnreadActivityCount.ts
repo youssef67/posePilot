@@ -26,5 +26,6 @@ export function useUnreadActivityCount(userId: string) {
       return count ?? 0
     },
     enabled: !!userId,
+    placeholderData: 0,
   })
 }

@@ -24,5 +24,6 @@ export function useEtages(plotId: string) {
       return data as unknown as EtageRow[]
     },
     enabled: !!plotId,
+    placeholderData: [],
   })
 }

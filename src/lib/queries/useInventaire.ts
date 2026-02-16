@@ -22,5 +22,6 @@ export function useInventaire(chantierId: string) {
       return data as unknown as InventaireWithLocation[]
     },
     enabled: !!chantierId,
+    placeholderData: [],
   })
 }

@@ -6,7 +6,7 @@ export function useTransformBesoinToLivraison() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoin }: { besoin: Besoin }) => {
+    mutationFn: async ({ besoin, fournisseur }: { besoin: Besoin; fournisseur?: string }) => {
       const { data: { user } } = await supabase.auth.getUser()
 
       // 1. Créer la livraison
@@ -15,6 +15,7 @@ export function useTransformBesoinToLivraison() {
         .insert({
           chantier_id: besoin.chantier_id,
           description: besoin.description,
+          fournisseur: fournisseur || null,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })
@@ -51,6 +52,8 @@ export function useTransformBesoinToLivraison() {
       queryClient.invalidateQueries({ queryKey: ['besoins', besoin.chantier_id] })
       queryClient.invalidateQueries({ queryKey: ['livraisons', besoin.chantier_id] })
       queryClient.invalidateQueries({ queryKey: ['livraisons-count', besoin.chantier_id] })
+      queryClient.invalidateQueries({ queryKey: ['all-besoins', besoin.chantier_id] })
+      queryClient.invalidateQueries({ queryKey: ['all-pending-besoins-count'] })
     },
   })
 }

@@ -94,6 +94,18 @@ FR54: Le système pré-remplit la localisation selon le contexte de navigation a
 FR55: Le système agrège l'inventaire automatiquement (étage → plot → chantier)
 FR56: L'utilisateur peut ajuster rapidement les quantités (+/-/supprimer)
 
+**6b. Besoins & Livraisons — Gestion avancée (FR77-FR85)**
+
+FR77: L'utilisateur peut sélectionner plusieurs besoins en attente simultanément pour les regrouper en une seule livraison
+FR78: L'utilisateur peut saisir un intitulé personnalisé lors de la création d'une livraison groupée
+FR79: L'utilisateur peut renseigner un fournisseur (texte libre) sur toute livraison (groupée ou directe)
+FR80: L'utilisateur peut voir le détail des besoins rattachés à une livraison via un accordéon dépliable sur la DeliveryCard
+FR81: L'utilisateur peut modifier la description d'un besoin en attente
+FR82: L'utilisateur peut modifier le fournisseur, l'intitulé et la date prévue d'une livraison (statut commandé ou prévu)
+FR83: L'utilisateur peut supprimer un besoin en attente
+FR84: L'utilisateur peut supprimer une livraison au statut commandé ou prévu, avec le choix de repasser les besoins rattachés en attente ou de tout supprimer définitivement
+FR85: Le système supprime les fichiers associés (BC/BL) lors de la suppression d'une livraison
+
 **7. Métrés, Plinthes & Indicateurs (FR57-FR64)**
 
 FR57: L'utilisateur peut saisir les m² par pièce (optionnel, jamais bloquant)
@@ -238,6 +250,15 @@ FR53: Epic 6 — Enregistrer matériel avec quantité et localisation
 FR54: Epic 6 — Pré-remplir localisation selon contexte
 FR55: Epic 6 — Agrégation inventaire automatique
 FR56: Epic 6 — Ajuster quantités rapidement
+FR77: Epic 6 — Sélection multiple besoins → livraison groupée
+FR78: Epic 6 — Intitulé personnalisé pour livraison groupée
+FR79: Epic 6 — Champ fournisseur (texte libre) sur toute livraison
+FR80: Epic 6 — Accordéon besoins rattachés sur DeliveryCard
+FR81: Epic 6 — Modifier description d'un besoin en attente
+FR82: Epic 6 — Modifier fournisseur, intitulé, date prévue d'une livraison
+FR83: Epic 6 — Supprimer un besoin en attente
+FR84: Epic 6 — Supprimer livraison (commandé/prévu) avec choix repasser en besoins ou supprimer définitivement
+FR85: Epic 6 — Suppression fichiers BC/BL associés lors de suppression livraison
 FR57: Epic 7 — Saisir m² par pièce
 FR58: Epic 7 — Saisir ML plinthes par pièce
 FR59: Epic 7 — Agrégation m² et ML par lot et plot
@@ -275,8 +296,8 @@ Les utilisateurs gèrent les plans de pose, fiches de choix et autres documents 
 **FRs couverts:** FR35, FR36, FR37, FR38, FR39, FR40, FR41, FR42, FR43
 
 ### Epic 6: Besoins, Livraisons & Inventaire
-Cycle complet besoin → commande → livraison avec BC/BL, navigation directe depuis chantier léger, gestion d'inventaire avec localisation et agrégation automatique.
-**FRs couverts:** FR7, FR44, FR45, FR46, FR47, FR48, FR49, FR50, FR51, FR52, FR53, FR54, FR55, FR56
+Cycle complet besoin → commande → livraison avec BC/BL, commande groupée avec fournisseur, édition et suppression des besoins et livraisons, navigation directe depuis chantier léger, gestion d'inventaire avec localisation et agrégation automatique.
+**FRs couverts:** FR7, FR44, FR45, FR46, FR47, FR48, FR49, FR50, FR51, FR52, FR53, FR54, FR55, FR56, FR77, FR78, FR79, FR80, FR81, FR82, FR83, FR84, FR85
 
 ### Epic 7: Métrés, Plinthes & Indicateurs intelligents
 Métrés optionnels (m² et ML plinthes), suivi des plinthes commandées/façonnées, et indicateurs d'aide à la décision : lots prêts à carreler, croisement inventaire/métrés, besoins en attente, livraisons prévues.
@@ -1133,6 +1154,166 @@ Afin que je sache exactement quel matériel est disponible et où sur le chantie
 **Given** l'utilisateur consulte l'inventaire au niveau chantier
 **When** les données s'affichent
 **Then** le total agrégé de chaque matériel est visible avec le détail par localisation
+
+### Story 6.6: Édition et suppression des besoins
+
+En tant que utilisateur de posePilot,
+Je veux modifier ou supprimer un besoin en attente,
+Afin que je puisse corriger une erreur de saisie ou retirer un besoin qui n'est plus pertinent.
+
+**Acceptance Criteria:**
+
+**Given** l'utilisateur consulte la liste des besoins en attente d'un chantier
+**When** il tape sur un besoin existant
+**Then** un menu d'actions s'affiche avec les options "Modifier" et "Supprimer"
+
+**Given** l'utilisateur choisit "Modifier" sur un besoin en attente
+**When** le formulaire d'édition s'affiche
+**Then** la description actuelle est pré-remplie dans le champ texte, modifiable
+
+**Given** l'utilisateur modifie la description et valide
+**When** la mutation s'exécute
+**Then** la description est mise à jour en base, la liste se rafraîchit et un toast "Besoin modifié" s'affiche
+
+**Given** l'utilisateur tente de valider avec une description vide
+**When** il soumet le formulaire
+**Then** un message d'erreur en français s'affiche sous le champ et la validation est bloquée
+
+**Given** l'utilisateur choisit "Supprimer" sur un besoin en attente
+**When** une confirmation s'affiche ("Supprimer ce besoin ?")
+**Then** l'utilisateur peut confirmer ou annuler
+
+**Given** l'utilisateur confirme la suppression
+**When** la mutation s'exécute
+**Then** le besoin est supprimé de la base, disparaît de la liste et un toast "Besoin supprimé" s'affiche
+
+**Given** un besoin est déjà rattaché à une livraison (livraison_id non null)
+**When** l'utilisateur consulte ce besoin
+**Then** les options "Modifier" et "Supprimer" ne sont pas disponibles (besoin verrouillé)
+
+### Story 6.7: Fournisseur et édition des livraisons
+
+En tant que utilisateur de posePilot,
+Je veux renseigner un fournisseur sur mes livraisons et pouvoir modifier les informations d'une livraison,
+Afin que je sache qui livre chaque commande et que je puisse corriger ou mettre à jour les détails.
+
+**Acceptance Criteria:**
+
+**Given** l'utilisateur crée une livraison directement (bouton "Nouvelle livraison")
+**When** le formulaire de création s'affiche
+**Then** un champ "Fournisseur" (texte libre, optionnel) est disponible en plus de la description
+
+**Given** l'utilisateur transforme un besoin unique en livraison (bouton "Commander" existant)
+**When** la livraison est créée
+**Then** un champ "Fournisseur" est proposé dans le flow de transformation
+
+**Given** une livraison a un fournisseur renseigné
+**When** l'utilisateur consulte la DeliveryCard
+**Then** le nom du fournisseur est affiché sur la carte (sous la description ou à côté du badge statut)
+
+**Given** une livraison est au statut "Commandé" ou "Prévu"
+**When** l'utilisateur tape sur la DeliveryCard
+**Then** un menu d'actions s'affiche avec l'option "Modifier"
+
+**Given** l'utilisateur choisit "Modifier" sur une livraison
+**When** le formulaire d'édition s'affiche
+**Then** les champs éditables sont : description/intitulé, fournisseur, et date prévue — tous pré-remplis avec les valeurs actuelles
+
+**Given** l'utilisateur modifie un ou plusieurs champs et valide
+**When** la mutation s'exécute
+**Then** les modifications sont enregistrées en base, la DeliveryCard se met à jour et un toast "Livraison modifiée" s'affiche
+
+**Given** une livraison est au statut "Livré"
+**When** l'utilisateur consulte la DeliveryCard
+**Then** l'option "Modifier" n'est pas disponible (livraison verrouillée)
+
+**Given** la colonne `fournisseur` est ajoutée à la table `livraisons`
+**When** des livraisons existantes n'ont pas de fournisseur
+**Then** le champ est null et la DeliveryCard n'affiche rien à cet emplacement (pas de "Fournisseur : —")
+
+### Story 6.8: Commande groupée de besoins
+
+En tant que utilisateur de posePilot,
+Je veux sélectionner plusieurs besoins en attente et les regrouper en une seule commande,
+Afin que je passe une commande unique chez un fournisseur pour plusieurs matériaux à la fois.
+
+**Acceptance Criteria:**
+
+**Given** l'utilisateur consulte la liste des besoins en attente d'un chantier
+**When** il effectue un appui long sur un besoin (ou tape un bouton "Sélectionner")
+**Then** le mode sélection s'active : des cases à cocher apparaissent sur chaque besoin et le besoin initial est pré-coché
+
+**Given** le mode sélection est actif
+**When** l'utilisateur coche plusieurs besoins
+**Then** un compteur affiche le nombre de besoins sélectionnés et un bouton "Commander (N)" apparaît en bas de l'écran
+
+**Given** l'utilisateur tape sur "Commander (N)" avec N besoins sélectionnés
+**When** le formulaire de création de livraison groupée s'affiche
+**Then** les champs disponibles sont : intitulé de la commande (obligatoire), fournisseur (optionnel), et la liste des N besoins sélectionnés est affichée en résumé
+
+**Given** l'utilisateur saisit un intitulé et valide
+**When** la mutation s'exécute
+**Then** une seule livraison est créée au statut "Commandé" avec l'intitulé saisi, le fournisseur (si renseigné), et les N besoins sont rattachés à cette livraison (livraison_id mis à jour)
+
+**Given** les besoins sont rattachés à la livraison
+**When** l'utilisateur consulte la liste des besoins en attente
+**Then** les N besoins commandés ont disparu de la liste en attente
+
+**Given** une livraison a des besoins rattachés
+**When** l'utilisateur consulte la DeliveryCard
+**Then** un indicateur (icône ou compteur "3 besoins") signale que des besoins sont liés
+
+**Given** l'utilisateur tape sur l'indicateur de besoins rattachés
+**When** l'accordéon se déplie
+**Then** le détail de chaque besoin rattaché est visible (description, auteur, date de création)
+
+**Given** l'utilisateur est en mode sélection et veut annuler
+**When** il tape sur "Annuler" ou le bouton retour
+**Then** le mode sélection se désactive, les cases à cocher disparaissent
+
+**Given** un seul besoin est sélectionné en mode sélection
+**When** l'utilisateur tape sur "Commander (1)"
+**Then** le même formulaire de livraison groupée s'affiche (intitulé + fournisseur) — comportement unifié quel que soit le nombre
+
+### Story 6.9: Suppression de livraisons
+
+En tant que utilisateur de posePilot,
+Je veux supprimer une livraison au statut commandé ou prévu,
+Afin que je puisse annuler une commande qui n'est plus pertinente ou qui a été refusée par le fournisseur.
+
+**Acceptance Criteria:**
+
+**Given** une livraison est au statut "Commandé" ou "Prévu"
+**When** l'utilisateur tape sur la DeliveryCard et consulte le menu d'actions
+**Then** l'option "Supprimer" est disponible
+
+**Given** la livraison à supprimer a des besoins rattachés
+**When** l'utilisateur tape "Supprimer"
+**Then** un dialogue s'affiche avec deux choix : "Repasser en besoins" et "Supprimer définitivement"
+
+**Given** l'utilisateur choisit "Repasser en besoins"
+**When** la mutation s'exécute
+**Then** les besoins rattachés redeviennent en attente (livraison_id remis à null), la livraison est supprimée, et les fichiers associés (BC/BL) sont supprimés du storage Supabase
+
+**Given** les besoins sont repassés en attente
+**When** l'utilisateur consulte la liste des besoins en attente
+**Then** les besoins réapparaissent dans la liste avec leurs descriptions d'origine
+
+**Given** l'utilisateur choisit "Supprimer définitivement"
+**When** la mutation s'exécute
+**Then** la livraison, les besoins rattachés et les fichiers associés (BC/BL) sont tous supprimés définitivement
+
+**Given** la livraison à supprimer n'a aucun besoin rattaché (créée directement)
+**When** l'utilisateur tape "Supprimer"
+**Then** un dialogue de confirmation simple s'affiche ("Supprimer cette livraison ?") sans proposer l'option "Repasser en besoins"
+
+**Given** la suppression est confirmée (quel que soit le mode)
+**When** la mutation réussit
+**Then** la DeliveryCard disparaît de la liste, un toast "Livraison supprimée" s'affiche, et les compteurs (tabs de filtre, badge nav) sont mis à jour
+
+**Given** une livraison est au statut "Livré"
+**When** l'utilisateur consulte le menu d'actions
+**Then** l'option "Supprimer" n'est pas disponible
 
 ---
 

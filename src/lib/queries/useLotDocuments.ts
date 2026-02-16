@@ -14,5 +14,6 @@ export function useLotDocuments(lotId: string) {
       return data
     },
     enabled: !!lotId,
+    placeholderData: [],
   })
 }

@@ -24,5 +24,6 @@ export function useChantierLots(chantierId: string) {
     },
     enabled: !!chantierId,
     staleTime: 5 * 60 * 1000,
+    placeholderData: [],
   })
 }

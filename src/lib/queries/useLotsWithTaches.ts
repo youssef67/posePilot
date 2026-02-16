@@ -41,5 +41,6 @@ export function useLotsWithTaches(chantierId: string) {
     },
     enabled: !!chantierId,
     staleTime: 30 * 1000,
+    placeholderData: [],
   })
 }

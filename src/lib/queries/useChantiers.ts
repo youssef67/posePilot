@@ -16,5 +16,6 @@ export function useChantiers(status: ChantierStatus = 'active') {
       if (error) throw error
       return data
     },
+    placeholderData: [],
   })
 }

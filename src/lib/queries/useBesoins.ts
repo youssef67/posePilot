@@ -17,5 +17,6 @@ export function useBesoins(chantierId: string) {
       return data as unknown as Besoin[]
     },
     enabled: !!chantierId,
+    placeholderData: [],
   })
 }

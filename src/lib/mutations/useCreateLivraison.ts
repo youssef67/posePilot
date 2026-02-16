@@ -6,13 +6,14 @@ export function useCreateLivraison() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ chantierId, description }: { chantierId: string; description: string }) => {
+    mutationFn: async ({ chantierId, description, fournisseur }: { chantierId: string; description: string; fournisseur?: string }) => {
       const { data: { user } } = await supabase.auth.getUser()
       const { data, error } = await supabase
         .from('livraisons')
         .insert({
           chantier_id: chantierId,
           description,
+          fournisseur: fournisseur || null,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })
@@ -21,7 +22,7 @@ export function useCreateLivraison() {
       if (error) throw error
       return data as unknown as Livraison
     },
-    onMutate: async ({ chantierId, description }) => {
+    onMutate: async ({ chantierId, description, fournisseur }) => {
       await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
       const previous = queryClient.getQueryData(['livraisons', chantierId])
       queryClient.setQueryData(['livraisons', chantierId], (old: Livraison[] | undefined) => [
@@ -30,6 +31,7 @@ export function useCreateLivraison() {
           chantier_id: chantierId,
           description,
           status: 'commande' as const,
+          fournisseur: fournisseur || null,
           date_prevue: null,
           bc_file_url: null,
           bc_file_name: null,

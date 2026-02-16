@@ -21,5 +21,6 @@ export function useVariantes(plotId: string) {
       return data as unknown as VarianteWithPieceCount[]
     },
     enabled: !!plotId,
+    placeholderData: [],
   })
 }

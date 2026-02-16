@@ -22,5 +22,6 @@ export function usePieces(lotId: string) {
       return data as unknown as PieceWithTaches[]
     },
     enabled: !!lotId,
+    placeholderData: [],
   })
 }

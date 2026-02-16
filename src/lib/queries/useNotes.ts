@@ -23,5 +23,6 @@ export function useNotes({ lotId, pieceId }: { lotId?: string; pieceId?: string 
       return data as unknown as Note[]
     },
     enabled: !!(lotId || pieceId),
+    placeholderData: [],
   })
 }

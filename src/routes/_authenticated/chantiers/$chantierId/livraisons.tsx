@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { LivraisonSheets } from '@/components/LivraisonSheets'
 import { useRealtimeLivraisons } from '@/lib/subscriptions/useRealtimeLivraisons'
 import { useLivraisons } from '@/lib/queries/useLivraisons'
 import { useChantier } from '@/lib/queries/useChantier'
+import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllBesoinsForChantier'
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 
 export const Route = createFileRoute(
@@ -19,8 +21,10 @@ function LivraisonsPage() {
   const { chantierId } = Route.useParams()
   const { data: chantier } = useChantier(chantierId)
   const { data: livraisons, isLoading } = useLivraisons(chantierId)
+  const { data: linkedBesoins } = useAllBesoinsForChantier(chantierId)
   useRealtimeLivraisons(chantierId)
   const livraisonActions = useLivraisonActions(chantierId)
+  const besoinsMap = useMemo(() => buildBesoinsMap(linkedBesoins ?? []), [linkedBesoins])
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-56px-env(safe-area-inset-bottom))]">
@@ -51,6 +55,9 @@ function LivraisonsPage() {
           onOpenSheet={livraisonActions.handleOpenLivraisonSheet}
           onMarquerPrevu={livraisonActions.handleMarquerPrevu}
           onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
+          onEdit={livraisonActions.handleEditLivraison}
+          onDelete={livraisonActions.handleDeleteLivraison}
+          besoinsMap={besoinsMap}
         />
 
         <Fab onClick={livraisonActions.handleOpenLivraisonSheet} />

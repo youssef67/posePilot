@@ -1,4 +1,6 @@
 import { createFileRoute, redirect, Outlet } from '@tanstack/react-router'
+import { BottomNavigation } from '@/components/BottomNavigation'
+import { SidebarNavigation } from '@/components/SidebarNavigation'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -13,5 +15,13 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AuthenticatedLayout() {
-  return <Outlet />
+  return (
+    <>
+      <SidebarNavigation />
+      <div className="lg:pl-56">
+        <Outlet />
+      </div>
+      <BottomNavigation />
+    </>
+  )
 }
