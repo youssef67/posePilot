@@ -30,8 +30,10 @@ export function useUpdateChantierStatus() {
       const previousQueries = queryClient.getQueriesData({ queryKey: ['chantiers'] })
       queryClient.setQueriesData(
         { queryKey: ['chantiers'] },
-        (old: unknown[] | undefined) =>
-          old?.filter((c: unknown) => (c as { id: string }).id !== chantierId) ?? []
+        (old: unknown) => {
+          if (!Array.isArray(old)) return old
+          return old.filter((c: unknown) => (c as { id: string }).id !== chantierId)
+        }
       )
       return { previousQueries }
     },

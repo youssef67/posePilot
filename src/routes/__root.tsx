@@ -1,4 +1,6 @@
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
+import { ThemeProvider } from '@/components/ThemeProvider'
+import { Toaster } from '@/components/ui/sonner'
 import type { AuthState } from '@/lib/auth'
 
 export interface RouterContext {
@@ -10,5 +12,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 function RootLayout() {
-  return <Outlet />
+  return (
+    <ThemeProvider>
+      <Outlet />
+      <Toaster />
+    </ThemeProvider>
+  )
 }
