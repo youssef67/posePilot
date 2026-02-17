@@ -3,9 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useNoteResponses } from '@/lib/queries/useNoteResponses'
 import { useCreateNoteResponse } from '@/lib/mutations/useCreateNoteResponse'
+import { useUpdateNote } from '@/lib/mutations/useUpdateNote'
+import { CheckCircle } from 'lucide-react'
+import type { Note } from '@/types/database'
 
 interface NoteResponsesListProps {
-  noteId: string
+  note: Note
+  onResolved?: () => void
 }
 
 const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
@@ -38,10 +42,14 @@ function extractAuthorName(email: string | null): string {
   return email.split('@')[0]
 }
 
-export function NoteResponsesList({ noteId }: NoteResponsesListProps) {
+export function NoteResponsesList({ note, onResolved }: NoteResponsesListProps) {
+  const noteId = note.id
   const { data: responses, isLoading } = useNoteResponses(noteId)
   const createResponse = useCreateNoteResponse()
+  const updateNote = useUpdateNote()
   const [content, setContent] = useState('')
+
+  const isPending = createResponse.isPending || updateNote.isPending
 
   function handleSubmit() {
     if (!content.trim()) return
@@ -49,6 +57,22 @@ export function NoteResponsesList({ noteId }: NoteResponsesListProps) {
       { noteId, content: content.trim() },
       { onSuccess: () => setContent('') },
     )
+  }
+
+  async function handleSubmitAndResolve() {
+    if (!content.trim()) return
+    try {
+      await createResponse.mutateAsync({ noteId, content: content.trim() })
+      await updateNote.mutateAsync({
+        noteId,
+        content: note.content,
+        isBlocking: false,
+      })
+      setContent('')
+      onResolved?.()
+    } catch {
+      // errors handled by individual mutation toasts
+    }
   }
 
   return (
@@ -90,13 +114,29 @@ export function NoteResponsesList({ noteId }: NoteResponsesListProps) {
           rows={2}
           data-testid="response-input"
         />
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!content.trim() || createResponse.isPending}
-        >
-          Envoyer
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!content.trim() || isPending}
+            className="flex-1"
+          >
+            Envoyer
+          </Button>
+          {note.is_blocking && (
+            <Button
+              size="sm"
+              onClick={handleSubmitAndResolve}
+              disabled={!content.trim() || isPending}
+              className="flex-1"
+              data-testid="submit-and-resolve"
+            >
+              <CheckCircle className="mr-1.5 h-4 w-4" />
+              Envoyer et débloquer
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

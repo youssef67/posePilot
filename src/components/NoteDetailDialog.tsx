@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
@@ -28,6 +27,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUpdateNote } from '@/lib/mutations/useUpdateNote'
 import { useDeleteNote } from '@/lib/mutations/useDeleteNote'
+import { useNoteResponses } from '@/lib/queries/useNoteResponses'
 import type { Note } from '@/types/database'
 
 interface NoteDetailDialogProps {
@@ -51,6 +51,9 @@ export function NoteDetailDialog({ note, open, onOpenChange }: NoteDetailDialogP
 
   const updateNote = useUpdateNote()
   const deleteNote = useDeleteNote()
+  const { data: responses } = useNoteResponses(note?.id ?? null)
+  const hasResponses = !!responses && responses.length > 0
+  const showResponses = note?.is_blocking || hasResponses
 
   function handleStartEdit() {
     if (!note) return
@@ -197,23 +200,13 @@ export function NoteDetailDialog({ note, open, onOpenChange }: NoteDetailDialogP
               {formatDate(note.created_at)}
             </p>
 
-            {note.is_blocking ? (
-              <Tabs defaultValue="note">
-                <TabsList className="w-full">
-                  <TabsTrigger value="note" className="flex-1">Note</TabsTrigger>
-                  <TabsTrigger value="responses" className="flex-1" data-testid="tab-responses">
-                    Réponse apportée
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="note" className="flex flex-col gap-4 pt-3">
-                  {noteContentSection}
-                </TabsContent>
-                <TabsContent value="responses" className="pt-3">
-                  <NoteResponsesList noteId={note.id} />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              noteContentSection
+            {noteContentSection}
+
+            {showResponses && (
+              <NoteResponsesList
+                note={note}
+                onResolved={() => onOpenChange(false)}
+              />
             )}
           </div>
         </SheetContent>

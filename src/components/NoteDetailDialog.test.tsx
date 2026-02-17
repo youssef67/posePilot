@@ -18,8 +18,10 @@ vi.mock('@/lib/mutations/useDeleteNote', () => ({
   useDeleteNote: () => ({ mutate: mockDeleteMutate, isPending: false }),
 }))
 
+const mockResponsesReturn = { data: [] as unknown[], isLoading: false }
+
 vi.mock('@/lib/queries/useNoteResponses', () => ({
-  useNoteResponses: () => ({ data: [], isLoading: false }),
+  useNoteResponses: () => mockResponsesReturn,
 }))
 
 vi.mock('@/lib/mutations/useCreateNoteResponse', () => ({
@@ -61,6 +63,7 @@ const noteWithPhoto: Note = {
 describe('NoteDetailDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockResponsesReturn.data = []
   })
 
   it('renders note content, date and no badge when not blocking', () => {
@@ -205,37 +208,37 @@ describe('NoteDetailDialog', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('shows tabs with "Réponse apportée" for blocking notes', () => {
+  it('shows responses section directly for blocking notes', () => {
     render(
       <NoteDetailDialog note={blockingNote} open onOpenChange={vi.fn()} />,
       { wrapper: createWrapper() },
     )
 
-    expect(screen.getByText('Note')).toBeInTheDocument()
-    expect(screen.getByTestId('tab-responses')).toBeInTheDocument()
-    expect(screen.getByText('Réponse apportée')).toBeInTheDocument()
+    // Responses section visible immediately, no tab click needed
+    expect(screen.getByText('Aucune réponse')).toBeInTheDocument()
+    expect(screen.getByTestId('response-input')).toBeInTheDocument()
   })
 
-  it('does NOT show tabs for non-blocking notes', () => {
+  it('does NOT show responses section for non-blocking notes without responses', () => {
     render(
       <NoteDetailDialog note={baseNote} open onOpenChange={vi.fn()} />,
       { wrapper: createWrapper() },
     )
 
-    expect(screen.queryByTestId('tab-responses')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('response-input')).not.toBeInTheDocument()
   })
 
-  it('shows NoteResponsesList when Réponse apportée tab is clicked', async () => {
-    const user = userEvent.setup()
+  it('shows responses section for non-blocking notes that have responses', () => {
+    mockResponsesReturn.data = [
+      { id: 'r-1', note_id: 'note-1', content: 'Résolu', created_by: 'u-1', created_by_email: 'alice@test.fr', created_at: new Date().toISOString() },
+    ]
+
     render(
-      <NoteDetailDialog note={blockingNote} open onOpenChange={vi.fn()} />,
+      <NoteDetailDialog note={baseNote} open onOpenChange={vi.fn()} />,
       { wrapper: createWrapper() },
     )
 
-    await user.click(screen.getByTestId('tab-responses'))
-
-    // NoteResponsesList renders "Aucune réponse" when empty + input
-    expect(screen.getByText('Aucune réponse')).toBeInTheDocument()
+    expect(screen.getByText('Résolu')).toBeInTheDocument()
     expect(screen.getByTestId('response-input')).toBeInTheDocument()
   })
 })
