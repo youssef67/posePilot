@@ -18,7 +18,9 @@ export function usePieces(lotId: string) {
         .select('*, taches(*)')
         .eq('lot_id', lotId)
         .order('created_at', { ascending: true })
+        .order('nom', { ascending: true })
         .order('position', { ascending: true, referencedTable: 'taches' })
+        .order('created_at', { ascending: true, referencedTable: 'taches' })
       if (error) throw error
       return data as unknown as PieceWithTaches[]
     },

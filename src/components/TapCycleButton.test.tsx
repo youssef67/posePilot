@@ -46,7 +46,7 @@ describe('TapCycleButton', () => {
     const btn = screen.getByRole('button')
     const svg = btn.querySelector('svg')
     expect(svg).toBeInTheDocument()
-    expect(svg).toHaveClass('text-tap-not-started')
+    expect(svg).toHaveClass('text-gray-semantic')
   })
 
   it('renders Clock icon for in_progress with theme token class', () => {
@@ -54,7 +54,7 @@ describe('TapCycleButton', () => {
     const btn = screen.getByRole('button')
     const svg = btn.querySelector('svg')
     expect(svg).toBeInTheDocument()
-    expect(svg).toHaveClass('text-tap-in-progress')
+    expect(svg).toHaveClass('text-orange-semantic')
   })
 
   it('renders CheckCircle2 icon for done with theme token class', () => {
@@ -62,7 +62,7 @@ describe('TapCycleButton', () => {
     const btn = screen.getByRole('button')
     const svg = btn.querySelector('svg')
     expect(svg).toBeInTheDocument()
-    expect(svg).toHaveClass('text-tap-done')
+    expect(svg).toHaveClass('text-green-semantic')
   })
 
   // --- Animation (1.4) ---

@@ -51,13 +51,13 @@ describe('useAddLotTask', () => {
     const { result } = renderHook(() => useAddLotTask(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1' })
+      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1', position: 0 })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(supabase.from).toHaveBeenCalledWith('taches')
-    expect(mockInsert).toHaveBeenCalledWith({ piece_id: 'piece-1', nom: 'Nettoyage', status: 'not_started' })
+    expect(mockInsert).toHaveBeenCalledWith({ piece_id: 'piece-1', nom: 'Nettoyage', status: 'not_started', position: 0 })
   })
 
   it('optimistically adds task to correct piece in cache', async () => {
@@ -83,7 +83,7 @@ describe('useAddLotTask', () => {
     const { result } = renderHook(() => useAddLotTask(), { wrapper: createWrapper(queryClient) })
 
     await act(async () => {
-      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1' })
+      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1', position: 1 })
     })
 
     const cached = queryClient.getQueryData<typeof previousPieces>(['pieces', 'lot-1'])
@@ -111,7 +111,7 @@ describe('useAddLotTask', () => {
     const { result } = renderHook(() => useAddLotTask(), { wrapper: createWrapper(queryClient) })
 
     await act(async () => {
-      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1' })
+      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1', position: 1 })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
@@ -129,7 +129,7 @@ describe('useAddLotTask', () => {
     const { result } = renderHook(() => useAddLotTask(), { wrapper: createWrapper(queryClient) })
 
     await act(async () => {
-      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1' })
+      result.current.mutate({ pieceId: 'piece-1', nom: 'Nettoyage', lotId: 'lot-1', position: 1 })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

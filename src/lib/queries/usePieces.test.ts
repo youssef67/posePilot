@@ -48,25 +48,33 @@ describe('usePieces', () => {
   })
 
   it('fetches pieces with nested taches for a lot', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: mockPieces, error: null })
-    const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+    const mockOrder4 = vi.fn().mockResolvedValue({ data: mockPieces, error: null })
+    const mockOrder3 = vi.fn().mockReturnValue({ order: mockOrder4 })
+    const mockOrder2 = vi.fn().mockReturnValue({ order: mockOrder3 })
+    const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 })
+    const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
 
     const { result } = renderHook(() => usePieces('lot-1'), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockPieces))
 
     expect(supabase.from).toHaveBeenCalledWith('pieces')
     expect(mockSelect).toHaveBeenCalledWith('*, taches(*)')
     expect(mockEq).toHaveBeenCalledWith('lot_id', 'lot-1')
-    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: true })
-    expect(result.current.data).toEqual(mockPieces)
+    expect(mockOrder1).toHaveBeenCalledWith('created_at', { ascending: true })
+    expect(mockOrder2).toHaveBeenCalledWith('nom', { ascending: true })
+    expect(mockOrder3).toHaveBeenCalledWith('position', { ascending: true, referencedTable: 'taches' })
+    expect(mockOrder4).toHaveBeenCalledWith('created_at', { ascending: true, referencedTable: 'taches' })
   })
 
   it('uses query key ["pieces", lotId]', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: mockPieces, error: null })
-    const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+    const mockOrder4 = vi.fn().mockResolvedValue({ data: mockPieces, error: null })
+    const mockOrder3 = vi.fn().mockReturnValue({ order: mockOrder4 })
+    const mockOrder2 = vi.fn().mockReturnValue({ order: mockOrder3 })
+    const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 })
+    const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
 
@@ -85,8 +93,11 @@ describe('usePieces', () => {
   })
 
   it('returns error on supabase failure', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') })
-    const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+    const mockOrder4 = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') })
+    const mockOrder3 = vi.fn().mockReturnValue({ order: mockOrder4 })
+    const mockOrder2 = vi.fn().mockReturnValue({ order: mockOrder3 })
+    const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 })
+    const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
 

@@ -16,9 +16,9 @@ const STATUS_ICONS = {
 } as const
 
 const STATUS_COLOR_CLASSES: Record<TaskStatus, string> = {
-  not_started: 'text-tap-not-started',
-  in_progress: 'text-tap-in-progress',
-  done: 'text-tap-done',
+  not_started: 'text-gray-semantic',
+  in_progress: 'text-orange-semantic',
+  done: 'text-green-semantic',
 }
 
 const STATUS_LABELS: Record<TaskStatus, string> = {

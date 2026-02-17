@@ -248,7 +248,7 @@ function LotIndexPage() {
       return
     }
     addTask.mutate(
-      { pieceId: addTaskPieceId, nom: trimmed, lotId },
+      { pieceId: addTaskPieceId, nom: trimmed, lotId, position: targetPiece?.taches.length ?? 0 },
       {
         onSuccess: () => {
           toast(`Tâche « ${trimmed} » ajoutée`)

@@ -6,10 +6,10 @@ export function useAddLotTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ pieceId, nom }: { pieceId: string; nom: string; lotId: string }) => {
+    mutationFn: async ({ pieceId, nom, position }: { pieceId: string; nom: string; lotId: string; position: number }) => {
       const { data, error } = await supabase
         .from('taches')
-        .insert({ piece_id: pieceId, nom, status: 'not_started' })
+        .insert({ piece_id: pieceId, nom, status: 'not_started', position })
         .select()
         .single()
       if (error) throw error
