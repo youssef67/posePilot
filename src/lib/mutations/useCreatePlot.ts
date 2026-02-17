@@ -43,6 +43,11 @@ export function useCreatePlot() {
             nom,
             task_definitions: DEFAULT_TASK_DEFINITIONS,
             created_at: new Date().toISOString(),
+            progress_done: 0,
+            progress_total: 0,
+            has_blocking_note: false,
+            metrage_m2_total: 0,
+            metrage_ml_total: 0,
           },
         ],
       )

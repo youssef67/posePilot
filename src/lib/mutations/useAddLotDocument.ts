@@ -29,6 +29,8 @@ export function useAddLotDocument() {
             lot_id: lotId,
             nom,
             is_required: false,
+            file_url: null,
+            file_name: null,
             created_at: new Date().toISOString(),
           },
         ],

@@ -535,6 +535,7 @@ function ChantierIndexPage() {
                   <Link
                     to="/chantiers/$chantierId/inventaire"
                     params={{ chantierId }}
+                    search={{ plotId: undefined, etageId: undefined }}
                   >
                     <Boxes className="mr-1 size-3.5" />
                     Inventaire

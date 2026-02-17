@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import type { Database } from '@/types/database'
+
+type LotDocumentRow = Database['public']['Tables']['lot_documents']['Row']
 
 interface ToggleLotDocumentRequiredInput {
   docId: string
@@ -25,8 +28,8 @@ export function useToggleLotDocumentRequired() {
     onMutate: async ({ docId, isRequired, lotId }) => {
       await queryClient.cancelQueries({ queryKey: ['lot-documents', lotId] })
       const previous = queryClient.getQueryData(['lot-documents', lotId])
-      queryClient.setQueryData(['lot-documents', lotId], (old: unknown[] | undefined) =>
-        old?.map((d: { id: string }) =>
+      queryClient.setQueryData(['lot-documents', lotId], (old: LotDocumentRow[] | undefined) =>
+        old?.map((d) =>
           d.id === docId ? { ...d, is_required: isRequired } : d,
         ),
       )

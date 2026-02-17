@@ -84,6 +84,10 @@ function getActivityDescription(entry: ActivityLog): string {
       return `${name} a modifié une livraison`
     case 'livraison_deleted':
       return `${name} a supprimé une livraison`
+    case 'inventaire_added':
+      return `${name} a ajouté du matériel`
+    case 'inventaire_updated':
+      return `${name} a mis à jour le matériel`
   }
 }
 
