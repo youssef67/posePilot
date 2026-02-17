@@ -1135,7 +1135,7 @@ describe('PlotIndexPage — GridFilterTabs on étages', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /En cours/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Terminés/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toBeInTheDocument()
   })
 
   it('shows correct counts on filter tabs', async () => {
@@ -1147,16 +1147,16 @@ describe('PlotIndexPage — GridFilterTabs on étages', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toHaveTextContent('(2)')
     expect(screen.getByRole('tab', { name: /En cours/i })).toHaveTextContent('(1)')
     expect(screen.getByRole('tab', { name: /Terminés/i })).toHaveTextContent('(0)')
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(0)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(0)')
   })
 
-  it('"Avec alertes" shows empty state message', async () => {
+  it('"Alertes" shows empty state message', async () => {
     const user = userEvent.setup()
     setupMockSupabase(mockVariantes, mockLots)
     renderPlotRoute()
 
     await screen.findByRole('tablist')
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     expect(await screen.findByText('Aucun étage avec alertes')).toBeInTheDocument()
   })

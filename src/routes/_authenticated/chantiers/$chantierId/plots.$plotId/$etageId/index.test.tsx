@@ -451,7 +451,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /En cours/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Terminés/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toBeInTheDocument()
   })
 
   it('"Tous" is active by default and shows all lots (AC #6)', async () => {
@@ -475,7 +475,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toHaveTextContent('(4)')
     expect(screen.getByRole('tab', { name: /En cours/i })).toHaveTextContent('(2)')
     expect(screen.getByRole('tab', { name: /Terminés/i })).toHaveTextContent('(1)')
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(0)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(0)')
   })
 
   it('"En cours" filter shows only partially completed lots (AC #2)', async () => {
@@ -507,13 +507,13 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
     expect(screen.queryByText('Lot 104')).not.toBeInTheDocument()
   })
 
-  it('"Avec alertes" shows no results — no alert data yet (AC #4)', async () => {
+  it('"Alertes" shows no results — no alert data yet (AC #4)', async () => {
     const user = userEvent.setup()
     setupMockSupabase(filterMockLots)
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     expect(screen.queryByText('Lot 101')).not.toBeInTheDocument()
     expect(screen.queryByText('Lot 102')).not.toBeInTheDocument()
@@ -597,13 +597,13 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
     },
   ]
 
-  it('"Avec alertes" shows lots with has_missing_docs OR has_blocking_note', async () => {
+  it('"Alertes" shows lots with has_missing_docs OR has_blocking_note', async () => {
     const user = userEvent.setup()
     setupMockSupabase(alertLots)
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     expect(screen.getByText('Lot 201')).toBeInTheDocument()
     expect(screen.getByText('Lot 203')).toBeInTheDocument()
@@ -615,7 +615,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(2)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(2)')
   })
 
   it('shows FileWarning icon on lot card with has_missing_docs', async () => {

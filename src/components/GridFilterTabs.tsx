@@ -23,7 +23,7 @@ const FILTER_TABS: { value: FilterType; label: string }[] = [
   { value: 'tous', label: 'Tous' },
   { value: 'en-cours', label: 'En cours' },
   { value: 'termines', label: 'Terminés' },
-  { value: 'alertes', label: 'Avec alertes' },
+  { value: 'alertes', label: 'Alertes' },
 ]
 
 export function GridFilterTabs<T>({
@@ -83,7 +83,7 @@ export function GridFilterTabs<T>({
       >
         <TabsList
           variant="line"
-          className="w-full justify-start gap-0 border-b border-border px-4"
+          className="w-full justify-start gap-0 border-b border-border px-4 overflow-x-auto scrollbar-hide"
         >
           {FILTER_TABS.map(({ value, label }) => (
             <TabsTrigger

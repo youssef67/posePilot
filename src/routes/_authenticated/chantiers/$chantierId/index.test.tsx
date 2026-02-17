@@ -425,7 +425,7 @@ describe('ChantierIndexPage — GridFilterTabs on plots', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /En cours/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Terminés/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toBeInTheDocument()
   })
 
   it('shows correct counts on filter tabs', async () => {
@@ -436,7 +436,7 @@ describe('ChantierIndexPage — GridFilterTabs on plots', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toHaveTextContent('(3)')
     expect(screen.getByRole('tab', { name: /En cours/i })).toHaveTextContent('(1)')
     expect(screen.getByRole('tab', { name: /Terminés/i })).toHaveTextContent('(1)')
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(0)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(0)')
   })
 
   it('"En cours" filter shows only partially completed plots', async () => {
@@ -579,24 +579,25 @@ describe('ChantierIndexPage — complet livraisons button', () => {
     } as never)
   })
 
-  it('shows "Livraisons" button in complet chantier header', async () => {
+  it('shows "Livraisons" item in Actions dropdown', async () => {
+    const user = userEvent.setup()
     setupMockSupabase(mockChantierComplet, mockPlots)
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    const links = screen.getAllByRole('link', { name: /Livraisons/i })
-    expect(links.length).toBeGreaterThanOrEqual(1)
+    await user.click(screen.getByRole('button', { name: /Actions/i }))
+    expect(await screen.findByRole('menuitem', { name: /Livraisons/i })).toBeInTheDocument()
   })
 
   it('Livraisons link points to correct route', async () => {
+    const user = userEvent.setup()
     setupMockSupabase(mockChantierComplet, mockPlots)
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    const links = screen.getAllByRole('link', { name: /Livraisons/i })
-    const chantierLink = links.find(l => l.getAttribute('href')?.includes('/chantiers/chantier-1/livraisons'))
-    expect(chantierLink).toBeDefined()
-    expect(chantierLink).toHaveAttribute('href', '/chantiers/chantier-1/livraisons')
+    await user.click(screen.getByRole('button', { name: /Actions/i }))
+    const item = await screen.findByRole('menuitem', { name: /Livraisons/i })
+    expect(item.closest('a')).toHaveAttribute('href', '/chantiers/chantier-1/livraisons')
   })
 })
 
@@ -610,23 +611,25 @@ describe('ChantierIndexPage — complet inventaire button', () => {
     } as never)
   })
 
-  it('shows "Inventaire" button in complet chantier header', async () => {
+  it('shows "Inventaire" item in Actions dropdown', async () => {
+    const user = userEvent.setup()
     setupMockSupabase(mockChantierComplet, mockPlots)
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    expect(screen.getByRole('link', { name: /Inventaire/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Actions/i }))
+    expect(await screen.findByRole('menuitem', { name: /Inventaire/i })).toBeInTheDocument()
   })
 
   it('Inventaire link points to correct route', async () => {
+    const user = userEvent.setup()
     setupMockSupabase(mockChantierComplet, mockPlots)
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    expect(screen.getByRole('link', { name: /Inventaire/i })).toHaveAttribute(
-      'href',
-      '/chantiers/chantier-1/inventaire',
-    )
+    await user.click(screen.getByRole('button', { name: /Actions/i }))
+    const item = await screen.findByRole('menuitem', { name: /Inventaire/i })
+    expect(item.closest('a')).toHaveAttribute('href', '/chantiers/chantier-1/inventaire')
   })
 })
 
@@ -753,13 +756,14 @@ describe('ChantierIndexPage — léger besoin edit/delete', () => {
     expect(await screen.findByText('Supprimer ce besoin ?')).toBeInTheDocument()
   })
 
-  it('complet chantier does not show besoin DropdownMenu inline', async () => {
+  it('complet chantier does not show inline besoin list', async () => {
     setupMockSupabase(mockChantierComplet, mockPlots)
     renderRoute('chantier-1')
 
     await screen.findByText('Plot A')
-    // Complet chantier uses link to /besoins page, no inline BesoinsList with actions
-    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument()
+    // Complet chantier uses link to /besoins page, no inline BesoinsList with edit/delete actions
+    expect(screen.queryByText('Modifier')).not.toBeInTheDocument()
+    expect(screen.queryByText('Supprimer')).not.toBeInTheDocument()
   })
 })
 

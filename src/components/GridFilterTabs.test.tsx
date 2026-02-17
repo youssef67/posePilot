@@ -38,7 +38,7 @@ describe('GridFilterTabs', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /En cours/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Terminés/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toBeInTheDocument()
   })
 
   it('has "Tous" tab active by default', () => {
@@ -68,7 +68,7 @@ describe('GridFilterTabs', () => {
     expect(screen.getByRole('tab', { name: /Tous/i })).toHaveTextContent('(5)')
     expect(screen.getByRole('tab', { name: /En cours/i })).toHaveTextContent('(2)')
     expect(screen.getByRole('tab', { name: /Terminés/i })).toHaveTextContent('(1)')
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(0)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(0)')
   })
 
   it('calls onFilteredChange with all items on initial render', () => {
@@ -120,7 +120,7 @@ describe('GridFilterTabs', () => {
     expect(lastCall[0].id).toBe('3')
   })
 
-  it('filters "Avec alertes" without getAlerts — returns empty array', async () => {
+  it('filters "Alertes" without getAlerts — returns empty array', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(
@@ -131,13 +131,13 @@ describe('GridFilterTabs', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
     expect(lastCall).toHaveLength(0)
   })
 
-  it('filters "Avec alertes" with getAlerts — returns matching items', async () => {
+  it('filters "Alertes" with getAlerts — returns matching items', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     const getAlerts = (item: MockItem) => item.id === '2' || item.id === '4'
@@ -151,7 +151,7 @@ describe('GridFilterTabs', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
     expect(lastCall).toHaveLength(2)
@@ -205,7 +205,7 @@ describe('GridFilterTabs', () => {
       />,
     )
 
-    expect(screen.getByRole('tab', { name: /Avec alertes/i })).toHaveTextContent('(1)')
+    expect(screen.getByRole('tab', { name: /Alertes/i })).toHaveTextContent('(1)')
   })
 
   it('renders contextual empty message with emptyMessage prop', async () => {
@@ -220,7 +220,7 @@ describe('GridFilterTabs', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     expect(screen.getByText('Aucun lot avec alertes')).toBeInTheDocument()
   })
@@ -256,7 +256,7 @@ describe('GridFilterTabs', () => {
       />,
     )
 
-    await user.click(screen.getByRole('tab', { name: /Avec alertes/i }))
+    await user.click(screen.getByRole('tab', { name: /Alertes/i }))
 
     expect(screen.queryByText('Aucun lot avec alertes')).not.toBeInTheDocument()
   })

@@ -513,34 +513,44 @@ function ChantierIndexPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">Complet</Badge>
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    to="/chantiers/$chantierId/besoins"
-                    params={{ chantierId }}
-                  >
-                    <Package className="mr-1 size-3.5" />
-                    Besoins
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    to="/chantiers/$chantierId/livraisons"
-                    params={{ chantierId }}
-                  >
-                    <Truck className="mr-1 size-3.5" />
-                    Livraisons
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    to="/chantiers/$chantierId/inventaire"
-                    params={{ chantierId }}
-                    search={{ plotId: undefined, etageId: undefined }}
-                  >
-                    <Boxes className="mr-1 size-3.5" />
-                    Inventaire
-                  </Link>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <EllipsisVertical className="size-4" />
+                      Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/chantiers/$chantierId/besoins"
+                        params={{ chantierId }}
+                      >
+                        <Package className="mr-2 size-4" />
+                        Besoins
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/chantiers/$chantierId/livraisons"
+                        params={{ chantierId }}
+                      >
+                        <Truck className="mr-2 size-4" />
+                        Livraisons
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/chantiers/$chantierId/inventaire"
+                        params={{ chantierId }}
+                        search={{ plotId: undefined, etageId: undefined }}
+                      >
+                        <Boxes className="mr-2 size-4" />
+                        Inventaire
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <span className="text-sm font-medium text-muted-foreground">
                 {progressPercent}
