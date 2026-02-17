@@ -26,6 +26,7 @@ import { useAddLotTask } from '@/lib/mutations/useAddLotTask'
 import { useAddLotDocument } from '@/lib/mutations/useAddLotDocument'
 import { useUpdateLot } from '@/lib/mutations/useUpdateLot'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
+import { useDeleteLotPiece } from '@/lib/mutations/useDeleteLotPiece'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +79,9 @@ function LotIndexPage() {
   const { data: allEtages } = useEtages(plotId)
 
   const deleteLots = useDeleteLots()
+  const deletePiece = useDeleteLotPiece()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [pieceToDelete, setPieceToDelete] = useState<{ id: string; nom: string } | null>(null)
 
   const [editMode, setEditMode] = useState(false)
   const [editCode, setEditCode] = useState('')
@@ -525,8 +528,9 @@ function LotIndexPage() {
             {filteredPieces.length > 0 && (
               <div className="flex flex-col gap-2">
                 {filteredPieces.map((piece) => (
+                  <div key={piece.id} className="flex items-center gap-1">
                     <StatusCard
-                      key={piece.id}
+                      className="flex-1 min-w-0"
                       title={piece.nom}
                       subtitle={`${piece.progress_done}/${piece.progress_total} tâche${piece.progress_total !== 1 ? 's' : ''}`}
                       statusColor={STATUS_COLORS[computeStatus(piece.progress_done, piece.progress_total)]}
@@ -544,6 +548,16 @@ function LotIndexPage() {
                         })
                       }
                     />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      aria-label={`Supprimer la pièce ${piece.nom}`}
+                      onClick={() => setPieceToDelete({ id: piece.id, nom: piece.nom })}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}
@@ -583,6 +597,18 @@ function LotIndexPage() {
                   disabled={addPiece.isPending}
                 >
                   OK
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Annuler l'ajout de pièce"
+                  onClick={() => {
+                    setAddPieceOpen(false)
+                    setAddPieceValue('')
+                    setAddPieceError('')
+                  }}
+                >
+                  <X className="size-4" />
                 </Button>
               </div>
               {addPieceError && (
@@ -646,6 +672,19 @@ function LotIndexPage() {
                   disabled={addTask.isPending}
                 >
                   OK
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Annuler l'ajout de tâche"
+                  onClick={() => {
+                    setAddTaskOpen(false)
+                    setAddTaskValue('')
+                    setAddTaskPieceId('')
+                    setAddTaskError('')
+                  }}
+                >
+                  <X className="size-4" />
                 </Button>
               </div>
               {addTaskError && (
@@ -731,6 +770,18 @@ function LotIndexPage() {
                 >
                   OK
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Annuler l'ajout de document"
+                  onClick={() => {
+                    setAddDocOpen(false)
+                    setAddDocValue('')
+                    setAddDocError('')
+                  }}
+                >
+                  <X className="size-4" />
+                </Button>
               </div>
               {addDocError && (
                 <p className="text-xs text-destructive mt-1">{addDocError}</p>
@@ -781,6 +832,41 @@ function LotIndexPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleDeleteLot}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pieceToDelete} onOpenChange={(open) => { if (!open) setPieceToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la pièce {pieceToDelete?.nom} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toutes les tâches de cette pièce seront supprimées définitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!pieceToDelete) return
+                deletePiece.mutate(
+                  { pieceId: pieceToDelete.id, lotId },
+                  {
+                    onSuccess: () => {
+                      toast(`Pièce « ${pieceToDelete.nom} » supprimée`)
+                      setPieceToDelete(null)
+                    },
+                    onError: () => {
+                      toast.error('Erreur lors de la suppression de la pièce')
+                      setPieceToDelete(null)
+                    },
+                  },
+                )
+              }}
+            >
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
