@@ -358,6 +358,33 @@ export type Database = {
         }
         Relationships: []
       }
+      note_responses: {
+        Row: {
+          id: string
+          note_id: string
+          content: string
+          created_by: string
+          created_by_email: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          note_id: string
+          content: string
+          created_by: string
+          created_by_email?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          note_id?: string
+          content?: string
+          created_by?: string
+          created_by_email?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           id: string
@@ -599,6 +626,16 @@ export interface Note {
   created_by: string
   created_by_email: string | null
   photo_url: string | null
+  created_at: string
+}
+
+// Type miroir de la table note_responses (027_note_responses.sql)
+export interface NoteResponse {
+  id: string
+  note_id: string
+  content: string
+  created_by: string
+  created_by_email: string | null
   created_at: string
 }
 

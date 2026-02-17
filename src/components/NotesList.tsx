@@ -4,10 +4,12 @@ import { toast } from 'sonner'
 import { useNotes } from '@/lib/queries/useNotes'
 import { Badge } from '@/components/ui/badge'
 import { PhotoPreview } from '@/components/PhotoPreview'
+import { NoteDetailDialog } from '@/components/NoteDetailDialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useShareContext } from '@/lib/utils/useShareContext'
 import { sharePhoto } from '@/lib/utils/sharePhoto'
+import type { Note } from '@/types/database'
 
 interface NotesListProps {
   lotId?: string
@@ -48,6 +50,7 @@ export function NotesList({ lotId, pieceId }: NotesListProps) {
   const { data: notes, isLoading } = useNotes({ lotId, pieceId })
   const contextString = useShareContext()
   const [isSharing, setIsSharing] = useState(false)
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
 
   const handleShare = async (note: { photo_url: string | null; content: string }) => {
     if (!note.photo_url || isSharing) return
@@ -79,47 +82,59 @@ export function NotesList({ lotId, pieceId }: NotesListProps) {
   }
 
   return (
-    <div className="space-y-2">
-      {notes.map((note) => (
-        <div
-          key={note.id}
-          className={cn(
-            'rounded-md border p-3',
-            note.is_blocking && 'border-l-4 border-l-destructive',
-          )}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm">{note.content}</p>
-            {note.is_blocking && (
-              <Badge variant="destructive" className="shrink-0">
-                Bloquant
-              </Badge>
+    <>
+      <div className="space-y-2">
+        {notes.map((note) => (
+          <div
+            key={note.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedNote(note)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedNote(note) }}
+            className={cn(
+              'cursor-pointer rounded-md border p-3 transition-colors active:bg-muted/50',
+              note.is_blocking && 'border-l-4 border-l-destructive',
             )}
-          </div>
-          {note.photo_url && (
-            <div className="mt-2">
-              <PhotoPreview url={note.photo_url} onShare={() => handleShare(note)} />
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="line-clamp-2 text-sm">{note.content}</p>
+              {note.is_blocking && (
+                <Badge variant="destructive" className="shrink-0">
+                  Bloquant
+                </Badge>
+              )}
             </div>
-          )}
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{extractAuthorName(note.created_by_email)}</span>
-            <span>·</span>
-            <span>{formatRelativeTime(note.created_at)}</span>
             {note.photo_url && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto h-8 w-8 text-muted-foreground"
-                onClick={() => handleShare(note)}
-                disabled={isSharing}
-                aria-label="Partager la photo"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
+              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                <PhotoPreview url={note.photo_url} onShare={() => handleShare(note)} />
+              </div>
             )}
+            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{extractAuthorName(note.created_by_email)}</span>
+              <span>·</span>
+              <span>{formatRelativeTime(note.created_at)}</span>
+              {note.photo_url && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto h-8 w-8 text-muted-foreground"
+                  onClick={(e) => { e.stopPropagation(); handleShare(note) }}
+                  disabled={isSharing}
+                  aria-label="Partager la photo"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      <NoteDetailDialog
+        note={selectedNote}
+        open={selectedNote !== null}
+        onOpenChange={(open) => { if (!open) setSelectedNote(null) }}
+      />
+    </>
   )
 }

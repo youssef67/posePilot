@@ -20,10 +20,19 @@ vi.mock('@/lib/utils/sharePhoto', () => ({
 }))
 
 vi.mock('sonner', () => {
-  const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
+  const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
+  toast.success = vi.fn()
   return { toast }
 })
+
+vi.mock('@/lib/mutations/useUpdateNote', () => ({
+  useUpdateNote: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
+vi.mock('@/lib/mutations/useDeleteNote', () => ({
+  useDeleteNote: () => ({ mutate: vi.fn(), isPending: false }),
+}))
 
 import { supabase } from '@/lib/supabase'
 import { sharePhoto } from '@/lib/utils/sharePhoto'
@@ -74,8 +83,9 @@ describe('NotesList', () => {
     vi.clearAllMocks()
   })
 
-  it('shows skeleton while loading', () => {
-    // Never resolving promise to keep loading state
+  it('shows empty state when no data (placeholderData=[] means no skeleton)', () => {
+    // useNotes uses placeholderData: [] so isLoading is never true.
+    // The empty placeholder is shown immediately.
     const mockOrder = vi.fn().mockReturnValue(new Promise(() => {}))
     const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
@@ -83,7 +93,7 @@ describe('NotesList', () => {
 
     render(<NotesList lotId="lot-1" />, { wrapper: createWrapper() })
 
-    expect(screen.getByTestId('notes-skeleton')).toBeInTheDocument()
+    expect(screen.getByText('Aucune note')).toBeInTheDocument()
   })
 
   it('shows "Aucune note" when no notes exist', async () => {
@@ -267,5 +277,31 @@ describe('NotesList', () => {
     await user.click(screen.getByRole('button', { name: 'Partager la photo' }))
 
     expect(toast.error).toHaveBeenCalledWith('Erreur lors du partage de la photo')
+  })
+
+  it('opens NoteDetailDialog when a note is clicked', async () => {
+    const user = userEvent.setup()
+    mockQuery(mockNotes)
+
+    render(<NotesList lotId="lot-1" />, { wrapper: createWrapper() })
+
+    await screen.findByText('Fissure au plafond')
+    const noteCard = screen.getByText('Fissure au plafond').closest('[role="button"]')!
+    await user.click(noteCard)
+
+    // NoteDetailDialog should show the detail sheet with date and actions
+    expect(screen.getByText('Détail de la note')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /modifier/i })).toBeInTheDocument()
+  })
+
+  it('notes have role="button" for accessibility', async () => {
+    mockQuery(mockNotes)
+
+    render(<NotesList lotId="lot-1" />, { wrapper: createWrapper() })
+
+    await screen.findByText('Fissure au plafond')
+    const buttons = screen.getAllByRole('button')
+    const noteButtons = buttons.filter((b) => b.getAttribute('tabindex') === '0')
+    expect(noteButtons.length).toBe(2) // 2 notes
   })
 })

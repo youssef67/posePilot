@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Share2, Trash2 } from 'lucide-react'
+import { ImageOff, Share2, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -18,22 +18,32 @@ interface PhotoPreviewProps {
 export function PhotoPreview({ url, alt = 'Photo', onRemove, showRemove, onShare }: PhotoPreviewProps) {
   const [fullscreen, setFullscreen] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
   return (
     <>
       <div className="relative inline-block">
-        {!loaded && (
+        {!loaded && !error && (
           <div className="h-20 w-20 animate-pulse rounded-lg bg-muted" data-testid="photo-skeleton" />
+        )}
+        {error && (
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+            data-testid="photo-error"
+          >
+            <ImageOff className="h-6 w-6" />
+          </div>
         )}
         <img
           src={url}
           alt={alt}
           loading="lazy"
-          onClick={() => setFullscreen(true)}
+          onClick={() => !error && setFullscreen(true)}
           onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
           className={cn(
             'h-20 w-20 cursor-pointer rounded-lg object-cover',
-            !loaded && 'hidden',
+            (!loaded || error) && 'hidden',
           )}
           data-testid="photo-thumbnail"
         />

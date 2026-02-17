@@ -74,6 +74,21 @@ describe('PhotoPreview', () => {
     expect(img.alt).toBe('Photo')
   })
 
+  it('shows error placeholder when image fails to load', () => {
+    render(<PhotoPreview url="https://broken.example.com/nope.jpg" />)
+    const img = screen.getByTestId('photo-thumbnail')
+    fireEvent.error(img)
+    expect(screen.getByTestId('photo-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('photo-skeleton')).not.toBeInTheDocument()
+  })
+
+  it('hides thumbnail when image fails to load', () => {
+    render(<PhotoPreview url="https://broken.example.com/nope.jpg" />)
+    const img = screen.getByTestId('photo-thumbnail')
+    fireEvent.error(img)
+    expect(img).toHaveClass('hidden')
+  })
+
   it('shows share button in fullscreen when onShare is provided', async () => {
     const user = userEvent.setup()
     const onShare = vi.fn()
