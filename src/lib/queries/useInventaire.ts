@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase'
 import type { Inventaire } from '@/types/database'
 
 export interface InventaireWithLocation extends Inventaire {
-  plots: { nom: string }
-  etages: { nom: string }
+  plots: { nom: string } | null
+  etages: { nom: string } | null
 }
 
 export function useInventaire(chantierId: string) {

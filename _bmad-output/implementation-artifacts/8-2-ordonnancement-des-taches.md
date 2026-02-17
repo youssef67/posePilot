@@ -1,6 +1,6 @@
 # Story 8.2: Ordonnancement des tâches avec drag-and-drop
 
-Status: dev-complete
+Status: done
 
 ## Story
 

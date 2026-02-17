@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Fab } from '@/components/Fab'
 import { InventaireList } from '@/components/InventaireList'
 import { useRealtimeInventaire } from '@/lib/subscriptions/useRealtimeInventaire'
@@ -56,6 +57,7 @@ function InventairePage() {
   const [quantite, setQuantite] = useState('1')
   const [selectedPlotId, setSelectedPlotId] = useState(defaultPlotId ?? '')
   const [selectedEtageId, setSelectedEtageId] = useState(defaultEtageId ?? '')
+  const [isStockageGeneral, setIsStockageGeneral] = useState(false)
   const [errors, setErrors] = useState<{ designation?: string; quantite?: string; plot?: string; etage?: string }>({})
 
   const { data: plots } = usePlots(chantierId)
@@ -66,6 +68,7 @@ function InventairePage() {
     setQuantite('1')
     setSelectedPlotId(defaultPlotId ?? '')
     setSelectedEtageId(defaultEtageId ?? '')
+    setIsStockageGeneral(false)
     setErrors({})
     setShowSheet(true)
   }
@@ -86,11 +89,13 @@ function InventairePage() {
     if (!qty || qty <= 0) {
       newErrors.quantite = 'La quantité doit être supérieure à 0'
     }
-    if (!selectedPlotId) {
-      newErrors.plot = 'Le plot est requis'
-    }
-    if (!selectedEtageId) {
-      newErrors.etage = "L'étage est requis"
+    if (!isStockageGeneral) {
+      if (!selectedPlotId) {
+        newErrors.plot = 'Le plot est requis'
+      }
+      if (!selectedEtageId) {
+        newErrors.etage = "L'étage est requis"
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -101,8 +106,8 @@ function InventairePage() {
     createInventaire.mutate(
       {
         chantierId,
-        plotId: selectedPlotId,
-        etageId: selectedEtageId,
+        plotId: isStockageGeneral ? null : selectedPlotId,
+        etageId: isStockageGeneral ? null : selectedEtageId,
         designation: trimmedDesignation,
         quantite: qty,
       },
@@ -230,55 +235,69 @@ function InventairePage() {
                 <p className="text-sm text-destructive mt-1">{errors.quantite}</p>
               )}
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Plot</label>
-              <Select
-                value={selectedPlotId}
-                onValueChange={(v) => {
-                  handlePlotChange(v)
-                  if (errors.plot) setErrors((prev) => ({ ...prev, plot: undefined }))
-                }}
-              >
-                <SelectTrigger aria-label="Sélectionner un plot" aria-invalid={!!errors.plot}>
-                  <SelectValue placeholder="Sélectionner un plot" />
-                </SelectTrigger>
-                <SelectContent>
-                  {plots?.map((plot) => (
-                    <SelectItem key={plot.id} value={plot.id}>
-                      {plot.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.plot && (
-                <p className="text-sm text-destructive mt-1">{errors.plot}</p>
-              )}
+            <div className="flex items-center justify-between">
+              <label htmlFor="stockage-general" className="text-sm font-medium text-foreground">
+                Stockage général
+              </label>
+              <Switch
+                id="stockage-general"
+                checked={isStockageGeneral}
+                onCheckedChange={setIsStockageGeneral}
+              />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Étage</label>
-              <Select
-                value={selectedEtageId}
-                onValueChange={(v) => {
-                  setSelectedEtageId(v)
-                  if (errors.etage) setErrors((prev) => ({ ...prev, etage: undefined }))
-                }}
-                disabled={!selectedPlotId}
-              >
-                <SelectTrigger aria-label="Sélectionner un étage" aria-invalid={!!errors.etage}>
-                  <SelectValue placeholder="Sélectionner un étage" />
-                </SelectTrigger>
-                <SelectContent>
-                  {etages?.map((etage) => (
-                    <SelectItem key={etage.id} value={etage.id}>
-                      {etage.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.etage && (
-                <p className="text-sm text-destructive mt-1">{errors.etage}</p>
-              )}
-            </div>
+            {!isStockageGeneral && (
+              <>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Plot</label>
+                  <Select
+                    value={selectedPlotId}
+                    onValueChange={(v) => {
+                      handlePlotChange(v)
+                      if (errors.plot) setErrors((prev) => ({ ...prev, plot: undefined }))
+                    }}
+                  >
+                    <SelectTrigger aria-label="Sélectionner un plot" aria-invalid={!!errors.plot}>
+                      <SelectValue placeholder="Sélectionner un plot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plots?.map((plot) => (
+                        <SelectItem key={plot.id} value={plot.id}>
+                          {plot.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.plot && (
+                    <p className="text-sm text-destructive mt-1">{errors.plot}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Étage</label>
+                  <Select
+                    value={selectedEtageId}
+                    onValueChange={(v) => {
+                      setSelectedEtageId(v)
+                      if (errors.etage) setErrors((prev) => ({ ...prev, etage: undefined }))
+                    }}
+                    disabled={!selectedPlotId}
+                  >
+                    <SelectTrigger aria-label="Sélectionner un étage" aria-invalid={!!errors.etage}>
+                      <SelectValue placeholder="Sélectionner un étage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {etages?.map((etage) => (
+                        <SelectItem key={etage.id} value={etage.id}>
+                          {etage.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.etage && (
+                    <p className="text-sm text-destructive mt-1">{errors.etage}</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           <SheetFooter>
             <Button

@@ -273,12 +273,12 @@ export interface Note {
   created_at: string
 }
 
-// Type miroir de la table inventaire (018_inventaire.sql)
+// Type miroir de la table inventaire (018_inventaire.sql + 026_stockage_general)
 export interface Inventaire {
   id: string
   chantier_id: string
-  plot_id: string
-  etage_id: string
+  plot_id: string | null
+  etage_id: string | null
   designation: string
   quantite: number
   created_at: string

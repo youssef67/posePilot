@@ -14,8 +14,8 @@ export function useCreateInventaire() {
       quantite,
     }: {
       chantierId: string
-      plotId: string
-      etageId: string
+      plotId: string | null
+      etageId: string | null
       designation: string
       quantite: number
     }) => {
@@ -51,8 +51,8 @@ export function useCreateInventaire() {
             quantite,
             created_at: new Date().toISOString(),
             created_by: null,
-            plots: { nom: '' },
-            etages: { nom: '' },
+            plots: plotId ? { nom: '' } : null,
+            etages: etageId ? { nom: '' } : null,
           },
         ],
       )

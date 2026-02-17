@@ -19,6 +19,11 @@ interface AggregatedGroup {
   items: InventaireWithLocation[]
 }
 
+function getLocationLabel(item: InventaireWithLocation): string {
+  if (!item.plots) return 'Stockage général'
+  return `${item.plots.nom} — ${item.etages!.nom}`
+}
+
 function aggregateByDesignation(items: InventaireWithLocation[]): AggregatedGroup[] {
   const groups = new Map<string, InventaireWithLocation[]>()
   for (const item of items) {
@@ -30,9 +35,12 @@ function aggregateByDesignation(items: InventaireWithLocation[]): AggregatedGrou
   return Array.from(groups.entries()).map(([, groupItems]) => ({
     designation: groupItems[0].designation,
     totalQuantite: groupItems.reduce((sum, i) => sum + i.quantite, 0),
-    items: groupItems.sort((a, b) =>
-      `${a.plots.nom} ${a.etages.nom}`.localeCompare(`${b.plots.nom} ${b.etages.nom}`),
-    ),
+    items: groupItems.sort((a, b) => {
+      // Stockage général en premier
+      if (!a.plots && b.plots) return -1
+      if (a.plots && !b.plots) return 1
+      return getLocationLabel(a).localeCompare(getLocationLabel(b))
+    }),
   }))
 }
 
@@ -103,7 +111,7 @@ export function InventaireList({
         <AlertDialogHeader>
           <AlertDialogTitle>Supprimer ce matériel ?</AlertDialogTitle>
           <AlertDialogDescription>
-            {deleteTarget?.designation} ({deleteTarget?.plots.nom} — {deleteTarget?.etages.nom}) sera supprimé de l&apos;inventaire.
+            {deleteTarget?.designation} ({deleteTarget ? getLocationLabel(deleteTarget) : ''}) sera supprimé de l&apos;inventaire.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -159,7 +167,7 @@ export function InventaireList({
                 {group.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between pl-2">
                     <span className="text-xs text-muted-foreground">
-                      {item.plots.nom} — {item.etages.nom} : {item.quantite}
+                      {getLocationLabel(item)} : {item.quantite}
                     </span>
                     {renderItemControls(item)}
                   </div>
@@ -182,7 +190,7 @@ export function InventaireList({
             <p className="text-sm font-medium text-foreground">{item.designation}</p>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {item.plots.nom} — {item.etages.nom}
+                {getLocationLabel(item)}
               </span>
               {renderItemControls(item)}
             </div>
