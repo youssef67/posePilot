@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { FileText, FileCheck2, MoreVertical, ExternalLink, RefreshCw, Download } from 'lucide-react'
+import { FileText, FileCheck2, MoreVertical, ExternalLink, RefreshCw, Download, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import { useUploadLotDocument } from '@/lib/mutations/useUploadLotDocument'
 import { useReplaceLotDocument } from '@/lib/mutations/useReplaceLotDocument'
 import { useToggleLotDocumentRequired } from '@/lib/mutations/useToggleLotDocumentRequired'
 import { getDocumentSignedUrl, downloadDocument } from '@/lib/utils/documentStorage'
+import { shareDocument } from '@/lib/utils/shareDocument'
 import type { LotDocument } from '@/types/database'
 
 interface DocumentSlotProps {
@@ -83,6 +84,17 @@ export function DocumentSlot({ document: doc, lotId }: DocumentSlotProps) {
       await downloadDocument(doc.file_url, doc.file_name)
     } catch {
       toast.error('Impossible de télécharger le document')
+    }
+  }
+
+  async function handleShare() {
+    if (!doc.file_url || !doc.file_name) return
+    try {
+      const result = await shareDocument(doc.file_url, doc.file_name)
+      if (result === 'shared') toast('Document partagé')
+      if (result === 'downloaded') toast('Document téléchargé')
+    } catch {
+      toast.error('Impossible de partager le document')
     }
   }
 
@@ -163,6 +175,10 @@ export function DocumentSlot({ document: doc, lotId }: DocumentSlotProps) {
                 <DropdownMenuItem onClick={handleDownload}>
                   <Download className="size-4" />
                   Télécharger
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share2 className="size-4" />
+                  Partager
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

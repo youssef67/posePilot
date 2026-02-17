@@ -43,6 +43,7 @@ export function useToggleLotDocumentRequired() {
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['lot-documents', variables.lotId] })
+      queryClient.invalidateQueries({ queryKey: ['lots'] })
     },
   })
 }
