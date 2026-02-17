@@ -385,7 +385,7 @@ function PiecePage() {
 
       <div className="border-t border-border" />
 
-      <div className="p-4">
+      <div className="p-4 pb-28">
         <h2 className="text-base font-semibold text-foreground mb-3">Notes</h2>
         <NotesList pieceId={pieceId} />
       </div>
