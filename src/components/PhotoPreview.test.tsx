@@ -25,10 +25,11 @@ describe('PhotoPreview', () => {
     expect(screen.queryByTestId('photo-skeleton')).not.toBeInTheDocument()
   })
 
-  it('has lazy loading attribute', () => {
+  it('hides image visually before load (invisible, not hidden)', () => {
     render(<PhotoPreview url={url} />)
     const img = screen.getByTestId('photo-thumbnail')
-    expect(img.getAttribute('loading')).toBe('lazy')
+    expect(img).toHaveClass('invisible')
+    expect(img).not.toHaveClass('hidden')
   })
 
   it('opens fullscreen dialog when thumbnail is clicked', async () => {
@@ -86,7 +87,7 @@ describe('PhotoPreview', () => {
     render(<PhotoPreview url="https://broken.example.com/nope.jpg" />)
     const img = screen.getByTestId('photo-thumbnail')
     fireEvent.error(img)
-    expect(img).toHaveClass('hidden')
+    expect(img).toHaveClass('invisible')
   })
 
   it('shows share button in fullscreen when onShare is provided', async () => {

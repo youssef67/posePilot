@@ -37,13 +37,12 @@ export function PhotoPreview({ url, alt = 'Photo', onRemove, showRemove, onShare
         <img
           src={url}
           alt={alt}
-          loading="lazy"
-          onClick={() => !error && setFullscreen(true)}
+          onClick={(e) => { e.stopPropagation(); if (!error) setFullscreen(true) }}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
           className={cn(
             'h-20 w-20 cursor-pointer rounded-lg object-cover',
-            (!loaded || error) && 'hidden',
+            (!loaded || error) && 'absolute invisible',
           )}
           data-testid="photo-thumbnail"
         />

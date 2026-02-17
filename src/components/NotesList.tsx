@@ -105,7 +105,7 @@ export function NotesList({ lotId, pieceId }: NotesListProps) {
               )}
             </div>
             {note.photo_url && (
-              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+              <div className="mt-2">
                 <PhotoPreview url={note.photo_url} onShare={() => handleShare(note)} />
               </div>
             )}
