@@ -28,6 +28,7 @@ export function useDeleteBesoin() {
     },
     onSettled: (_data, _error, { chantierId }) => {
       queryClient.invalidateQueries({ queryKey: ['besoins', chantierId] })
+      queryClient.invalidateQueries({ queryKey: ['all-pending-besoins'] })
       queryClient.invalidateQueries({ queryKey: ['all-pending-besoins-count'] })
     },
   })

@@ -85,4 +85,30 @@ describe('useDeleteBesoin', () => {
     expect(cached).toHaveLength(1)
     expect(cached?.[0].id).toBe('b2')
   })
+
+  it('invalidates all-pending-besoins and count caches on settled', async () => {
+    const mockIs = vi.fn().mockResolvedValue({ error: null })
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
+    vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as never)
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+
+    const { result } = renderHook(() => useDeleteBesoin(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({ id: 'b1', chantierId: 'ch1' })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as { queryKey: string[] }).queryKey)
+    expect(invalidatedKeys).toContainEqual(['besoins', 'ch1'])
+    expect(invalidatedKeys).toContainEqual(['all-pending-besoins'])
+    expect(invalidatedKeys).toContainEqual(['all-pending-besoins-count'])
+  })
 })

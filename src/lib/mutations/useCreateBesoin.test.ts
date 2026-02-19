@@ -102,4 +102,33 @@ describe('useCreateBesoin', () => {
     // After settlement, cache is invalidated, but during mutation it was set
     expect(cached).toBeDefined()
   })
+
+  it('invalidates all-pending-besoins and count caches on settled', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { id: 'b-new', chantier_id: 'ch1', description: 'Test', livraison_id: null, created_at: '2026-02-10T10:00:00Z', created_by: 'user-1' },
+      error: null,
+    })
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as never)
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+
+    const { result } = renderHook(() => useCreateBesoin(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({ chantierId: 'ch1', description: 'Test' })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as { queryKey: string[] }).queryKey)
+    expect(invalidatedKeys).toContainEqual(['besoins', 'ch1'])
+    expect(invalidatedKeys).toContainEqual(['all-pending-besoins'])
+    expect(invalidatedKeys).toContainEqual(['all-pending-besoins-count'])
+  })
 })
