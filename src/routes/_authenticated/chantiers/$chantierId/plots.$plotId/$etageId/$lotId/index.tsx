@@ -18,6 +18,7 @@ import { computeStatus } from '@/lib/utils/computeStatus'
 import { useLots } from '@/lib/queries/useLots'
 import { usePieces } from '@/lib/queries/usePieces'
 import { useLotDocuments } from '@/lib/queries/useLotDocuments'
+import { useLotPhotos } from '@/lib/queries/useLotPhotos'
 import { useToggleLotTma } from '@/lib/mutations/useToggleLotTma'
 import { useUpdatePlinthStatus } from '@/lib/mutations/useUpdatePlinthStatus'
 import { PlinthStatus } from '@/types/enums'
@@ -27,6 +28,7 @@ import { useAddLotDocument } from '@/lib/mutations/useAddLotDocument'
 import { useUpdateLot } from '@/lib/mutations/useUpdateLot'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
 import { useDeleteLotPiece } from '@/lib/mutations/useDeleteLotPiece'
+import { useUploadLotPhoto } from '@/lib/mutations/useUploadLotPhoto'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,10 +52,12 @@ import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { NotesList } from '@/components/NotesList'
 import { NoteForm } from '@/components/NoteForm'
+import { LotPhotoGallery } from '@/components/LotPhotoGallery'
 import { Fab, type FabMenuItem } from '@/components/Fab'
 import { PhotoCapture, type PhotoCaptureHandle } from '@/components/PhotoCapture'
 import { useRealtimePieces } from '@/lib/subscriptions/useRealtimePieces'
 import { useRealtimeNotes } from '@/lib/subscriptions/useRealtimeNotes'
+import { useRealtimeLotPhotos } from '@/lib/subscriptions/useRealtimeLotPhotos'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/',
@@ -67,8 +71,10 @@ function LotIndexPage() {
   const { data: lots, isLoading: lotsLoading } = useLots(plotId)
   const { data: pieces, isLoading: piecesLoading } = usePieces(lotId)
   const { data: documents, isLoading: documentsLoading } = useLotDocuments(lotId)
+  const { data: lotPhotos } = useLotPhotos(lotId)
   useRealtimePieces(lotId)
   useRealtimeNotes(lotId, 'lot')
+  useRealtimeLotPhotos(lotId)
   const toggleTma = useToggleLotTma()
   const updatePlinthStatus = useUpdatePlinthStatus()
   const addPiece = useAddLotPiece()
@@ -78,6 +84,8 @@ function LotIndexPage() {
   const { data: variantes } = useVariantes(plotId)
   const { data: allEtages } = useEtages(plotId)
 
+  const uploadLotPhoto = useUploadLotPhoto()
+  const [photoUploadProgress, setPhotoUploadProgress] = useState<number | undefined>(undefined)
   const deleteLots = useDeleteLots()
   const deletePiece = useDeleteLotPiece()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -123,8 +131,17 @@ function LotIndexPage() {
   ]
 
   function handlePhotoSelected(file: File) {
-    setInitialPhoto(file)
-    setNoteFormOpen(true)
+    setPhotoUploadProgress(0)
+    uploadLotPhoto.mutate(
+      {
+        file,
+        lotId,
+        onProgress: (p) => setPhotoUploadProgress(p),
+      },
+      {
+        onSettled: () => setPhotoUploadProgress(undefined),
+      },
+    )
   }
 
   const getPieceProgress = useCallback(
@@ -801,9 +818,23 @@ function LotIndexPage() {
 
       <div className="border-t border-border" />
 
-      <div className="p-4 pb-28">
+      <div className="p-4">
         <h2 className="text-base font-semibold text-foreground mb-3">Notes</h2>
         <NotesList lotId={lotId} />
+      </div>
+
+      <div className="border-t border-border" />
+
+      <div className="p-4 pb-28">
+        <h2 className="text-base font-semibold text-foreground mb-3">
+          Photos{lotPhotos && lotPhotos.length > 0 ? ` (${lotPhotos.length})` : ''}
+        </h2>
+        <LotPhotoGallery
+          photos={lotPhotos ?? []}
+          lotId={lotId}
+          isUploading={uploadLotPhoto.isPending}
+          uploadProgress={photoUploadProgress}
+        />
       </div>
 
       <PhotoCapture ref={photoCaptureRef} onPhotoSelected={handlePhotoSelected} />

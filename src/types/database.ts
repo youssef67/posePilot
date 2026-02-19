@@ -526,6 +526,30 @@ export type Database = {
         }
         Relationships: []
       }
+      lot_photos: {
+        Row: {
+          id: string
+          lot_id: string
+          photo_url: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lot_id: string
+          photo_url: string
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lot_id?: string
+          photo_url?: string
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -636,6 +660,15 @@ export interface NoteResponse {
   content: string
   created_by: string
   created_by_email: string | null
+  created_at: string
+}
+
+// Type miroir de la table lot_photos (033_lot_photos.sql)
+export interface LotPhoto {
+  id: string
+  lot_id: string
+  photo_url: string
+  created_by: string
   created_at: string
 }
 
