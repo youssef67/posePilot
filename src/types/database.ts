@@ -702,6 +702,7 @@ export interface Livraison {
   status: 'commande' | 'prevu' | 'livre'
   fournisseur: string | null
   date_prevue: string | null
+  montant_ttc: number | null
   bc_file_url: string | null
   bc_file_name: string | null
   bl_file_url: string | null

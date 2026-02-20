@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Calendar, Hammer, Package, Ruler } from 'lucide-react'
+import { Banknote, Calendar, Hammer, Package, Ruler } from 'lucide-react'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import type { LotPretACarreler, MetrageVsInventaire } from '@/lib/utils/computeChantierIndicators'
 import type { Livraison } from '@/types/database'
@@ -10,6 +10,7 @@ interface ChantierIndicatorsProps {
   metrageVsInventaire?: MetrageVsInventaire
   besoinsEnAttente: number
   livraisonsPrevues: Livraison[]
+  totalDepenses?: number | null
 }
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -23,7 +24,9 @@ export function ChantierIndicators({
   metrageVsInventaire,
   besoinsEnAttente,
   livraisonsPrevues,
+  totalDepenses,
 }: ChantierIndicatorsProps) {
+  const showDepenses = totalDepenses != null && totalDepenses > 0
   const showLots = lotsPretsACarreler && lotsPretsACarreler.length > 0
   const showMetrage =
     metrageVsInventaire &&
@@ -33,12 +36,21 @@ export function ChantierIndicators({
   const showBesoins = besoinsEnAttente > 0
   const showLivraisons = livraisonsPrevues.length > 0
 
-  if (!showLots && !showMetrage && !showBesoins && !showLivraisons) {
+  if (!showDepenses && !showLots && !showMetrage && !showBesoins && !showLivraisons) {
     return null
   }
 
   return (
     <div className="rounded-lg border border-border p-3 space-y-3 mb-4" data-testid="chantier-indicators">
+      {showDepenses && (
+        <div>
+          <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <Banknote className="size-4" />
+            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalDepenses!)} dépensés
+          </p>
+        </div>
+      )}
+
       {showLots && (
         <div>
           <p className="text-sm font-medium text-foreground flex items-center gap-1.5 text-green-600 dark:text-green-400">

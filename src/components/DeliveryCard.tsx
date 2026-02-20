@@ -10,11 +10,22 @@ import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import type { Besoin, Livraison } from '@/types/database'
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   commande: { color: '#F59E0B', label: 'Commandé' },
   prevu: { color: '#3B82F6', label: 'Prévu' },
+  livraison_prevue: { color: '#3B82F6', label: 'Livraison prévue' },
+  a_recuperer: { color: '#8B5CF6', label: 'À récupérer' },
+  receptionne: { color: '#10B981', label: 'Réceptionné' },
+  recupere: { color: '#10B981', label: 'Récupéré' },
   livre: { color: '#10B981', label: 'Livré' },
-} as const
+}
+
+const FALLBACK_CONFIG = { color: '#6B7280', label: 'Inconnu' }
+
+const montantFormatter = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+})
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -48,7 +59,7 @@ interface DeliveryCardProps {
 
 export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
   const { user } = useAuth()
-  const config = STATUS_CONFIG[livraison.status]
+  const config = STATUS_CONFIG[livraison.status] ?? FALLBACK_CONFIG
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -68,7 +79,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             >
               {config.label}
             </span>
-            {(onEdit || onDelete) && livraison.status !== 'livre' && (
+            {(onEdit || onDelete) && !['livre', 'receptionne', 'recupere'].includes(livraison.status) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions livraison">
@@ -97,8 +108,12 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             )}
           </div>
         </div>
-        {livraison.fournisseur && (
-          <span className="text-sm text-muted-foreground">{livraison.fournisseur}</span>
+        {(livraison.fournisseur || livraison.montant_ttc != null) && (
+          <span className="text-sm text-muted-foreground">
+            {livraison.fournisseur}
+            {livraison.fournisseur && livraison.montant_ttc != null && ' · '}
+            {livraison.montant_ttc != null && montantFormatter.format(livraison.montant_ttc)}
+          </span>
         )}
         {chantierNom && (
           <span className="text-xs text-muted-foreground">{chantierNom}</span>
@@ -164,7 +179,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
               Marquer prévu
             </Button>
           )}
-          {livraison.status === 'prevu' && (
+          {(livraison.status === 'prevu' || livraison.status === 'livraison_prevue' || livraison.status === 'a_recuperer') && (
             <Button
               variant="outline"
               size="sm"
@@ -180,7 +195,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             livraison={livraison}
             chantierId={chantierId}
           />
-          {livraison.status === 'livre' && (
+          {['livre', 'receptionne', 'recupere'].includes(livraison.status) && (
             <LivraisonDocumentSlot
               type="bl"
               livraison={livraison}

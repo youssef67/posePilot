@@ -108,6 +108,14 @@ function ChantierIndexPage() {
     [livraisons],
   )
 
+  const totalDepenses = useMemo(() => {
+    const all = livraisons ?? []
+    const sum = all
+      .filter(l => l.montant_ttc != null)
+      .reduce((acc, l) => acc + (l.montant_ttc ?? 0), 0)
+    return sum > 0 ? sum : null
+  }, [livraisons])
+
   const [filteredPlots, setFilteredPlots] = useState<NonNullable<typeof plots>>([])
 
   const getPlotProgress = useCallback(
@@ -459,6 +467,7 @@ function ChantierIndexPage() {
               chantierId={chantierId}
               besoinsEnAttente={besoins?.length ?? 0}
               livraisonsPrevues={livraisonsPrevues}
+              totalDepenses={totalDepenses}
             />
 
             <div className="flex items-center justify-between mb-3">
@@ -563,6 +572,7 @@ function ChantierIndexPage() {
               metrageVsInventaire={metrageVsInventaire}
               besoinsEnAttente={besoins?.length ?? 0}
               livraisonsPrevues={livraisonsPrevues}
+              totalDepenses={totalDepenses}
             />
 
             <div className="flex flex-col gap-3">

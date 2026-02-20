@@ -1,10 +1,19 @@
 import { useState, useMemo } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Truck } from 'lucide-react'
+import { Euro, Truck } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -15,9 +24,12 @@ import {
 } from '@/components/ui/sheet'
 import { EditLivraisonSheet } from '@/components/EditLivraisonSheet'
 import { DeliveryCard, DeliveryCardSkeleton } from '@/components/DeliveryCard'
+import { Fab } from '@/components/Fab'
 import { useAllLivraisons, type LivraisonWithChantier } from '@/lib/queries/useAllLivraisons'
 import { useAllLinkedBesoins, buildBesoinsMap } from '@/lib/queries/useAllLinkedBesoins'
+import { useChantiers } from '@/lib/queries/useChantiers'
 import { useRealtimeAllLivraisons } from '@/lib/subscriptions/useRealtimeAllLivraisons'
+import { useCreateLivraison } from '@/lib/mutations/useCreateLivraison'
 import { useUpdateLivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
 import { useUpdateLivraison } from '@/lib/mutations/useUpdateLivraison'
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
@@ -57,15 +69,26 @@ function countByStatus(livraisons: LivraisonWithChantier[], status: StatusFilter
 }
 
 function LivraisonsPage() {
+  const queryClient = useQueryClient()
   const { data: livraisons, isLoading } = useAllLivraisons()
   const { data: linkedBesoins } = useAllLinkedBesoins()
+  const { data: chantiers } = useChantiers()
   useRealtimeAllLivraisons()
   const besoinsMap = useMemo(() => buildBesoinsMap(linkedBesoins ?? []), [linkedBesoins])
+  const createLivraison = useCreateLivraison()
   const updateStatus = useUpdateLivraisonStatus()
   const updateLivraison = useUpdateLivraison()
   const deleteLivraison = useDeleteLivraison()
 
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('tous')
+
+  // Création
+  const [showCreateSheet, setShowCreateSheet] = useState(false)
+  const [createChantierId, setCreateChantierId] = useState('')
+  const [createDescription, setCreateDescription] = useState('')
+  const [createFournisseur, setCreateFournisseur] = useState('')
+  const [createMontant, setCreateMontant] = useState('')
+  const [createError, setCreateError] = useState('')
   const [showDateSheet, setShowDateSheet] = useState(false)
   const [datePrevue, setDatePrevue] = useState('')
   const [livraisonToUpdate, setLivraisonToUpdate] = useState<LivraisonWithChantier | null>(null)
@@ -81,10 +104,45 @@ function LivraisonsPage() {
   const [editDescription, setEditDescription] = useState('')
   const [editFournisseur, setEditFournisseur] = useState('')
   const [editDatePrevue, setEditDatePrevue] = useState('')
+  const [editMontantTtc, setEditMontantTtc] = useState('')
   const [editError, setEditError] = useState('')
 
   const all = livraisons ?? []
   const displayed = filterAndSort(all, activeFilter)
+
+  function handleOpenCreateSheet() {
+    setCreateChantierId('')
+    setCreateDescription('')
+    setCreateFournisseur('')
+    setCreateMontant('')
+    setCreateError('')
+    setShowCreateSheet(true)
+  }
+
+  function handleCreateLivraison() {
+    const trimmed = createDescription.trim()
+    if (!createChantierId) {
+      setCreateError('Veuillez sélectionner un chantier')
+      return
+    }
+    if (!trimmed) {
+      setCreateError('La description est requise')
+      return
+    }
+    const parsedMontant = parseFloat(createMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+    createLivraison.mutate(
+      { chantierId: createChantierId, description: trimmed, fournisseur: createFournisseur.trim() || undefined, montantTtc },
+      {
+        onSuccess: () => {
+          setShowCreateSheet(false)
+          queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
+          toast('Livraison créée')
+        },
+        onError: () => toast.error('Erreur lors de la création'),
+      },
+    )
+  }
 
   function handleMarquerPrevu(id: string) {
     const liv = all.find((l) => l.id === id) ?? null
@@ -127,6 +185,7 @@ function LivraisonsPage() {
     setEditDescription(livraison.description)
     setEditFournisseur(livraison.fournisseur ?? '')
     setEditDatePrevue(livraison.date_prevue ?? '')
+    setEditMontantTtc(livraison.montant_ttc?.toString() ?? '')
     setEditError('')
     setShowEditSheet(true)
   }
@@ -138,6 +197,7 @@ function LivraisonsPage() {
       return
     }
     if (!livraisonToEdit) return
+    const parsedMontant = parseFloat(editMontantTtc)
     updateLivraison.mutate(
       {
         id: livraisonToEdit.id,
@@ -145,6 +205,7 @@ function LivraisonsPage() {
         description: trimmed,
         fournisseur: editFournisseur.trim() || null,
         datePrevue: editDatePrevue || null,
+        montantTtc: !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null,
       },
       {
         onSuccess: () => {
@@ -233,6 +294,71 @@ function LivraisonsPage() {
         </div>
       )}
 
+      <Fab onClick={handleOpenCreateSheet} />
+
+      <Sheet open={showCreateSheet} onOpenChange={setShowCreateSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Nouvelle livraison</SheetTitle>
+            <SheetDescription>
+              Sélectionnez un chantier et décrivez la livraison.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 flex flex-col gap-3">
+            <Select value={createChantierId} onValueChange={(v) => { setCreateChantierId(v); setCreateError('') }}>
+              <SelectTrigger aria-label="Chantier">
+                <SelectValue placeholder="Sélectionner un chantier" />
+              </SelectTrigger>
+              <SelectContent>
+                {(chantiers ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Textarea
+              placeholder="Ex: Colle pour faïence 20kg"
+              value={createDescription}
+              onChange={(e) => { setCreateDescription(e.target.value); setCreateError('') }}
+              aria-label="Description de la livraison"
+              aria-invalid={!!createError}
+              rows={3}
+            />
+            <Input
+              placeholder="Fournisseur (optionnel)"
+              value={createFournisseur}
+              onChange={(e) => setCreateFournisseur(e.target.value)}
+              aria-label="Fournisseur"
+            />
+            <div className="relative">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Montant TTC (optionnel)"
+                value={createMontant}
+                onChange={(e) => setCreateMontant(e.target.value)}
+                aria-label="Montant TTC"
+                className="pr-8"
+              />
+              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
+            {createError && (
+              <p className="text-sm text-destructive">{createError}</p>
+            )}
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleCreateLivraison}
+              disabled={createLivraison.isPending}
+              className="w-full"
+            >
+              Créer la livraison
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
       <Sheet open={showDateSheet} onOpenChange={setShowDateSheet}>
         <SheetContent side="bottom">
           <SheetHeader>
@@ -270,6 +396,8 @@ function LivraisonsPage() {
         onFournisseurChange={setEditFournisseur}
         datePrevue={editDatePrevue}
         onDatePrevueChange={setEditDatePrevue}
+        montantTtc={editMontantTtc}
+        onMontantTtcChange={setEditMontantTtc}
         error={editError}
         onErrorChange={setEditError}
         onConfirm={handleConfirmEdit}

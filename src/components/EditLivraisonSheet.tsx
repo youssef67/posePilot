@@ -1,3 +1,4 @@
+import { Euro } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -19,6 +20,8 @@ interface EditLivraisonSheetProps {
   onFournisseurChange: (value: string) => void
   datePrevue: string
   onDatePrevueChange: (value: string) => void
+  montantTtc: string
+  onMontantTtcChange: (value: string) => void
   error: string
   onErrorChange: (value: string) => void
   onConfirm: () => void
@@ -34,6 +37,8 @@ export function EditLivraisonSheet({
   onFournisseurChange,
   datePrevue,
   onDatePrevueChange,
+  montantTtc,
+  onMontantTtcChange,
   error,
   onErrorChange,
   onConfirm,
@@ -83,6 +88,24 @@ export function EditLivraisonSheet({
               onChange={(e) => onDatePrevueChange(e.target.value)}
               aria-label="Date prévue"
             />
+          </div>
+          <div>
+            <label htmlFor="edit-livraison-montant" className="text-sm font-medium mb-1 block">Montant TTC</label>
+            <div className="relative">
+              <Input
+                id="edit-livraison-montant"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={montantTtc}
+                onChange={(e) => onMontantTtcChange(e.target.value)}
+                placeholder="Optionnel"
+                aria-label="Montant TTC"
+                className="pr-8"
+              />
+              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
         </div>
         <SheetFooter>

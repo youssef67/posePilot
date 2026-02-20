@@ -4,6 +4,7 @@ import { useCreateLivraison } from '@/lib/mutations/useCreateLivraison'
 import { useUpdateLivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
 import { useUpdateLivraison } from '@/lib/mutations/useUpdateLivraison'
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
+import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
 import type { Besoin, Livraison } from '@/types/database'
 
 export function useLivraisonActions(chantierId: string) {
@@ -11,11 +12,14 @@ export function useLivraisonActions(chantierId: string) {
   const updateLivraisonStatus = useUpdateLivraisonStatus()
   const updateLivraison = useUpdateLivraison()
   const deleteLivraison = useDeleteLivraison()
+  const uploadDocument = useUploadLivraisonDocument()
 
   // Création
   const [showLivraisonSheet, setShowLivraisonSheet] = useState(false)
   const [livraisonDescription, setLivraisonDescription] = useState('')
   const [livraisonFournisseur, setLivraisonFournisseur] = useState('')
+  const [livraisonMontant, setLivraisonMontant] = useState('')
+  const [livraisonBcFile, setLivraisonBcFile] = useState<File | null>(null)
   const [livraisonError, setLivraisonError] = useState('')
 
   // Marquer prévu
@@ -28,17 +32,23 @@ export function useLivraisonActions(chantierId: string) {
   const [deleteLinkedBesoins, setDeleteLinkedBesoins] = useState<Besoin[]>([])
   const [showDeleteSheet, setShowDeleteSheet] = useState(false)
 
+  // Passer en commande (montant)
+  const [commandeMontant, setCommandeMontant] = useState('')
+
   // Édition
   const [livraisonToEdit, setLivraisonToEdit] = useState<Livraison | null>(null)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [editDescription, setEditDescription] = useState('')
   const [editFournisseur, setEditFournisseur] = useState('')
   const [editDatePrevue, setEditDatePrevue] = useState('')
+  const [editMontantTtc, setEditMontantTtc] = useState('')
   const [editError, setEditError] = useState('')
 
   function handleOpenLivraisonSheet() {
     setLivraisonDescription('')
     setLivraisonFournisseur('')
+    setLivraisonMontant('')
+    setLivraisonBcFile(null)
     setLivraisonError('')
     setShowLivraisonSheet(true)
   }
@@ -49,12 +59,23 @@ export function useLivraisonActions(chantierId: string) {
       setLivraisonError('La description est requise')
       return
     }
+    const parsedMontant = parseFloat(livraisonMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+    const pendingBcFile = livraisonBcFile
     createLivraison.mutate(
-      { chantierId, description: trimmed, fournisseur: livraisonFournisseur.trim() || undefined },
+      { chantierId, description: trimmed, fournisseur: livraisonFournisseur.trim() || undefined, montantTtc },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setShowLivraisonSheet(false)
           toast('Livraison créée')
+          if (pendingBcFile && data?.id) {
+            uploadDocument.mutate({
+              livraisonId: data.id,
+              chantierId,
+              file: pendingBcFile,
+              documentType: 'bc',
+            })
+          }
         },
         onError: () => {
           toast.error('Erreur lors de la création de la livraison')
@@ -66,13 +87,16 @@ export function useLivraisonActions(chantierId: string) {
   function handleMarquerPrevu(id: string) {
     setLivraisonToUpdate(id)
     setDatePrevue('')
+    setCommandeMontant('')
     setShowDateSheet(true)
   }
 
   function handleConfirmDatePrevue() {
     if (!livraisonToUpdate || !datePrevue) return
+    const parsedMontant = parseFloat(commandeMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
     updateLivraisonStatus.mutate(
-      { livraisonId: livraisonToUpdate, chantierId, newStatus: 'prevu', datePrevue },
+      { livraisonId: livraisonToUpdate, chantierId, newStatus: 'prevu', datePrevue, montantTtc },
       {
         onSuccess: () => {
           setShowDateSheet(false)
@@ -101,6 +125,7 @@ export function useLivraisonActions(chantierId: string) {
     setEditDescription(livraison.description)
     setEditFournisseur(livraison.fournisseur ?? '')
     setEditDatePrevue(livraison.date_prevue ?? '')
+    setEditMontantTtc(livraison.montant_ttc?.toString() ?? '')
     setEditError('')
     setShowEditSheet(true)
   }
@@ -112,6 +137,7 @@ export function useLivraisonActions(chantierId: string) {
       return
     }
     if (!livraisonToEdit) return
+    const parsedMontant = parseFloat(editMontantTtc)
     updateLivraison.mutate(
       {
         id: livraisonToEdit.id,
@@ -119,6 +145,7 @@ export function useLivraisonActions(chantierId: string) {
         description: trimmed,
         fournisseur: editFournisseur.trim() || null,
         datePrevue: editDatePrevue || null,
+        montantTtc: !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null,
       },
       {
         onSuccess: () => {
@@ -168,6 +195,10 @@ export function useLivraisonActions(chantierId: string) {
     setLivraisonDescription,
     livraisonFournisseur,
     setLivraisonFournisseur,
+    livraisonMontant,
+    setLivraisonMontant,
+    livraisonBcFile,
+    setLivraisonBcFile,
     livraisonError,
     setLivraisonError,
     handleOpenLivraisonSheet,
@@ -178,6 +209,8 @@ export function useLivraisonActions(chantierId: string) {
     setShowDateSheet,
     datePrevue,
     setDatePrevue,
+    commandeMontant,
+    setCommandeMontant,
     handleMarquerPrevu,
     handleConfirmDatePrevue,
     updateStatusPending: updateLivraisonStatus.isPending,
@@ -193,6 +226,8 @@ export function useLivraisonActions(chantierId: string) {
     setEditFournisseur,
     editDatePrevue,
     setEditDatePrevue,
+    editMontantTtc,
+    setEditMontantTtc,
     editError,
     setEditError,
     handleEditLivraison,

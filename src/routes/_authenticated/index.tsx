@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Building2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -7,8 +7,14 @@ import { StatusCard, STATUS_COLORS, StatusCardSkeleton } from '@/components/Stat
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { Fab } from '@/components/Fab'
 import { useChantiers } from '@/lib/queries/useChantiers'
+import { useAllLivraisons } from '@/lib/queries/useAllLivraisons'
 import type { ChantierRow } from '@/lib/queries/useChantier'
 import { computeStatus } from '@/lib/utils/computeStatus'
+
+const montantFormatter = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+})
 
 export const Route = createFileRoute('/_authenticated/')({
   component: HomePage,
@@ -17,6 +23,17 @@ export const Route = createFileRoute('/_authenticated/')({
 function HomePage() {
   const navigate = useNavigate()
   const { data: chantiers, isLoading } = useChantiers('active')
+  const { data: allLivraisons } = useAllLivraisons()
+
+  const depensesParChantier = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const l of allLivraisons ?? []) {
+      if (l.montant_ttc != null) {
+        map.set(l.chantier_id, (map.get(l.chantier_id) ?? 0) + l.montant_ttc)
+      }
+    }
+    return map
+  }, [allLivraisons])
 
   const all = (chantiers ?? []) as unknown as ChantierRow[]
   const [filtered, setFiltered] = useState<ChantierRow[]>([])
@@ -72,6 +89,7 @@ function HomePage() {
                 ? `${Math.round((chantier.progress_done / chantier.progress_total) * 100)}%`
                 : '0%'
               : undefined
+            const depenses = depensesParChantier.get(chantier.id)
 
             return (
               <StatusCard
@@ -83,6 +101,7 @@ function HomePage() {
                   </Badge>
                 }
                 indicator={indicator}
+                secondaryInfo={depenses ? montantFormatter.format(depenses) : undefined}
                 statusColor={STATUS_COLORS[computeStatus(chantier.progress_done, chantier.progress_total)]}
                 isBlocked={chantier.has_blocking_note}
                 onClick={() => navigate({ to: '/chantiers/$chantierId', params: { chantierId: chantier.id } })}
