@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedLivraisonsRouteImport } from './routes/_authenticated/livraisons'
+import { Route as AuthenticatedBesoinsRouteImport } from './routes/_authenticated/besoins'
 import { Route as AuthenticatedActiviteRouteImport } from './routes/_authenticated/activite'
 import { Route as AuthenticatedChantiersNouveauRouteImport } from './routes/_authenticated/chantiers/nouveau'
 import { Route as AuthenticatedChantiersChantierIdRouteImport } from './routes/_authenticated/chantiers/$chantierId'
@@ -52,6 +53,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedLivraisonsRoute = AuthenticatedLivraisonsRouteImport.update({
   id: '/livraisons',
   path: '/livraisons',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBesoinsRoute = AuthenticatedBesoinsRouteImport.update({
+  id: '/besoins',
+  path: '/besoins',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedActiviteRoute = AuthenticatedActiviteRouteImport.update({
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/activite': typeof AuthenticatedActiviteRoute
+  '/besoins': typeof AuthenticatedBesoinsRoute
   '/livraisons': typeof AuthenticatedLivraisonsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdRouteWithChildren
@@ -178,6 +185,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/activite': typeof AuthenticatedActiviteRoute
+  '/besoins': typeof AuthenticatedBesoinsRoute
   '/livraisons': typeof AuthenticatedLivraisonsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/activite': typeof AuthenticatedActiviteRoute
+  '/_authenticated/besoins': typeof AuthenticatedBesoinsRoute
   '/_authenticated/livraisons': typeof AuthenticatedLivraisonsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/activite'
+    | '/besoins'
     | '/livraisons'
     | '/settings'
     | '/chantiers/$chantierId'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/activite'
+    | '/besoins'
     | '/livraisons'
     | '/settings'
     | '/'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/activite'
+    | '/_authenticated/besoins'
     | '/_authenticated/livraisons'
     | '/_authenticated/settings'
     | '/_authenticated/'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/livraisons'
       fullPath: '/livraisons'
       preLoaderRoute: typeof AuthenticatedLivraisonsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/besoins': {
+      id: '/_authenticated/besoins'
+      path: '/besoins'
+      fullPath: '/besoins'
+      preLoaderRoute: typeof AuthenticatedBesoinsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/activite': {
@@ -514,6 +533,7 @@ const AuthenticatedChantiersChantierIdRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedActiviteRoute: typeof AuthenticatedActiviteRoute
+  AuthenticatedBesoinsRoute: typeof AuthenticatedBesoinsRoute
   AuthenticatedLivraisonsRoute: typeof AuthenticatedLivraisonsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -523,6 +543,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedActiviteRoute: AuthenticatedActiviteRoute,
+  AuthenticatedBesoinsRoute: AuthenticatedBesoinsRoute,
   AuthenticatedLivraisonsRoute: AuthenticatedLivraisonsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
