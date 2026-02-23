@@ -57,7 +57,7 @@ function EtageIndexPage() {
   )
 
   const getAlerts = useCallback(
-    (lot: (typeof etageLots)[0]) => lot.has_blocking_note === true || lot.has_missing_docs === true,
+    (lot: (typeof etageLots)[0]) => lot.has_blocking_note === true || lot.has_missing_docs === true || lot.has_open_reservation === true,
     [],
   )
 
@@ -246,6 +246,7 @@ function EtageIndexPage() {
                           indicator={`${lot.progress_done}/${lot.progress_total}`}
                           isBlocked={lot.has_blocking_note}
                           hasMissingDocs={lot.has_missing_docs}
+                          hasOpenReservation={lot.has_open_reservation}
                           badge={
                             <>
                               {lot.is_tma && (

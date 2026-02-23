@@ -13,6 +13,7 @@ export type Database = {
           progress_done: number
           progress_total: number
           has_blocking_note: boolean
+          has_open_reservation: boolean
           created_at: string
           created_by: string | null
         }
@@ -24,6 +25,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           created_at?: string
           created_by?: string | null
         }
@@ -35,6 +37,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           created_at?: string
           created_by?: string | null
         }
@@ -50,6 +53,7 @@ export type Database = {
           progress_done: number
           progress_total: number
           has_blocking_note: boolean
+          has_open_reservation: boolean
           metrage_m2_total: number
           metrage_ml_total: number
         }
@@ -62,6 +66,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
         }
@@ -74,6 +79,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
         }
@@ -154,6 +160,7 @@ export type Database = {
           progress_done: number
           progress_total: number
           has_blocking_note: boolean
+          has_open_reservation: boolean
           metrage_m2_total: number
           metrage_ml_total: number
         }
@@ -165,6 +172,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
         }
@@ -176,6 +184,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
         }
@@ -193,6 +202,7 @@ export type Database = {
           progress_done: number
           progress_total: number
           has_blocking_note: boolean
+          has_open_reservation: boolean
           has_missing_docs: boolean
           metrage_m2_total: number
           metrage_ml_total: number
@@ -209,6 +219,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           has_missing_docs?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
@@ -225,6 +236,7 @@ export type Database = {
           progress_done?: number
           progress_total?: number
           has_blocking_note?: boolean
+          has_open_reservation?: boolean
           has_missing_docs?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
@@ -424,7 +436,7 @@ export type Database = {
       livraisons: {
         Row: {
           id: string
-          chantier_id: string
+          chantier_id: string | null
           description: string
           status: string
           date_prevue: string | null
@@ -438,7 +450,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          chantier_id: string
+          chantier_id?: string | null
           description: string
           status?: string
           date_prevue?: string | null
@@ -452,7 +464,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          chantier_id?: string
+          chantier_id?: string | null
           description?: string
           status?: string
           date_prevue?: string | null
@@ -553,6 +565,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reservations: {
+        Row: {
+          id: string
+          lot_id: string
+          piece_id: string
+          description: string
+          photo_url: string | null
+          status: 'ouvert' | 'resolu'
+          resolved_at: string | null
+          created_by: string
+          created_by_email: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lot_id: string
+          piece_id: string
+          description: string
+          photo_url?: string | null
+          status?: 'ouvert' | 'resolu'
+          resolved_at?: string | null
+          created_by: string
+          created_by_email?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lot_id?: string
+          piece_id?: string
+          description?: string
+          photo_url?: string | null
+          status?: 'ouvert' | 'resolu'
+          resolved_at?: string | null
+          created_by?: string
+          created_by_email?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -601,7 +652,8 @@ export type Database = {
       task_status: 'not_started' | 'in_progress' | 'done'
       delivery_status: 'commande' | 'prevu' | 'livre'
       plinth_status: 'non_commandees' | 'commandees' | 'faconnees'
-      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'besoin_updated' | 'besoin_deleted' | 'livraison_created' | 'livraison_status_changed' | 'livraison_updated' | 'livraison_deleted' | 'inventaire_added' | 'inventaire_updated'
+      reservation_status: 'ouvert' | 'resolu'
+      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'besoin_updated' | 'besoin_deleted' | 'livraison_created' | 'livraison_status_changed' | 'livraison_updated' | 'livraison_deleted' | 'inventaire_added' | 'inventaire_updated' | 'reservation_created' | 'reservation_resolved'
     }
     CompositeTypes: { [_ in never]: never }
   }
@@ -625,9 +677,11 @@ export interface ActivityLog {
     new_status?: string
     content_preview?: string
     description?: string
+    description_preview?: string
     designation?: string
     quantite?: number
     old_quantite?: number
+    reservation_id?: string
   }
   created_at: string
 }
@@ -687,6 +741,21 @@ export interface Inventaire {
   created_by: string | null
 }
 
+// Type miroir de la table reservations (036_reservations.sql)
+export interface Reservation {
+  id: string
+  lot_id: string
+  piece_id: string
+  description: string
+  photo_url: string | null
+  status: 'ouvert' | 'resolu'
+  resolved_at: string | null
+  created_by: string
+  created_by_email: string | null
+  created_at: string
+  pieces?: { nom: string }
+}
+
 // Type miroir de la table besoins (016_besoins_livraisons.sql)
 export interface Besoin {
   id: string
@@ -701,7 +770,7 @@ export interface Besoin {
 // Type miroir de la table livraisons (016_besoins_livraisons.sql)
 export interface Livraison {
   id: string
-  chantier_id: string
+  chantier_id: string | null
   description: string
   status: 'commande' | 'prevu' | 'livre'
   fournisseur: string | null

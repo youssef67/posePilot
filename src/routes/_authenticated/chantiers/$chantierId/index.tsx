@@ -124,7 +124,7 @@ function ChantierIndexPage() {
   )
 
   const getPlotAlerts = useCallback(
-    (plot: NonNullable<typeof plots>[0]) => plot.has_blocking_note === true,
+    (plot: NonNullable<typeof plots>[0]) => plot.has_blocking_note === true || plot.has_open_reservation === true,
     [],
   )
 
@@ -522,44 +522,16 @@ function ChantierIndexPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">Complet</Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <EllipsisVertical className="size-4" />
-                      Actions
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/chantiers/$chantierId/besoins"
-                        params={{ chantierId }}
-                      >
-                        <Package className="mr-2 size-4" />
-                        Besoins
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/chantiers/$chantierId/livraisons"
-                        params={{ chantierId }}
-                      >
-                        <Truck className="mr-2 size-4" />
-                        Livraisons
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        to="/chantiers/$chantierId/inventaire"
-                        params={{ chantierId }}
-                        search={{ plotId: undefined, etageId: undefined }}
-                      >
-                        <Boxes className="mr-2 size-4" />
-                        Inventaire
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    to="/chantiers/$chantierId/inventaire"
+                    params={{ chantierId }}
+                    search={{ plotId: undefined, etageId: undefined }}
+                  >
+                    <Boxes className="mr-2 size-4" />
+                    Inventaire
+                  </Link>
+                </Button>
               </div>
               <span className="text-sm font-medium text-muted-foreground">
                 {progressPercent}
@@ -594,23 +566,29 @@ function ChantierIndexPage() {
                   />
                   {filteredPlots.length > 0 && (
                     <div className="flex flex-col gap-3">
-                      {filteredPlots.map((plot) => (
-                        <StatusCard
-                          key={plot.id}
-                          title={plot.nom}
-                          subtitle={`${plot.task_definitions.length} tâche${plot.task_definitions.length !== 1 ? 's' : ''} définie${plot.task_definitions.length !== 1 ? 's' : ''}`}
-                          secondaryInfo={formatMetrage(plot.metrage_m2_total ?? 0, plot.metrage_ml_total ?? 0)}
-                          statusColor={STATUS_COLORS[computeStatus(plot.progress_done, plot.progress_total)]}
-                          indicator={`${plot.progress_done}/${plot.progress_total}`}
-                          isBlocked={getPlotAlerts(plot)}
-                          onClick={() =>
-                            navigate({
-                              to: '/chantiers/$chantierId/plots/$plotId',
-                              params: { chantierId, plotId: plot.id },
-                            })
-                          }
-                        />
-                      ))}
+                      {filteredPlots.map((plot) => {
+                        const pct = plot.progress_total > 0
+                          ? Math.round((plot.progress_done / plot.progress_total) * 100)
+                          : 0
+                        return (
+                          <StatusCard
+                            key={plot.id}
+                            title={plot.nom}
+                            subtitle={`${plot.lots_count} lot${plot.lots_count !== 1 ? 's' : ''}`}
+                            secondaryInfo={formatMetrage(plot.metrage_m2_total ?? 0, plot.metrage_ml_total ?? 0)}
+                            statusColor={STATUS_COLORS[computeStatus(plot.progress_done, plot.progress_total)]}
+                            indicator={plot.progress_total > 0 ? `${pct} %` : undefined}
+                            isBlocked={plot.has_blocking_note}
+                            hasOpenReservation={plot.has_open_reservation}
+                            onClick={() =>
+                              navigate({
+                                to: '/chantiers/$chantierId/plots/$plotId',
+                                params: { chantierId, plotId: plot.id },
+                              })
+                            }
+                          />
+                        )
+                      })}
                     </div>
                   )}
                 </>

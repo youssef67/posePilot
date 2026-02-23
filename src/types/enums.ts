@@ -27,3 +27,10 @@ export const PlinthStatus = {
   FACONNEES: 'faconnees',
 } as const
 export type PlinthStatus = (typeof PlinthStatus)[keyof typeof PlinthStatus]
+
+export const ReservationStatus = {
+  OUVERT: 'ouvert',
+  RESOLU: 'resolu',
+} as const
+export type ReservationStatus =
+  (typeof ReservationStatus)[keyof typeof ReservationStatus]

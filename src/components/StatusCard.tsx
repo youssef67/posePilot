@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, FileWarning } from 'lucide-react'
+import { AlertTriangle, FileWarning, Wrench } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,7 @@ interface StatusCardProps {
   badge?: ReactNode
   isBlocked?: boolean
   hasMissingDocs?: boolean
+  hasOpenReservation?: boolean
   onClick?: () => void
   className?: string
   role?: string
@@ -34,6 +35,7 @@ export function StatusCard({
   badge,
   isBlocked,
   hasMissingDocs,
+  hasOpenReservation,
   onClick,
   className,
   role,
@@ -66,6 +68,9 @@ export function StatusCard({
             )}
             {hasMissingDocs && (
               <FileWarning className="size-4 shrink-0 text-amber-500" aria-label="Documents manquants" />
+            )}
+            {hasOpenReservation && (
+              <Wrench className="size-4 shrink-0 text-orange-500" aria-label="Réserves ouvertes" />
             )}
           </div>
           {subtitle && (

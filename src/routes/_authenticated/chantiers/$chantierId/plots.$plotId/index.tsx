@@ -419,6 +419,7 @@ function PlotIndexPage() {
         progress_done: etage.progress_done,
         progress_total: etage.progress_total,
         has_blocking_note: etage.has_blocking_note,
+        has_open_reservation: etage.has_open_reservation,
       }
     })
   }, [etages, lots])
@@ -431,7 +432,7 @@ function PlotIndexPage() {
   )
 
   const getEtageAlerts = useCallback(
-    (etage: (typeof etageCards)[0]) => etage.has_blocking_note === true,
+    (etage: (typeof etageCards)[0]) => etage.has_blocking_note === true || etage.has_open_reservation === true,
     [],
   )
 
@@ -561,22 +562,28 @@ function PlotIndexPage() {
           />
           {filteredEtages.length > 0 && (
             <div className="flex flex-col gap-2">
-              {filteredEtages.map((etage) => (
-                <StatusCard
-                  key={etage.id}
-                  title={etage.nom}
-                  subtitle={`${etage.lotCount} lot${etage.lotCount !== 1 ? 's' : ''}`}
-                  statusColor={STATUS_COLORS[computeStatus(etage.progress_done, etage.progress_total)]}
-                  indicator={`${etage.progress_done}/${etage.progress_total}`}
-                  isBlocked={getEtageAlerts(etage)}
-                  onClick={() =>
-                    navigate({
-                      to: '/chantiers/$chantierId/plots/$plotId/$etageId',
-                      params: { chantierId, plotId, etageId: etage.id },
-                    })
-                  }
-                />
-              ))}
+              {filteredEtages.map((etage) => {
+                const pct = etage.progress_total > 0
+                  ? Math.round((etage.progress_done / etage.progress_total) * 100)
+                  : 0
+                return (
+                  <StatusCard
+                    key={etage.id}
+                    title={etage.nom}
+                    subtitle={`${etage.lotCount} lot${etage.lotCount !== 1 ? 's' : ''}`}
+                    statusColor={STATUS_COLORS[computeStatus(etage.progress_done, etage.progress_total)]}
+                    indicator={etage.progress_total > 0 ? `${pct} %` : undefined}
+                    isBlocked={etage.has_blocking_note}
+                    hasOpenReservation={etage.has_open_reservation}
+                    onClick={() =>
+                      navigate({
+                        to: '/chantiers/$chantierId/plots/$plotId/$etageId',
+                        params: { chantierId, plotId, etageId: etage.id },
+                      })
+                    }
+                  />
+                )
+              })}
             </div>
           )}
         </div>
@@ -764,6 +771,7 @@ function PlotIndexPage() {
                             statusColor={STATUS_COLORS[computeStatus(lot.progress_done, lot.progress_total)]}
                             indicator={`${lot.progress_done}/${lot.progress_total}`}
                             isBlocked={lot.has_blocking_note}
+                            hasOpenReservation={lot.has_open_reservation}
                             badge={lot.is_tma ? <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px]">TMA</Badge> : undefined}
                             onClick={selectionMode
                               ? () => toggleLotSelection(lot.id)

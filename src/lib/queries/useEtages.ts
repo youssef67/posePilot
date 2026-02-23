@@ -8,6 +8,9 @@ export interface EtageRow {
   progress_done: number
   progress_total: number
   has_blocking_note: boolean
+  has_open_reservation: boolean
+  metrage_m2_total: number
+  metrage_ml_total: number
   created_at: string
 }
 

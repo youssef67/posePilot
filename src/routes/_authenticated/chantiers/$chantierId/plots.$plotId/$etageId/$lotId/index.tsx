@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2 } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,12 +52,16 @@ import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { NotesList } from '@/components/NotesList'
 import { NoteForm } from '@/components/NoteForm'
+import { ReservationsList } from '@/components/ReservationsList'
+import { ReservationForm } from '@/components/ReservationForm'
 import { LotPhotoGallery } from '@/components/LotPhotoGallery'
 import { Fab, type FabMenuItem } from '@/components/Fab'
 import { PhotoCapture, type PhotoCaptureHandle } from '@/components/PhotoCapture'
 import { useRealtimePieces } from '@/lib/subscriptions/useRealtimePieces'
 import { useRealtimeNotes } from '@/lib/subscriptions/useRealtimeNotes'
 import { useRealtimeLotPhotos } from '@/lib/subscriptions/useRealtimeLotPhotos'
+import { useRealtimeReservations } from '@/lib/subscriptions/useRealtimeReservations'
+import { useReservations } from '@/lib/queries/useReservations'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/',
@@ -75,6 +79,8 @@ function LotIndexPage() {
   useRealtimePieces(lotId)
   useRealtimeNotes(lotId, 'lot')
   useRealtimeLotPhotos(lotId)
+  useRealtimeReservations(lotId)
+  const { data: reservations } = useReservations(lotId)
   const toggleTma = useToggleLotTma()
   const updatePlinthStatus = useUpdatePlinthStatus()
   const addPiece = useAddLotPiece()
@@ -109,10 +115,21 @@ function LotIndexPage() {
   const [addDocError, setAddDocError] = useState('')
   const [filteredPieces, setFilteredPieces] = useState<NonNullable<typeof pieces>>([])
   const [noteFormOpen, setNoteFormOpen] = useState(false)
+  const [reservationFormOpen, setReservationFormOpen] = useState(false)
   const [initialPhoto, setInitialPhoto] = useState<File | undefined>(undefined)
   const photoCaptureRef = useRef<PhotoCaptureHandle>(null)
 
+  const openReservationCount = useMemo(
+    () => reservations?.filter((r) => r.status === 'ouvert').length ?? 0,
+    [reservations],
+  )
+
   const fabMenuItems: FabMenuItem[] = [
+    {
+      icon: Wrench,
+      label: 'Réserve',
+      onClick: () => setReservationFormOpen(true),
+    },
     {
       icon: MessageSquare,
       label: 'Note',
@@ -825,6 +842,15 @@ function LotIndexPage() {
 
       <div className="border-t border-border" />
 
+      <div className="p-4">
+        <h2 className="text-base font-semibold text-foreground mb-3">
+          Réserves{openReservationCount > 0 ? ` (${openReservationCount} ouverte${openReservationCount > 1 ? 's' : ''})` : ''}
+        </h2>
+        <ReservationsList lotId={lotId} />
+      </div>
+
+      <div className="border-t border-border" />
+
       <div className="p-4 pb-28">
         <h2 className="text-base font-semibold text-foreground mb-3">
           Photos{lotPhotos && lotPhotos.length > 0 ? ` (${lotPhotos.length})` : ''}
@@ -848,6 +874,12 @@ function LotIndexPage() {
         }}
         lotId={lotId}
         initialPhoto={initialPhoto}
+      />
+      <ReservationForm
+        open={reservationFormOpen}
+        onOpenChange={setReservationFormOpen}
+        lotId={lotId}
+        pieces={(pieces ?? []).map((p) => ({ id: p.id, nom: p.nom }))}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

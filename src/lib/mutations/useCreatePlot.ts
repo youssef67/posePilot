@@ -46,6 +46,7 @@ export function useCreatePlot() {
             progress_done: 0,
             progress_total: 0,
             has_blocking_note: false,
+            has_open_reservation: false,
             metrage_m2_total: 0,
             metrage_ml_total: 0,
           },
