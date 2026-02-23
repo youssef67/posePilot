@@ -8,7 +8,8 @@ import { LivraisonDocumentSlot } from '@/components/LivraisonDocumentSlot'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import type { Besoin, Livraison } from '@/types/database'
+import type { Livraison } from '@/types/database'
+import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   commande: { color: '#F59E0B', label: 'Commandé' },
@@ -47,14 +48,14 @@ function getAuthorInitial(
 
 interface DeliveryCardProps {
   livraison: Livraison
-  chantierId: string
+  chantierId: string | null
   onMarquerPrevu: (id: string) => void
   onConfirmerLivraison: (id: string) => void
   onEdit?: (livraison: Livraison) => void
-  onDelete?: (livraison: Livraison, linkedBesoins: Besoin[]) => void
+  onDelete?: (livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) => void
   chantierNom?: string
   highlighted?: boolean
-  linkedBesoins?: Besoin[]
+  linkedBesoins?: LinkedBesoinWithChantier[]
 }
 
 export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
@@ -132,18 +133,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
             </button>
             {expanded && (
-              <div className="space-y-1 pl-4 border-l-2 border-muted">
-                {linkedBesoins.map((b) => (
-                  <div key={b.id} className="text-sm">
-                    <span className="text-foreground">{b.description}</span>
-                    <span className="text-muted-foreground text-xs ml-2">
-                      {getAuthorInitial(b.created_by, user?.id, user?.email ?? undefined)}
-                      {' · '}
-                      {formatRelativeTime(b.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <BesoinsList besoins={linkedBesoins} isMultiChantier={!livraison.chantier_id} userId={user?.id} userEmail={user?.email ?? undefined} />
             )}
           </>
         )}
@@ -205,6 +195,60 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function BesoinsList({ besoins, isMultiChantier, userId, userEmail }: {
+  besoins: LinkedBesoinWithChantier[]
+  isMultiChantier: boolean
+  userId: string | undefined
+  userEmail: string | undefined
+}) {
+  if (!isMultiChantier) {
+    return (
+      <div className="space-y-1 pl-4 border-l-2 border-muted">
+        {besoins.map((b) => (
+          <div key={b.id} className="text-sm">
+            <span className="text-foreground">{b.description}</span>
+            <span className="text-muted-foreground text-xs ml-2">
+              {getAuthorInitial(b.created_by, userId, userEmail)}
+              {' · '}
+              {formatRelativeTime(b.created_at)}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // Grouper par chantier
+  const groups = new Map<string, { nom: string; besoins: LinkedBesoinWithChantier[] }>()
+  for (const b of besoins) {
+    const existing = groups.get(b.chantier_id)
+    if (existing) existing.besoins.push(b)
+    else groups.set(b.chantier_id, { nom: b.chantiers.nom, besoins: [b] })
+  }
+
+  return (
+    <div className="space-y-2 pl-4 border-l-2 border-muted">
+      {[...groups.values()].map((group) => (
+        <div key={group.nom}>
+          <span className="text-xs font-semibold text-muted-foreground">{group.nom}</span>
+          <div className="space-y-0.5 mt-0.5">
+            {group.besoins.map((b) => (
+              <div key={b.id} className="text-sm">
+                <span className="text-foreground">{b.description}</span>
+                <span className="text-muted-foreground text-xs ml-2">
+                  {getAuthorInitial(b.created_by, userId, userEmail)}
+                  {' · '}
+                  {formatRelativeTime(b.created_at)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

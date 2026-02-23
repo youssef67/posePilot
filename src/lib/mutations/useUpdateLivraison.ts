@@ -4,7 +4,7 @@ import type { Livraison } from '@/types/database'
 
 interface UpdateLivraisonInput {
   id: string
-  chantierId: string
+  chantierId: string | null
   description: string
   fournisseur: string | null
   datePrevue: string | null
@@ -32,24 +32,31 @@ export function useUpdateLivraison() {
       return data as unknown as Livraison
     },
     onMutate: async ({ id, chantierId, description, fournisseur, datePrevue, montantTtc }) => {
-      await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
-      const previous = queryClient.getQueryData(['livraisons', chantierId])
-      queryClient.setQueryData(
-        ['livraisons', chantierId],
-        (old: Livraison[] | undefined) =>
-          (old ?? []).map((l) =>
-            l.id === id
-              ? { ...l, description, fournisseur: fournisseur || null, date_prevue: datePrevue || null, montant_ttc: montantTtc }
-              : l,
-          ),
-      )
-      return { previous }
+      if (chantierId) {
+        await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
+        const previous = queryClient.getQueryData(['livraisons', chantierId])
+        queryClient.setQueryData(
+          ['livraisons', chantierId],
+          (old: Livraison[] | undefined) =>
+            (old ?? []).map((l) =>
+              l.id === id
+                ? { ...l, description, fournisseur: fournisseur || null, date_prevue: datePrevue || null, montant_ttc: montantTtc }
+                : l,
+            ),
+        )
+        return { previous }
+      }
+      return { previous: undefined }
     },
     onError: (_err, { chantierId }, context) => {
-      queryClient.setQueryData(['livraisons', chantierId], context?.previous)
+      if (chantierId) {
+        queryClient.setQueryData(['livraisons', chantierId], context?.previous)
+      }
     },
     onSettled: (_data, _error, { chantierId }) => {
-      queryClient.invalidateQueries({ queryKey: ['livraisons', chantierId] })
+      if (chantierId) {
+        queryClient.invalidateQueries({ queryKey: ['livraisons', chantierId] })
+      }
       queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
     },
   })

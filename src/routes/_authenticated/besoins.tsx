@@ -168,6 +168,8 @@ function BesoinsPage() {
 
   // Sheet bulk commande
   const [showBulkSheet, setShowBulkSheet] = useState(false)
+  const [bulkDescription, setBulkDescription] = useState('')
+  const [bulkDescError, setBulkDescError] = useState('')
   const [bulkFournisseur, setBulkFournisseur] = useState('')
   const [bulkMontant, setBulkMontant] = useState('')
 
@@ -288,12 +290,20 @@ function BesoinsPage() {
   }
 
   function handleOpenBulkSheet() {
+    setBulkDescription('')
+    setBulkDescError('')
     setBulkFournisseur('')
     setBulkMontant('')
     setShowBulkSheet(true)
   }
 
   function handleConfirmBulkTransform() {
+    const trimmedDesc = bulkDescription.trim()
+    if (!trimmedDesc) {
+      setBulkDescError("L'intitulé est requis")
+      return
+    }
+
     const selectedBesoins = (besoins ?? []).filter((b) => selectedIds.has(b.id))
     if (selectedBesoins.length === 0) return
 
@@ -303,22 +313,18 @@ function BesoinsPage() {
     bulkTransform.mutate(
       {
         besoins: selectedBesoins,
+        description: trimmedDesc,
         fournisseur: bulkFournisseur.trim() || undefined,
         montantTtc,
       },
       {
-        onSuccess: (data) => {
+        onSuccess: () => {
           setShowBulkSheet(false)
           setSelectionMode(false)
           setSelectedIds(new Set())
-          const n = data.succeeded.length
-          if (data.failedCount > 0) {
-            toast(`${n} livraison${n > 1 ? 's' : ''} créée${n > 1 ? 's' : ''}, ${data.failedCount} échec${data.failedCount > 1 ? 's' : ''}`)
-          } else {
-            toast(`${n} livraison${n > 1 ? 's' : ''} créée${n > 1 ? 's' : ''}`)
-          }
+          toast('Commande créée')
         },
-        onError: () => toast.error('Erreur lors de la transformation'),
+        onError: () => toast.error('Erreur lors de la création de la commande'),
       },
     )
   }
@@ -508,12 +514,25 @@ function BesoinsPage() {
           <SheetHeader>
             <SheetTitle>Commander {selectedIds.size} besoin{selectedIds.size > 1 ? 's' : ''}</SheetTitle>
             <SheetDescription>
-              {selectedIds.size > 1
-                ? 'Une livraison sera créée pour chaque besoin sélectionné.'
-                : 'Le besoin sera transformé en livraison.'}
+              Créer une commande regroupant les besoins sélectionnés.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 flex flex-col gap-3">
+            <div>
+              <Input
+                placeholder="Intitulé de la commande"
+                value={bulkDescription}
+                onChange={(e) => {
+                  setBulkDescription(e.target.value)
+                  if (bulkDescError) setBulkDescError('')
+                }}
+                aria-label="Intitulé de la commande"
+                aria-invalid={!!bulkDescError}
+              />
+              {bulkDescError && (
+                <p className="text-sm text-destructive mt-1">{bulkDescError}</p>
+              )}
+            </div>
             <Input
               placeholder="Fournisseur (optionnel)"
               value={bulkFournisseur}

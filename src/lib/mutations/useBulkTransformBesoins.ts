@@ -5,68 +5,51 @@ import type { BesoinWithChantier } from '@/lib/queries/useAllPendingBesoins'
 
 interface BulkTransformInput {
   besoins: BesoinWithChantier[]
+  description: string
   fournisseur?: string
   montantTtc?: number | null
-}
-
-export interface BulkTransformResult {
-  succeeded: Livraison[]
-  failedCount: number
 }
 
 export function useBulkTransformBesoins() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoins, fournisseur, montantTtc }: BulkTransformInput) => {
+    mutationFn: async ({ besoins, description, fournisseur, montantTtc }: BulkTransformInput) => {
       const { data: { user } } = await supabase.auth.getUser()
 
-      const results = await Promise.allSettled(
-        besoins.map(async (besoin) => {
-          // 1. Créer la livraison
-          const { data: livraison, error: livraisonError } = await supabase
-            .from('livraisons')
-            .insert({
-              chantier_id: besoin.chantier_id,
-              description: besoin.description,
-              fournisseur: fournisseur || null,
-              montant_ttc: montantTtc ?? null,
-              status: 'commande' as const,
-              created_by: user?.id ?? null,
-            })
-            .select()
-            .single()
-          if (livraisonError) throw livraisonError
+      // 1. Créer UNE seule livraison (chantier_id null = multi-chantier)
+      const { data: livraison, error: livraisonError } = await supabase
+        .from('livraisons')
+        .insert({
+          chantier_id: null,
+          description,
+          fournisseur: fournisseur || null,
+          montant_ttc: montantTtc ?? null,
+          status: 'commande' as const,
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single()
+      if (livraisonError) throw livraisonError
 
-          // 2. Lier le besoin à la livraison
-          const { error: besoinError } = await supabase
-            .from('besoins')
-            .update({ livraison_id: (livraison as unknown as Livraison).id })
-            .eq('id', besoin.id)
-          if (besoinError) throw besoinError
+      // 2. Rattacher TOUS les besoins en batch
+      const besoinIds = besoins.map((b) => b.id)
+      const { error: besoinsError } = await supabase
+        .from('besoins')
+        .update({ livraison_id: (livraison as unknown as Livraison).id })
+        .in('id', besoinIds)
+        .is('livraison_id', null)
+      if (besoinsError) throw besoinsError
 
-          return livraison as unknown as Livraison
-        }),
-      )
-
-      const succeeded = results
-        .filter((r): r is PromiseFulfilledResult<Livraison> => r.status === 'fulfilled')
-        .map((r) => r.value)
-      const failedCount = results.filter((r) => r.status === 'rejected').length
-
-      if (failedCount > 0 && succeeded.length === 0) {
-        throw new Error(`Échec de la transformation des ${failedCount} besoin(s)`)
-      }
-
-      return { succeeded, failedCount } as BulkTransformResult
+      return livraison as unknown as Livraison
     },
     onSettled: (_data, _error, { besoins }) => {
-      // Collect unique chantier IDs
       const chantierIds = [...new Set(besoins.map((b) => b.chantier_id))]
 
       queryClient.invalidateQueries({ queryKey: ['all-pending-besoins'] })
       queryClient.invalidateQueries({ queryKey: ['all-pending-besoins-count'] })
       queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
+      queryClient.invalidateQueries({ queryKey: ['all-linked-besoins'] })
 
       for (const chantierId of chantierIds) {
         queryClient.invalidateQueries({ queryKey: ['besoins', chantierId] })

@@ -26,7 +26,7 @@ import { EditLivraisonSheet } from '@/components/EditLivraisonSheet'
 import { DeliveryCard, DeliveryCardSkeleton } from '@/components/DeliveryCard'
 import { Fab } from '@/components/Fab'
 import { useAllLivraisons, type LivraisonWithChantier } from '@/lib/queries/useAllLivraisons'
-import { useAllLinkedBesoins, buildBesoinsMap } from '@/lib/queries/useAllLinkedBesoins'
+import { useAllLinkedBesoins, buildLinkedBesoinsMap } from '@/lib/queries/useAllLinkedBesoins'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { useRealtimeAllLivraisons } from '@/lib/subscriptions/useRealtimeAllLivraisons'
 import { useCreateLivraison } from '@/lib/mutations/useCreateLivraison'
@@ -34,7 +34,8 @@ import { useUpdateLivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStat
 import { useUpdateLivraison } from '@/lib/mutations/useUpdateLivraison'
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
 import { isThisWeek } from '@/lib/utils/isThisWeek'
-import type { Besoin, Livraison } from '@/types/database'
+import type { Livraison } from '@/types/database'
+import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 export const Route = createFileRoute('/_authenticated/livraisons')({
   component: LivraisonsPage,
@@ -74,7 +75,7 @@ function LivraisonsPage() {
   const { data: linkedBesoins } = useAllLinkedBesoins()
   const { data: chantiers } = useChantiers()
   useRealtimeAllLivraisons()
-  const besoinsMap = useMemo(() => buildBesoinsMap(linkedBesoins ?? []), [linkedBesoins])
+  const besoinsMap = useMemo(() => buildLinkedBesoinsMap(linkedBesoins ?? []), [linkedBesoins])
   const createLivraison = useCreateLivraison()
   const updateStatus = useUpdateLivraisonStatus()
   const updateLivraison = useUpdateLivraison()
@@ -95,7 +96,7 @@ function LivraisonsPage() {
 
   // Suppression inline
   const [livraisonToDelete, setLivraisonToDelete] = useState<Livraison | null>(null)
-  const [deleteLinkedBesoins, setDeleteLinkedBesoins] = useState<Besoin[]>([])
+  const [deleteLinkedBesoins, setDeleteLinkedBesoins] = useState<LinkedBesoinWithChantier[]>([])
   const [showDeleteSheet, setShowDeleteSheet] = useState(false)
 
   // Édition inline
@@ -218,7 +219,7 @@ function LivraisonsPage() {
     )
   }
 
-  function handleDeleteLivraison(livraison: Livraison, linkedBesoins: Besoin[]) {
+  function handleDeleteLivraison(livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) {
     setLivraisonToDelete(livraison)
     setDeleteLinkedBesoins(linkedBesoins)
     setShowDeleteSheet(true)
@@ -286,7 +287,7 @@ function LivraisonsPage() {
               onConfirmerLivraison={handleConfirmerLivraison}
               onEdit={handleEditLivraison}
               onDelete={handleDeleteLivraison}
-              chantierNom={liv.chantiers.nom}
+              chantierNom={liv.chantiers?.nom}
               highlighted={isThisWeek(liv.date_prevue)}
               linkedBesoins={besoinsMap.get(liv.id)}
             />

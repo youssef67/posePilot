@@ -88,6 +88,12 @@ function getActivityDescription(entry: ActivityLog): string {
       return `${name} a ajouté du matériel`
     case 'inventaire_updated':
       return `${name} a mis à jour le matériel`
+    case 'reservation_created':
+      return `${name} a créé une réserve`
+    case 'reservation_resolved':
+      return `${name} a résolu une réserve`
+    default:
+      return `${name} a effectué une action`
   }
 }
 

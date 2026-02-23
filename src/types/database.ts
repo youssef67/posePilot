@@ -445,6 +445,9 @@ export type Database = {
           bl_file_url: string | null
           bl_file_name: string | null
           fournisseur: string | null
+          montant_ttc: number | null
+          parent_id: string | null
+          status_history: Record<string, unknown> | null
           created_at: string
           created_by: string | null
         }
@@ -459,6 +462,9 @@ export type Database = {
           bl_file_url?: string | null
           bl_file_name?: string | null
           fournisseur?: string | null
+          montant_ttc?: number | null
+          parent_id?: string | null
+          status_history?: Record<string, unknown> | null
           created_at?: string
           created_by?: string | null
         }
@@ -473,6 +479,9 @@ export type Database = {
           bl_file_url?: string | null
           bl_file_name?: string | null
           fournisseur?: string | null
+          montant_ttc?: number | null
+          parent_id?: string | null
+          status_history?: Record<string, unknown> | null
           created_at?: string
           created_by?: string | null
         }
@@ -767,12 +776,18 @@ export interface Besoin {
   created_by: string | null
 }
 
-// Type miroir de la table livraisons (016_besoins_livraisons.sql)
+// Status history entry for livraison timeline
+export interface StatusHistoryEntry {
+  status: string
+  date: string
+}
+
+// Type miroir de la table livraisons (016_besoins_livraisons.sql + 029/031/032)
 export interface Livraison {
   id: string
   chantier_id: string | null
   description: string
-  status: 'commande' | 'prevu' | 'livre'
+  status: 'commande' | 'prevu' | 'livraison_prevue' | 'a_recuperer' | 'receptionne' | 'recupere' | 'livre'
   fournisseur: string | null
   date_prevue: string | null
   montant_ttc: number | null
@@ -780,6 +795,8 @@ export interface Livraison {
   bc_file_name: string | null
   bl_file_url: string | null
   bl_file_name: string | null
+  parent_id: string | null
+  status_history: StatusHistoryEntry[] | null
   created_at: string
   created_by: string | null
 }

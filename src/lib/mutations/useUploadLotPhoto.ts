@@ -42,7 +42,7 @@ export function useUploadLotPhoto() {
       // Phase 3: Insert lot_photos row (90–100%)
       const { error: insertError } = await supabase
         .from('lot_photos')
-        .insert({ lot_id: lotId, photo_url: publicUrl } as Record<string, unknown>)
+        .insert({ lot_id: lotId, photo_url: publicUrl })
       if (insertError) {
         // Cleanup orphan photo from storage on DB insert failure
         await supabase.storage.from('note-photos').remove([filePath])

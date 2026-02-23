@@ -22,7 +22,7 @@ export function PhotoPreview({ url, alt = 'Photo', onRemove, showRemove, onShare
 
   return (
     <>
-      <div className="relative inline-block">
+      <div className="relative h-20 w-20 shrink-0">
         {!loaded && !error && (
           <div className="h-20 w-20 animate-pulse rounded-lg bg-muted" data-testid="photo-skeleton" />
         )}
@@ -41,8 +41,8 @@ export function PhotoPreview({ url, alt = 'Photo', onRemove, showRemove, onShare
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
           className={cn(
-            'h-20 w-20 cursor-pointer rounded-lg object-cover',
-            (!loaded || error) && 'absolute invisible',
+            'absolute inset-0 h-20 w-20 cursor-pointer rounded-lg object-cover',
+            (!loaded || error) && 'invisible',
           )}
           data-testid="photo-thumbnail"
         />
@@ -53,7 +53,7 @@ export function PhotoPreview({ url, alt = 'Photo', onRemove, showRemove, onShare
               e.stopPropagation()
               onRemove?.()
             }}
-            className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
+            className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
             aria-label="Supprimer la photo"
           >
             <Trash2 className="h-3 w-3" />

@@ -12,7 +12,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 interface ReplaceLivraisonDocumentInput {
   livraisonId: string
-  chantierId: string
+  chantierId: string | null
   file: File
   documentType: 'bc' | 'bl'
   oldFileUrl: string
@@ -76,10 +76,11 @@ export function useReplaceLivraisonDocument() {
       toast.error(error instanceof Error ? error.message : 'Erreur lors du remplacement')
     },
     onSettled: (_data, _error, variables) => {
-      if (variables) {
+      if (variables?.chantierId) {
         queryClient.invalidateQueries({ queryKey: ['livraisons', variables.chantierId] })
         queryClient.invalidateQueries({ queryKey: ['livraisons-count', variables.chantierId] })
       }
+      queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
     },
   })
 }

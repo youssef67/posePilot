@@ -4,7 +4,7 @@ import type { Livraison } from '@/types/database'
 
 interface DeleteLivraisonInput {
   livraisonId: string
-  chantierId: string
+  chantierId: string | null
   mode: 'release-besoins' | 'delete-all'
   linkedBesoinIds: string[]
   bcFileUrl: string | null
@@ -41,25 +41,32 @@ export function useDeleteLivraison() {
       }
     },
     onMutate: async ({ livraisonId, chantierId }) => {
-      await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
-      const previousLivraisons = queryClient.getQueryData(['livraisons', chantierId])
-      queryClient.setQueryData(
-        ['livraisons', chantierId],
-        (old: Livraison[] | undefined) =>
-          (old ?? []).filter((l) => l.id !== livraisonId),
-      )
-      return { previousLivraisons }
+      if (chantierId) {
+        await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
+        const previousLivraisons = queryClient.getQueryData(['livraisons', chantierId])
+        queryClient.setQueryData(
+          ['livraisons', chantierId],
+          (old: Livraison[] | undefined) =>
+            (old ?? []).filter((l) => l.id !== livraisonId),
+        )
+        return { previousLivraisons }
+      }
+      return { previousLivraisons: undefined }
     },
     onError: (_err, { chantierId }, context) => {
-      queryClient.setQueryData(['livraisons', chantierId], context?.previousLivraisons)
+      if (chantierId) {
+        queryClient.setQueryData(['livraisons', chantierId], context?.previousLivraisons)
+      }
     },
     onSettled: (_data, _error, { chantierId }) => {
-      queryClient.invalidateQueries({ queryKey: ['livraisons', chantierId] })
-      queryClient.invalidateQueries({ queryKey: ['livraisons-count', chantierId] })
+      if (chantierId) {
+        queryClient.invalidateQueries({ queryKey: ['livraisons', chantierId] })
+        queryClient.invalidateQueries({ queryKey: ['livraisons-count', chantierId] })
+        queryClient.invalidateQueries({ queryKey: ['besoins', chantierId] })
+        queryClient.invalidateQueries({ queryKey: ['all-besoins', chantierId] })
+      }
       queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
-      queryClient.invalidateQueries({ queryKey: ['besoins', chantierId] })
       queryClient.invalidateQueries({ queryKey: ['all-pending-besoins-count'] })
-      queryClient.invalidateQueries({ queryKey: ['all-besoins', chantierId] })
       queryClient.invalidateQueries({ queryKey: ['all-linked-besoins'] })
     },
   })

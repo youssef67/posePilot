@@ -28,7 +28,7 @@ function HomePage() {
   const depensesParChantier = useMemo(() => {
     const map = new Map<string, number>()
     for (const l of allLivraisons ?? []) {
-      if (l.montant_ttc != null) {
+      if (l.montant_ttc != null && l.chantier_id) {
         map.set(l.chantier_id, (map.get(l.chantier_id) ?? 0) + l.montant_ttc)
       }
     }

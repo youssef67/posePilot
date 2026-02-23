@@ -5,7 +5,8 @@ import { useUpdateLivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStat
 import { useUpdateLivraison } from '@/lib/mutations/useUpdateLivraison'
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
 import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
-import type { Besoin, Livraison } from '@/types/database'
+import type { Livraison } from '@/types/database'
+import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 export function useLivraisonActions(chantierId: string) {
   const createLivraison = useCreateLivraison()
@@ -29,7 +30,7 @@ export function useLivraisonActions(chantierId: string) {
 
   // Suppression
   const [livraisonToDelete, setLivraisonToDelete] = useState<Livraison | null>(null)
-  const [deleteLinkedBesoins, setDeleteLinkedBesoins] = useState<Besoin[]>([])
+  const [deleteLinkedBesoins, setDeleteLinkedBesoins] = useState<LinkedBesoinWithChantier[]>([])
   const [showDeleteSheet, setShowDeleteSheet] = useState(false)
 
   // Passer en commande (montant)
@@ -158,7 +159,7 @@ export function useLivraisonActions(chantierId: string) {
     )
   }
 
-  function handleDeleteLivraison(livraison: Livraison, linkedBesoins: Besoin[]) {
+  function handleDeleteLivraison(livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) {
     setLivraisonToDelete(livraison)
     setDeleteLinkedBesoins(linkedBesoins)
     setShowDeleteSheet(true)

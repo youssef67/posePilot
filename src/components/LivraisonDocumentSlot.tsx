@@ -23,7 +23,7 @@ const LABELS = {
 interface LivraisonDocumentSlotProps {
   type: 'bc' | 'bl'
   livraison: Livraison
-  chantierId: string
+  chantierId: string | null
   disabled?: boolean
 }
 
