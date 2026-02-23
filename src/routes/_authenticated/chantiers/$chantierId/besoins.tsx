@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ListChecks } from 'lucide-react'
+import { ArrowLeft, Euro, FileText, ListChecks, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { parseQuantite } from '@/lib/utils/parseQuantite'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
 import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
 import { useCreateGroupedLivraison } from '@/lib/mutations/useCreateGroupedLivraison'
+import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
 import { useBesoins } from '@/lib/queries/useBesoins'
 import { useChantier } from '@/lib/queries/useChantier'
 import type { Besoin } from '@/types/database'
@@ -51,6 +53,10 @@ function BesoinsPage() {
   const deleteBesoin = useDeleteBesoin()
   const transformBesoin = useTransformBesoinToLivraison()
   const createGroupedLivraison = useCreateGroupedLivraison()
+  const uploadDocument = useUploadLivraisonDocument()
+
+  const commanderBcFileRef = useRef<HTMLInputElement>(null)
+  const groupeBcFileRef = useRef<HTMLInputElement>(null)
 
   const [showSheet, setShowSheet] = useState(false)
   const [description, setDescription] = useState('')
@@ -58,6 +64,8 @@ function BesoinsPage() {
   const [showCommanderSheet, setShowCommanderSheet] = useState(false)
   const [besoinToCommand, setBesoinToCommand] = useState<Besoin | null>(null)
   const [commanderFournisseur, setCommanderFournisseur] = useState('')
+  const [commanderMontant, setCommanderMontant] = useState('')
+  const [commanderBcFile, setCommanderBcFile] = useState<File | null>(null)
 
   const [besoinToEdit, setBesoinToEdit] = useState<Besoin | null>(null)
   const [showEditSheet, setShowEditSheet] = useState(false)
@@ -73,6 +81,8 @@ function BesoinsPage() {
   const [showGroupeSheet, setShowGroupeSheet] = useState(false)
   const [groupeDescription, setGroupeDescription] = useState('')
   const [groupeFournisseur, setGroupeFournisseur] = useState('')
+  const [groupeMontant, setGroupeMontant] = useState('')
+  const [groupeBcFile, setGroupeBcFile] = useState<File | null>(null)
   const [groupeError, setGroupeError] = useState('')
 
   function handleOpenSheet() {
@@ -87,8 +97,9 @@ function BesoinsPage() {
       setDescError('La description est requise')
       return
     }
+    const { description: desc, quantite } = parseQuantite(trimmed)
     createBesoin.mutate(
-      { chantierId, description: trimmed },
+      { chantierId, description: desc, quantite },
       {
         onSuccess: () => {
           setShowSheet(false)
@@ -149,19 +160,34 @@ function BesoinsPage() {
   function handleCommander(besoin: Besoin) {
     setBesoinToCommand(besoin)
     setCommanderFournisseur('')
+    setCommanderMontant('')
+    setCommanderBcFile(null)
     setShowCommanderSheet(true)
   }
 
   function handleConfirmCommander() {
     if (!besoinToCommand) return
+    const parsedMontant = parseFloat(commanderMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+    const pendingBcFile = commanderBcFile
     transformBesoin.mutate(
-      { besoin: besoinToCommand, fournisseur: commanderFournisseur.trim() || undefined },
+      { besoin: besoinToCommand, fournisseur: commanderFournisseur.trim() || undefined, montantTtc },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setShowCommanderSheet(false)
           setBesoinToCommand(null)
           setCommanderFournisseur('')
+          setCommanderMontant('')
+          setCommanderBcFile(null)
           toast('Besoin commandé')
+          if (pendingBcFile && data?.id) {
+            uploadDocument.mutate({
+              livraisonId: data.id,
+              chantierId,
+              file: pendingBcFile,
+              documentType: 'bc',
+            })
+          }
         },
         onError: () => toast.error('Erreur lors de la commande'),
       },
@@ -197,6 +223,8 @@ function BesoinsPage() {
   function handleOpenGroupeSheet() {
     setGroupeDescription('')
     setGroupeFournisseur('')
+    setGroupeMontant('')
+    setGroupeBcFile(null)
     setGroupeError('')
     setShowGroupeSheet(true)
   }
@@ -207,26 +235,40 @@ function BesoinsPage() {
       setGroupeError("L'intitulé de la commande est requis")
       return
     }
+    const parsedMontant = parseFloat(groupeMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+    const pendingBcFile = groupeBcFile
     createGroupedLivraison.mutate(
       {
         chantierId,
         besoinIds: Array.from(selectedBesoinIds),
         description: trimmed,
         fournisseur: groupeFournisseur.trim() || undefined,
+        montantTtc,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           setShowGroupeSheet(false)
           setSelectionMode(false)
           setSelectedBesoinIds(new Set())
+          setGroupeMontant('')
+          setGroupeBcFile(null)
           toast('Commande créée')
+          if (pendingBcFile && data?.id) {
+            uploadDocument.mutate({
+              livraisonId: data.id,
+              chantierId,
+              file: pendingBcFile,
+              documentType: 'bc',
+            })
+          }
         },
         onError: () => toast.error('Erreur lors de la commande'),
       },
     )
   }
 
-  const showSelectButton = !selectionMode && besoins && besoins.length >= 2
+  const showSelectButton = !selectionMode && besoins && besoins.length >= 1
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-56px-env(safe-area-inset-bottom))]">
@@ -392,13 +434,63 @@ function BesoinsPage() {
               Le besoin &laquo;{besoinToCommand?.description}&raquo; sera transformé en livraison.
             </SheetDescription>
           </SheetHeader>
-          <div className="px-4">
+          <div className="px-4 flex flex-col gap-3">
             <Input
               placeholder="Fournisseur (optionnel)"
               value={commanderFournisseur}
               onChange={(e) => setCommanderFournisseur(e.target.value)}
               aria-label="Fournisseur"
             />
+            <div className="relative">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Montant TTC (optionnel)"
+                value={commanderMontant}
+                onChange={(e) => setCommanderMontant(e.target.value)}
+                aria-label="Montant TTC"
+                className="pr-8"
+              />
+              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
+            <div>
+              <input
+                ref={commanderBcFileRef}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/heic"
+                className="hidden"
+                onChange={(e) => {
+                  setCommanderBcFile(e.target.files?.[0] ?? null)
+                  e.target.value = ''
+                }}
+              />
+              {commanderBcFile ? (
+                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+                  <FileText className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-sm truncate flex-1">{commanderBcFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCommanderBcFile(null)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label="Retirer le fichier"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full justify-start gap-2"
+                  onClick={() => commanderBcFileRef.current?.click()}
+                >
+                  <FileText className="size-4" />
+                  Bon de commande (optionnel)
+                </Button>
+              )}
+            </div>
           </div>
           <SheetFooter>
             <Button
@@ -451,6 +543,56 @@ function BesoinsPage() {
                 onChange={(e) => setGroupeFournisseur(e.target.value)}
                 placeholder="Optionnel"
               />
+            </div>
+            <div className="relative">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Montant TTC (optionnel)"
+                value={groupeMontant}
+                onChange={(e) => setGroupeMontant(e.target.value)}
+                aria-label="Montant TTC"
+                className="pr-8"
+              />
+              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
+            <div>
+              <input
+                ref={groupeBcFileRef}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/heic"
+                className="hidden"
+                onChange={(e) => {
+                  setGroupeBcFile(e.target.files?.[0] ?? null)
+                  e.target.value = ''
+                }}
+              />
+              {groupeBcFile ? (
+                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+                  <FileText className="size-4 text-emerald-500 shrink-0" />
+                  <span className="text-sm truncate flex-1">{groupeBcFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setGroupeBcFile(null)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label="Retirer le fichier"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full justify-start gap-2"
+                  onClick={() => groupeBcFileRef.current?.click()}
+                >
+                  <FileText className="size-4" />
+                  Bon de commande (optionnel)
+                </Button>
+              )}
             </div>
             <div>
               <p className="text-sm font-medium mb-1">Besoins inclus :</p>

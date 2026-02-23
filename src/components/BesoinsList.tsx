@@ -122,6 +122,9 @@ export function BesoinsList({
                       onClick={(e) => e.stopPropagation()}
                     />
                   )}
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground mt-0.5">
+                    {besoin.quantite}
+                  </span>
                   <p className="text-sm font-medium text-foreground">
                     {besoin.description}
                   </p>

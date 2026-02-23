@@ -55,6 +55,7 @@ describe('useCreateBesoin', () => {
     expect(mockInsert).toHaveBeenCalledWith({
       chantier_id: 'ch1',
       description: 'Colle faïence',
+      quantite: 1,
       created_by: 'user-1',
     })
     expect(result.current.data).toEqual(created)

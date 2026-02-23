@@ -6,7 +6,7 @@ export function useTransformBesoinToLivraison() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoin, fournisseur }: { besoin: Besoin; fournisseur?: string }) => {
+    mutationFn: async ({ besoin, fournisseur, montantTtc }: { besoin: Besoin; fournisseur?: string; montantTtc?: number | null }) => {
       const { data: { user } } = await supabase.auth.getUser()
 
       // 1. Créer la livraison
@@ -16,6 +16,7 @@ export function useTransformBesoinToLivraison() {
           chantier_id: besoin.chantier_id,
           description: besoin.description,
           fournisseur: fournisseur || null,
+          montant_ttc: montantTtc ?? null,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })

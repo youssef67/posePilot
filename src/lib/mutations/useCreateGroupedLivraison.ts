@@ -7,13 +7,14 @@ interface CreateGroupedLivraisonInput {
   besoinIds: string[]
   description: string
   fournisseur?: string
+  montantTtc?: number | null
 }
 
 export function useCreateGroupedLivraison() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ chantierId, besoinIds, description, fournisseur }: CreateGroupedLivraisonInput) => {
+    mutationFn: async ({ chantierId, besoinIds, description, fournisseur, montantTtc }: CreateGroupedLivraisonInput) => {
       const { data: { user } } = await supabase.auth.getUser()
 
       // Etape 1 : creer la livraison
@@ -23,6 +24,7 @@ export function useCreateGroupedLivraison() {
           chantier_id: chantierId,
           description,
           fournisseur: fournisseur || null,
+          montant_ttc: montantTtc ?? null,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })

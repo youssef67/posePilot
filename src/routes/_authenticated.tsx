@@ -18,7 +18,7 @@ function AuthenticatedLayout() {
   return (
     <>
       <SidebarNavigation />
-      <div className="lg:pl-56">
+      <div className="lg:pl-56 overflow-x-hidden">
         <Outlet />
       </div>
       <BottomNavigation />

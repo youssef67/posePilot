@@ -1,9 +1,26 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Euro, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -24,9 +41,11 @@ import { Fab } from '@/components/Fab'
 import { useAllPendingBesoins, type BesoinWithChantier } from '@/lib/queries/useAllPendingBesoins'
 import { useBulkTransformBesoins } from '@/lib/mutations/useBulkTransformBesoins'
 import { useCreateBesoin } from '@/lib/mutations/useCreateBesoin'
+import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { useRealtimeAllPendingBesoins } from '@/lib/subscriptions/useRealtimeAllPendingBesoins'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
+import { parseQuantite } from '@/lib/utils/parseQuantite'
 import { useAuth } from '@/lib/auth'
 
 export const Route = createFileRoute('/_authenticated/besoins')({
@@ -79,11 +98,78 @@ function BesoinsPage() {
   const { data: chantiers } = useChantiers()
   const bulkTransform = useBulkTransformBesoins()
   const createBesoin = useCreateBesoin()
+  const deleteBesoin = useDeleteBesoin()
   const { user } = useAuth()
   useRealtimeAllPendingBesoins()
 
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Delete dialog
+  const [besoinToDelete, setBesoinToDelete] = useState<BesoinWithChantier | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  function handleDelete(besoin: BesoinWithChantier) {
+    setBesoinToDelete(besoin)
+    setShowDeleteDialog(true)
+  }
+
+  function handleConfirmDelete() {
+    if (!besoinToDelete) return
+    deleteBesoin.mutate(
+      { id: besoinToDelete.id, chantierId: besoinToDelete.chantier_id },
+      {
+        onSuccess: () => {
+          setShowDeleteDialog(false)
+          setBesoinToDelete(null)
+          toast('Besoin supprimé')
+        },
+        onError: () => toast.error('Erreur lors de la suppression'),
+      },
+    )
+  }
+
+  // Bulk delete
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+
+  function handleOpenBulkDelete() {
+    setShowBulkDeleteDialog(true)
+  }
+
+  async function handleConfirmBulkDelete() {
+    const selectedBesoins = (besoins ?? []).filter((b) => selectedIds.has(b.id))
+    if (selectedBesoins.length === 0) return
+
+    setIsBulkDeleting(true)
+    let successCount = 0
+    let failCount = 0
+
+    for (const besoin of selectedBesoins) {
+      try {
+        await deleteBesoin.mutateAsync({ id: besoin.id, chantierId: besoin.chantier_id })
+        successCount++
+      } catch {
+        failCount++
+      }
+    }
+
+    setIsBulkDeleting(false)
+    setShowBulkDeleteDialog(false)
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+
+    if (failCount > 0) {
+      toast(`${successCount} supprimé${successCount > 1 ? 's' : ''}, ${failCount} échec${failCount > 1 ? 's' : ''}`)
+    } else {
+      toast(`${successCount} besoin${successCount > 1 ? 's' : ''} supprimé${successCount > 1 ? 's' : ''}`)
+    }
+  }
+
+  // Sheet bulk commande
+  const [showBulkSheet, setShowBulkSheet] = useState(false)
+  const [bulkFournisseur, setBulkFournisseur] = useState('')
+  const [bulkMontant, setBulkMontant] = useState('')
 
   // Sheet creation besoin
   const [showSheet, setShowSheet] = useState(false)
@@ -120,9 +206,11 @@ function BesoinsPage() {
     setIsCreating(true)
     try {
       for (const line of lines) {
+        const { description: desc, quantite } = parseQuantite(line)
         await createBesoin.mutateAsync({
           chantierId: selectedChantierId,
-          description: line,
+          description: desc,
+          quantite,
         })
       }
       setShowSheet(false)
@@ -199,14 +287,28 @@ function BesoinsPage() {
     setSelectedIds(new Set())
   }
 
-  function handleBulkTransform() {
+  function handleOpenBulkSheet() {
+    setBulkFournisseur('')
+    setBulkMontant('')
+    setShowBulkSheet(true)
+  }
+
+  function handleConfirmBulkTransform() {
     const selectedBesoins = (besoins ?? []).filter((b) => selectedIds.has(b.id))
     if (selectedBesoins.length === 0) return
 
+    const parsedMontant = parseFloat(bulkMontant)
+    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+
     bulkTransform.mutate(
-      { besoins: selectedBesoins },
+      {
+        besoins: selectedBesoins,
+        fournisseur: bulkFournisseur.trim() || undefined,
+        montantTtc,
+      },
       {
         onSuccess: (data) => {
+          setShowBulkSheet(false)
           setSelectionMode(false)
           setSelectedIds(new Set())
           const n = data.succeeded.length
@@ -222,10 +324,10 @@ function BesoinsPage() {
   }
 
   const totalBesoins = besoins?.length ?? 0
-  const showSelectButton = !selectionMode && totalBesoins >= 2
+  const showSelectButton = !selectionMode && totalBesoins >= 1
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-24">
+    <div className="flex flex-col gap-4 p-4 pb-24 overflow-x-hidden">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Besoins</h1>
         {showSelectButton && (
@@ -307,8 +409,11 @@ function BesoinsPage() {
                               onClick={(e) => e.stopPropagation()}
                             />
                           )}
+                          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground mt-0.5">
+                            {besoin.quantite}
+                          </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground">
+                            <p className="text-sm font-medium text-foreground break-words">
                               {besoin.description}
                             </p>
                             <span className="text-xs text-muted-foreground">
@@ -319,6 +424,27 @@ function BesoinsPage() {
                               {formatRelativeTime(besoin.created_at)}
                             </span>
                           </div>
+                          {!selectionMode && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  aria-label="Actions"
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem className="text-destructive" onSelect={() => handleDelete(besoin)}>
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
                       </div>
                     )
@@ -335,17 +461,117 @@ function BesoinsPage() {
           className="fixed bottom-14 left-0 right-0 z-40 border-t bg-background p-4"
           style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
         >
-          <Button
-            onClick={handleBulkTransform}
-            disabled={bulkTransform.isPending}
-            className="w-full"
-          >
-            Passer en livraison ({selectedIds.size})
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleOpenBulkDelete}
+              className="flex-1"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer ({selectedIds.size})
+            </Button>
+            <Button
+              onClick={handleOpenBulkSheet}
+              className="flex-1"
+            >
+              Commander ({selectedIds.size})
+            </Button>
+          </div>
         </div>
       )}
 
       {!selectionMode && <Fab onClick={handleOpenSheet} />}
+
+      {/* Dialog suppression en masse */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer {selectedIds.size} besoin{selectedIds.size > 1 ? 's' : ''} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedIds.size > 1
+                ? 'Les besoins sélectionnés seront supprimés définitivement.'
+                : 'Le besoin sélectionné sera supprimé définitivement.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmBulkDelete} disabled={isBulkDeleting}>
+              {isBulkDeleting ? 'Suppression...' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Sheet bulk commande */}
+      <Sheet open={showBulkSheet} onOpenChange={setShowBulkSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Commander {selectedIds.size} besoin{selectedIds.size > 1 ? 's' : ''}</SheetTitle>
+            <SheetDescription>
+              {selectedIds.size > 1
+                ? 'Une livraison sera créée pour chaque besoin sélectionné.'
+                : 'Le besoin sera transformé en livraison.'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 flex flex-col gap-3">
+            <Input
+              placeholder="Fournisseur (optionnel)"
+              value={bulkFournisseur}
+              onChange={(e) => setBulkFournisseur(e.target.value)}
+              aria-label="Fournisseur"
+            />
+            <div className="relative">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Montant TTC (optionnel)"
+                value={bulkMontant}
+                onChange={(e) => setBulkMontant(e.target.value)}
+                aria-label="Montant TTC"
+                className="pr-8"
+              />
+              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Besoins inclus :</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {(besoins ?? []).filter((b) => selectedIds.has(b.id)).map((b) => (
+                  <li key={b.id} className="truncate">• {b.description}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleConfirmBulkTransform}
+              disabled={bulkTransform.isPending}
+              className="w-full"
+            >
+              Confirmer la commande
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Dialog suppression besoin */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce besoin ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le besoin &laquo;{besoinToDelete?.description}&raquo; sera supprimé définitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Sheet open={showSheet} onOpenChange={setShowSheet}>
         <SheetContent side="bottom">
@@ -381,7 +607,7 @@ function BesoinsPage() {
             </div>
             <div>
               <Textarea
-                placeholder={"Ex: Colle pour faïence 20kg\nSacs de ciment\nMortier"}
+                placeholder={"Ex: Colle pour faïence 20kg\n3x Sacs de ciment\nMortier x2"}
                 value={description}
                 onChange={(e) => {
                   setDescription(e.target.value)
@@ -395,7 +621,7 @@ function BesoinsPage() {
                 <p className="text-sm text-destructive mt-1">{descError}</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                Une ligne par besoin pour en créer plusieurs d'un coup.
+                Une ligne par besoin. Ajoutez «3x» ou «x3» pour la quantité.
               </p>
             </div>
           </div>

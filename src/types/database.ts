@@ -471,6 +471,7 @@ export type Database = {
           id: string
           chantier_id: string
           description: string
+          quantite: number
           livraison_id: string | null
           created_at: string
           created_by: string | null
@@ -479,6 +480,7 @@ export type Database = {
           id?: string
           chantier_id: string
           description: string
+          quantite?: number
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -487,6 +489,7 @@ export type Database = {
           id?: string
           chantier_id?: string
           description?: string
+          quantite?: number
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -689,6 +692,7 @@ export interface Besoin {
   id: string
   chantier_id: string
   description: string
+  quantite: number
   livraison_id: string | null
   created_at: string
   created_by: string | null

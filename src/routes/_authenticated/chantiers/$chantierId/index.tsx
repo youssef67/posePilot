@@ -361,7 +361,7 @@ function ChantierIndexPage() {
     )
   }
 
-  const showSelectButton = !selectionMode && besoins && besoins.length >= 2
+  const showSelectButton = !selectionMode && besoins && besoins.length >= 1
 
   if (isLoading) {
     return (

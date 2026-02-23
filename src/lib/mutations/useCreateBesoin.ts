@@ -6,13 +6,14 @@ export function useCreateBesoin() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ chantierId, description }: { chantierId: string; description: string }) => {
+    mutationFn: async ({ chantierId, description, quantite = 1 }: { chantierId: string; description: string; quantite?: number }) => {
       const { data: { user } } = await supabase.auth.getUser()
       const { data, error } = await supabase
         .from('besoins')
         .insert({
           chantier_id: chantierId,
           description,
+          quantite,
           created_by: user?.id ?? null,
         })
         .select()
@@ -20,7 +21,7 @@ export function useCreateBesoin() {
       if (error) throw error
       return data as unknown as Besoin
     },
-    onMutate: async ({ chantierId, description }) => {
+    onMutate: async ({ chantierId, description, quantite = 1 }) => {
       await queryClient.cancelQueries({ queryKey: ['besoins', chantierId] })
       const previous = queryClient.getQueryData(['besoins', chantierId])
       queryClient.setQueryData(['besoins', chantierId], (old: Besoin[] | undefined) => [
@@ -28,6 +29,7 @@ export function useCreateBesoin() {
           id: crypto.randomUUID(),
           chantier_id: chantierId,
           description,
+          quantite,
           livraison_id: null,
           created_at: new Date().toISOString(),
           created_by: null,

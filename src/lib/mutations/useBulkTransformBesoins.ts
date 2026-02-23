@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Livraison, StatusHistoryEntry } from '@/types/database'
+import type { Livraison } from '@/types/database'
 import type { BesoinWithChantier } from '@/lib/queries/useAllPendingBesoins'
 
 interface BulkTransformInput {
   besoins: BesoinWithChantier[]
+  fournisseur?: string
+  montantTtc?: number | null
 }
 
 export interface BulkTransformResult {
@@ -16,22 +18,20 @@ export function useBulkTransformBesoins() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoins }: BulkTransformInput) => {
+    mutationFn: async ({ besoins, fournisseur, montantTtc }: BulkTransformInput) => {
       const { data: { user } } = await supabase.auth.getUser()
 
       const results = await Promise.allSettled(
         besoins.map(async (besoin) => {
-          const initialHistory: StatusHistoryEntry[] = [{ status: 'prevu', date: new Date().toISOString() }]
-
           // 1. Créer la livraison
           const { data: livraison, error: livraisonError } = await supabase
             .from('livraisons')
             .insert({
               chantier_id: besoin.chantier_id,
               description: besoin.description,
-              status: 'prevu' as const,
-              retrait: false,
-              status_history: initialHistory as unknown as Record<string, unknown>,
+              fournisseur: fournisseur || null,
+              montant_ttc: montantTtc ?? null,
+              status: 'commande' as const,
               created_by: user?.id ?? null,
             })
             .select()
