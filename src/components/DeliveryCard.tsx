@@ -133,7 +133,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
             </button>
             {expanded && (
-              <BesoinsList besoins={linkedBesoins} isMultiChantier={!livraison.chantier_id} userId={user?.id} userEmail={user?.email ?? undefined} />
+              <BesoinsList besoins={linkedBesoins} isMultiChantier={!livraison.chantier_id} />
             )}
           </>
         )}
@@ -198,11 +198,9 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
   )
 }
 
-function BesoinLine({ b, showChantier, userId, userEmail }: {
+function BesoinLine({ b, showChantier }: {
   b: LinkedBesoinWithChantier
   showChantier: boolean
-  userId: string | undefined
-  userEmail: string | undefined
 }) {
   const lineTotal = b.montant_unitaire != null ? (b.quantite ?? 1) * b.montant_unitaire : null
   return (
@@ -230,17 +228,15 @@ function BesoinLine({ b, showChantier, userId, userEmail }: {
   )
 }
 
-function BesoinsList({ besoins, isMultiChantier, userId, userEmail }: {
+function BesoinsList({ besoins, isMultiChantier }: {
   besoins: LinkedBesoinWithChantier[]
   isMultiChantier: boolean
-  userId: string | undefined
-  userEmail: string | undefined
 }) {
   if (!isMultiChantier) {
     return (
       <div className="space-y-1 pl-4 border-l-2 border-muted">
         {besoins.map((b) => (
-          <BesoinLine key={b.id} b={b} showChantier={false} userId={userId} userEmail={userEmail} />
+          <BesoinLine key={b.id} b={b} showChantier={false}  />
         ))}
       </div>
     )
@@ -278,7 +274,7 @@ function BesoinsList({ besoins, isMultiChantier, userId, userEmail }: {
             </div>
             <div className="space-y-0.5">
               {group.besoins.map((b) => (
-                <BesoinLine key={b.id} b={b} showChantier={false} userId={userId} userEmail={userEmail} />
+                <BesoinLine key={b.id} b={b} showChantier={false}  />
               ))}
             </div>
           </div>
