@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Home, Truck, Bell, Settings } from 'lucide-react'
+import { Home, ClipboardList, Truck, Bell } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useUnreadActivityCount } from '@/lib/queries/useUnreadActivityCount'
 import { useAllPendingBesoinsCount } from '@/lib/queries/useAllPendingBesoinsCount'
@@ -8,9 +8,9 @@ import { useRealtimeAllBesoins } from '@/lib/subscriptions/useRealtimeAllBesoins
 
 const tabs = [
   { to: '/', label: 'Chantiers', icon: Home },
+  { to: '/besoins', label: 'Besoins', icon: ClipboardList },
   { to: '/livraisons', label: 'Livraisons', icon: Truck },
   { to: '/activite', label: 'Activité', icon: Bell },
-  { to: '/settings', label: 'Réglages', icon: Settings },
 ] as const
 
 export function BottomNavigation() {
@@ -40,7 +40,7 @@ export function BottomNavigation() {
         {tabs.map(({ to, label, icon: Icon }) => {
           const active = isActive(to)
           const showActivityBadge = to === '/activite' && (unreadCount ?? 0) > 0
-          const showBesoinsBadge = to === '/livraisons' && (pendingBesoinsCount ?? 0) > 0
+          const showBesoinsBadge = to === '/besoins' && (pendingBesoinsCount ?? 0) > 0
           const badgeCount = showActivityBadge ? unreadCount : showBesoinsBadge ? pendingBesoinsCount : null
           const ariaLabel = showActivityBadge
             ? `${label}, ${unreadCount} nouvelles notifications`
