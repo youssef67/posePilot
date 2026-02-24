@@ -29,22 +29,23 @@ function HomePage() {
 
   const depensesParChantier = useMemo(() => {
     const map = new Map<string, number>()
-    // Livraisons with a direct chantier_id
-    for (const l of allLivraisons ?? []) {
-      if (l.montant_ttc != null && l.chantier_id) {
-        map.set(l.chantier_id, (map.get(l.chantier_id) ?? 0) + l.montant_ttc)
+    // Use besoins linked to livraisons as source of truth (covers mono and multi-chantier)
+    for (const b of allLinkedBesoins ?? []) {
+      if (b.montant_unitaire != null) {
+        const amount = (b.quantite ?? 1) * b.montant_unitaire
+        map.set(b.chantier_id, (map.get(b.chantier_id) ?? 0) + amount)
       }
     }
-    // Multi-chantier livraisons (chantier_id = null): ventilate via besoins
-    const multiChantierLivIds = new Set(
-      (allLivraisons ?? []).filter((l) => !l.chantier_id && l.montant_ttc != null).map((l) => l.id),
-    )
-    if (multiChantierLivIds.size > 0) {
-      for (const b of allLinkedBesoins ?? []) {
-        if (b.livraison_id && multiChantierLivIds.has(b.livraison_id) && b.montant_unitaire != null) {
-          const amount = (b.quantite ?? 1) * b.montant_unitaire
-          map.set(b.chantier_id, (map.get(b.chantier_id) ?? 0) + amount)
-        }
+    // Fallback: livraisons without besoins that have montant_unitaire (legacy)
+    const chantiersCoveredByBesoins = new Set<string>()
+    for (const b of allLinkedBesoins ?? []) {
+      if (b.livraison_id && b.montant_unitaire != null) {
+        chantiersCoveredByBesoins.add(b.livraison_id)
+      }
+    }
+    for (const l of allLivraisons ?? []) {
+      if (l.montant_ttc != null && l.chantier_id && !chantiersCoveredByBesoins.has(l.id)) {
+        map.set(l.chantier_id, (map.get(l.chantier_id) ?? 0) + l.montant_ttc)
       }
     }
     return map
