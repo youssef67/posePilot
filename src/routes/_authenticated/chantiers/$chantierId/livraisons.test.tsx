@@ -220,7 +220,7 @@ describe('LivraisonsPage — sheet interactions', () => {
     await screen.findByText('Nouvelle livraison')
     await user.click(screen.getByRole('button', { name: 'Créer la livraison' }))
 
-    expect(await screen.findByText('La description est requise')).toBeInTheDocument()
+    expect(await screen.findByText('Au moins une ligne est requise')).toBeInTheDocument()
     expect(mockCreateMutate).not.toHaveBeenCalled()
   })
 
@@ -233,12 +233,23 @@ describe('LivraisonsPage — sheet interactions', () => {
     await user.click(screen.getByRole('button', { name: 'Ajouter' }))
     await screen.findByText('Nouvelle livraison')
 
-    const textarea = screen.getByLabelText('Description de la livraison')
-    await user.type(textarea, 'Colle pour faïence')
+    // Fill description for item 1
+    const descInput = screen.getByLabelText('Description item 1')
+    await user.type(descInput, 'Colle pour faïence')
+    // Fill montant unitaire for item 1
+    const montantInput = screen.getByLabelText('Montant unitaire item 1')
+    await user.type(montantInput, '15')
+
     await user.click(screen.getByRole('button', { name: 'Créer la livraison' }))
 
     expect(mockCreateMutate).toHaveBeenCalledWith(
-      { chantierId: 'abc-123', description: 'Colle pour faïence' },
+      expect.objectContaining({
+        chantierId: 'abc-123',
+        description: 'Colle pour faïence',
+        lines: expect.arrayContaining([
+          expect.objectContaining({ description: 'Colle pour faïence', montant_unitaire: 15 }),
+        ]),
+      }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })

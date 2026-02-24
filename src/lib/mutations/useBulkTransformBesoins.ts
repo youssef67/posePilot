@@ -3,28 +3,44 @@ import { supabase } from '@/lib/supabase'
 import type { Livraison } from '@/types/database'
 import type { BesoinWithChantier } from '@/lib/queries/useAllPendingBesoins'
 
+interface BesoinMontantEntry {
+  besoinId: string
+  montantUnitaire: number
+  quantite: number
+}
+
 interface BulkTransformInput {
   besoins: BesoinWithChantier[]
   description: string
   fournisseur?: string
   montantTtc?: number | null
+  besoinMontants?: BesoinMontantEntry[]
 }
 
 export function useBulkTransformBesoins() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoins, description, fournisseur, montantTtc }: BulkTransformInput) => {
+    mutationFn: async ({ besoins, description, fournisseur, montantTtc, besoinMontants }: BulkTransformInput) => {
       const { data: { user } } = await supabase.auth.getUser()
 
-      // 1. Créer UNE seule livraison (chantier_id null = multi-chantier)
+      // Determine chantier_id: common if all same, null if multi-chantier
+      const chantierIds = [...new Set(besoins.map((b) => b.chantier_id))]
+      const chantierId = chantierIds.length === 1 ? chantierIds[0] : null
+
+      // Calculate montant_ttc from line items if provided
+      const computedMontantTtc = besoinMontants && besoinMontants.length > 0
+        ? besoinMontants.reduce((sum, bm) => sum + bm.quantite * bm.montantUnitaire, 0)
+        : montantTtc ?? null
+
+      // 1. Créer UNE seule livraison
       const { data: livraison, error: livraisonError } = await supabase
         .from('livraisons')
         .insert({
-          chantier_id: null,
+          chantier_id: chantierId,
           description,
           fournisseur: fournisseur || null,
-          montant_ttc: montantTtc ?? null,
+          montant_ttc: computedMontantTtc,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })
@@ -32,14 +48,25 @@ export function useBulkTransformBesoins() {
         .single()
       if (livraisonError) throw livraisonError
 
-      // 2. Rattacher TOUS les besoins en batch
-      const besoinIds = besoins.map((b) => b.id)
-      const { error: besoinsError } = await supabase
-        .from('besoins')
-        .update({ livraison_id: (livraison as unknown as Livraison).id })
-        .in('id', besoinIds)
-        .is('livraison_id', null)
-      if (besoinsError) throw besoinsError
+      const livraisonId = (livraison as unknown as Livraison).id
+
+      // 2. Rattacher les besoins et mettre à jour montant_unitaire en un seul update par besoin
+      const montantMap = new Map(
+        (besoinMontants ?? []).map((bm) => [bm.besoinId, bm.montantUnitaire]),
+      )
+
+      for (const besoin of besoins) {
+        const updatePayload: Record<string, unknown> = { livraison_id: livraisonId }
+        const montant = montantMap.get(besoin.id)
+        if (montant !== undefined) updatePayload.montant_unitaire = montant
+
+        const { error } = await supabase
+          .from('besoins')
+          .update(updatePayload)
+          .eq('id', besoin.id)
+          .is('livraison_id', null)
+        if (error) throw error
+      }
 
       return livraison as unknown as Livraison
     },

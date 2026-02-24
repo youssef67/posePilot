@@ -511,9 +511,6 @@ describe('DeliveryCard', () => {
     expect(screen.getByText('Colle faience')).toBeInTheDocument()
     expect(screen.getByText('Joint gris 5kg')).toBeInTheDocument()
     expect(screen.getByText('Carrelage 60x60')).toBeInTheDocument()
-    // Author initial shown (Y for youssef@test.com since created_by matches user-1)
-    const details = screen.getAllByText(/Y · il y a 2h/)
-    expect(details.length).toBeGreaterThanOrEqual(3)
   })
 
   // Delete tests (Story 6.9)

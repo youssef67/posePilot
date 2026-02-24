@@ -83,6 +83,7 @@ describe('useTransformBesoinToLivraison', () => {
       chantier_id: 'ch1',
       description: 'Colle faïence 20kg',
       fournisseur: null,
+      montant_ttc: null,
       status: 'commande',
       created_by: 'user-1',
     })

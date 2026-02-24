@@ -8,6 +8,7 @@ import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { Fab } from '@/components/Fab'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { useAllLivraisons } from '@/lib/queries/useAllLivraisons'
+import { useAllLinkedBesoins } from '@/lib/queries/useAllLinkedBesoins'
 import type { ChantierRow } from '@/lib/queries/useChantier'
 import { computeStatus } from '@/lib/utils/computeStatus'
 
@@ -24,16 +25,30 @@ function HomePage() {
   const navigate = useNavigate()
   const { data: chantiers, isLoading } = useChantiers('active')
   const { data: allLivraisons } = useAllLivraisons()
+  const { data: allLinkedBesoins } = useAllLinkedBesoins()
 
   const depensesParChantier = useMemo(() => {
     const map = new Map<string, number>()
+    // Livraisons with a direct chantier_id
     for (const l of allLivraisons ?? []) {
       if (l.montant_ttc != null && l.chantier_id) {
         map.set(l.chantier_id, (map.get(l.chantier_id) ?? 0) + l.montant_ttc)
       }
     }
+    // Multi-chantier livraisons (chantier_id = null): ventilate via besoins
+    const multiChantierLivIds = new Set(
+      (allLivraisons ?? []).filter((l) => !l.chantier_id && l.montant_ttc != null).map((l) => l.id),
+    )
+    if (multiChantierLivIds.size > 0) {
+      for (const b of allLinkedBesoins ?? []) {
+        if (b.livraison_id && multiChantierLivIds.has(b.livraison_id) && b.montant_unitaire != null) {
+          const amount = (b.quantite ?? 1) * b.montant_unitaire
+          map.set(b.chantier_id, (map.get(b.chantier_id) ?? 0) + amount)
+        }
+      }
+    }
     return map
-  }, [allLivraisons])
+  }, [allLivraisons, allLinkedBesoins])
 
   const all = (chantiers ?? []) as unknown as ChantierRow[]
   const [filtered, setFiltered] = useState<ChantierRow[]>([])

@@ -43,8 +43,8 @@ function setupMocks(livraisonOverrides?: Partial<typeof mockLivraison>, besoinsE
   const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
 
   const mockIs = vi.fn().mockResolvedValue({ error: besoinsError ?? null })
-  const mockIn = vi.fn().mockReturnValue({ is: mockIs })
-  const mockUpdate = vi.fn().mockReturnValue({ in: mockIn })
+  const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+  const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
 
   let callCount = 0
   vi.mocked(supabase.from).mockImplementation((table: string) => {
@@ -55,7 +55,7 @@ function setupMocks(livraisonOverrides?: Partial<typeof mockLivraison>, besoinsE
     return { update: mockUpdate } as never
   })
 
-  return { mockInsert, mockUpdate, mockIn, mockIs }
+  return { mockInsert, mockUpdate, mockEq, mockIs }
 }
 
 function createWrapper(queryClient?: QueryClient) {
@@ -70,8 +70,8 @@ describe('useCreateGroupedLivraison', () => {
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: 'user-1' } as never }, error: null })
   })
 
-  it('creates livraison and batch-updates besoins', async () => {
-    const { mockInsert, mockUpdate, mockIn, mockIs } = setupMocks()
+  it('creates livraison and updates each besoin individually', async () => {
+    const { mockInsert, mockUpdate, mockEq, mockIs } = setupMocks()
     const { result } = renderHook(() => useCreateGroupedLivraison(), { wrapper: createWrapper() })
 
     await act(async () => {
@@ -88,11 +88,14 @@ describe('useCreateGroupedLivraison', () => {
       chantier_id: 'ch1',
       description: 'Commande carrelage T2',
       fournisseur: null,
+      montant_ttc: null,
       status: 'commande',
       created_by: 'user-1',
     })
+    expect(mockUpdate).toHaveBeenCalledTimes(2)
     expect(mockUpdate).toHaveBeenCalledWith({ livraison_id: 'liv1' })
-    expect(mockIn).toHaveBeenCalledWith('id', ['b1', 'b2'])
+    expect(mockEq).toHaveBeenCalledWith('id', 'b1')
+    expect(mockEq).toHaveBeenCalledWith('id', 'b2')
     expect(mockIs).toHaveBeenCalledWith('livraison_id', null)
     expect(result.current.data).toEqual(expect.objectContaining({ id: 'liv1' }))
   })

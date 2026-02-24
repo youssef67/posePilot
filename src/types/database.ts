@@ -493,6 +493,7 @@ export type Database = {
           chantier_id: string
           description: string
           quantite: number
+          montant_unitaire: number | null
           livraison_id: string | null
           created_at: string
           created_by: string | null
@@ -502,6 +503,7 @@ export type Database = {
           chantier_id: string
           description: string
           quantite?: number
+          montant_unitaire?: number | null
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -511,6 +513,7 @@ export type Database = {
           chantier_id?: string
           description?: string
           quantite?: number
+          montant_unitaire?: number | null
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null

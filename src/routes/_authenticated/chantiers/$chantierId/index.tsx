@@ -59,6 +59,7 @@ import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
 import { useInventaire } from '@/lib/queries/useInventaire'
 import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllBesoinsForChantier'
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
+import { useChantiers } from '@/lib/queries/useChantiers'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import type { Besoin } from '@/types/database'
 
@@ -88,6 +89,7 @@ function ChantierIndexPage() {
   const deleteBesoin = useDeleteBesoin()
   const { data: allLinkedBesoins } = useAllBesoinsForChantier(chantierId)
   const livraisonActions = useLivraisonActions(chantierId)
+  const { data: allChantiers } = useChantiers('active')
   const transformBesoin = useTransformBesoinToLivraison()
   const besoinsMap = useMemo(() => buildBesoinsMap(allLinkedBesoins ?? []), [allLinkedBesoins])
   const createGroupedLivraison = useCreateGroupedLivraison()
@@ -109,12 +111,22 @@ function ChantierIndexPage() {
   )
 
   const totalDepenses = useMemo(() => {
-    const all = livraisons ?? []
-    const sum = all
+    // Use besoins linked to livraisons as source of truth for this chantier's costs
+    // This covers both direct (single-chantier) and multi-chantier livraisons
+    const besoinsWithMontant = (allLinkedBesoins ?? []).filter(b => b.montant_unitaire != null)
+    if (besoinsWithMontant.length > 0) {
+      const sum = besoinsWithMontant.reduce(
+        (acc, b) => acc + (b.quantite ?? 1) * b.montant_unitaire!,
+        0,
+      )
+      return sum > 0 ? sum : null
+    }
+    // Fallback for legacy livraisons without montant_unitaire on besoins
+    const sum = (livraisons ?? [])
       .filter(l => l.montant_ttc != null)
       .reduce((acc, l) => acc + (l.montant_ttc ?? 0), 0)
     return sum > 0 ? sum : null
-  }, [livraisons])
+  }, [livraisons, allLinkedBesoins])
 
   const [filteredPlots, setFilteredPlots] = useState<NonNullable<typeof plots>>([])
 
@@ -802,7 +814,7 @@ function ChantierIndexPage() {
         </SheetContent>
       </Sheet>
 
-      <LivraisonSheets actions={livraisonActions} />
+      <LivraisonSheets actions={livraisonActions} chantiers={(allChantiers ?? []) as { id: string; nom: string }[]} />
 
       {/* Barre de selection groupee */}
       {selectionMode && (

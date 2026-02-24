@@ -1,27 +1,52 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useCreateLivraison } from '@/lib/mutations/useCreateLivraison'
+import { useCreateLivraison, type LivraisonLine } from '@/lib/mutations/useCreateLivraison'
 import { useUpdateLivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
-import { useUpdateLivraison } from '@/lib/mutations/useUpdateLivraison'
+import { useUpdateLivraison, type BesoinMontantUpdate } from '@/lib/mutations/useUpdateLivraison'
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
 import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
 import type { Livraison } from '@/types/database'
 import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
-export function useLivraisonActions(chantierId: string) {
+export function useLivraisonActions(chantierId = '') {
   const createLivraison = useCreateLivraison()
   const updateLivraisonStatus = useUpdateLivraisonStatus()
   const updateLivraison = useUpdateLivraison()
   const deleteLivraison = useDeleteLivraison()
   const uploadDocument = useUploadLivraisonDocument()
 
-  // Création
+  // Création multi-lignes
   const [showLivraisonSheet, setShowLivraisonSheet] = useState(false)
   const [livraisonDescription, setLivraisonDescription] = useState('')
   const [livraisonFournisseur, setLivraisonFournisseur] = useState('')
   const [livraisonMontant, setLivraisonMontant] = useState('')
   const [livraisonBcFile, setLivraisonBcFile] = useState<File | null>(null)
   const [livraisonError, setLivraisonError] = useState('')
+
+  // Multi-line livraison creation
+  interface LivraisonLineState {
+    description: string
+    quantite: number
+    montantUnitaire: string
+    chantierId: string
+  }
+  const emptyLivraisonLine = (): LivraisonLineState => ({
+    description: '',
+    quantite: 1,
+    montantUnitaire: '',
+    chantierId: chantierId,
+  })
+  const [livraisonLines, setLivraisonLines] = useState<LivraisonLineState[]>([emptyLivraisonLine()])
+  const [livraisonChantierUnique, setLivraisonChantierUnique] = useState(true)
+  const [livraisonGlobalChantierId, setLivraisonGlobalChantierId] = useState(chantierId)
+
+  const livraisonTotal = useMemo(() => {
+    return livraisonLines.reduce((sum, l) => {
+      const pu = parseFloat(l.montantUnitaire)
+      if (isNaN(pu)) return sum
+      return sum + l.quantite * pu
+    }, 0)
+  }, [livraisonLines])
 
   // Marquer prévu
   const [showDateSheet, setShowDateSheet] = useState(false)
@@ -44,6 +69,8 @@ export function useLivraisonActions(chantierId: string) {
   const [editDatePrevue, setEditDatePrevue] = useState('')
   const [editMontantTtc, setEditMontantTtc] = useState('')
   const [editError, setEditError] = useState('')
+  const [editLinkedBesoins, setEditLinkedBesoins] = useState<LinkedBesoinWithChantier[]>([])
+  const [editBesoinMontants, setEditBesoinMontants] = useState<Record<string, string>>({})
 
   function handleOpenLivraisonSheet() {
     setLivraisonDescription('')
@@ -51,20 +78,52 @@ export function useLivraisonActions(chantierId: string) {
     setLivraisonMontant('')
     setLivraisonBcFile(null)
     setLivraisonError('')
+    setLivraisonLines([emptyLivraisonLine()])
+    setLivraisonChantierUnique(!!chantierId)
+    setLivraisonGlobalChantierId(chantierId)
     setShowLivraisonSheet(true)
   }
 
   function handleCreateLivraison() {
-    const trimmed = livraisonDescription.trim()
-    if (!trimmed) {
-      setLivraisonError('La description est requise')
+    // Multi-line creation
+    const filledLines = livraisonLines.filter((l) => l.description.trim())
+    if (filledLines.length === 0) {
+      setLivraisonError('Au moins une ligne est requise')
       return
     }
-    const parsedMontant = parseFloat(livraisonMontant)
-    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+
+    // Validate all lines have montant unitaire
+    const missingMontant = filledLines.some((l) => {
+      const pu = parseFloat(l.montantUnitaire)
+      return isNaN(pu) || pu < 0
+    })
+    if (missingMontant) {
+      setLivraisonError('Montant unitaire requis pour chaque ligne')
+      return
+    }
+
+    // Validate chantier
+    const missingChantier = filledLines.some((l) => {
+      const cid = livraisonChantierUnique ? livraisonGlobalChantierId : l.chantierId
+      return !cid
+    })
+    if (missingChantier) {
+      setLivraisonError('Sélectionnez un chantier pour chaque ligne')
+      return
+    }
+
+    const lines: LivraisonLine[] = filledLines.map((l) => ({
+      description: l.description.trim(),
+      quantite: l.quantite,
+      montant_unitaire: parseFloat(l.montantUnitaire),
+      chantier_id: livraisonChantierUnique ? livraisonGlobalChantierId : l.chantierId,
+    }))
+
+    const desc = livraisonDescription.trim() || lines.map((l) => l.description).join(', ')
+
     const pendingBcFile = livraisonBcFile
     createLivraison.mutate(
-      { chantierId, description: trimmed, fournisseur: livraisonFournisseur.trim() || undefined, montantTtc },
+      { chantierId, description: desc, fournisseur: livraisonFournisseur.trim() || undefined, lines },
       {
         onSuccess: (data) => {
           setShowLivraisonSheet(false)
@@ -121,13 +180,21 @@ export function useLivraisonActions(chantierId: string) {
     )
   }
 
-  function handleEditLivraison(livraison: Livraison) {
+  function handleEditLivraison(livraison: Livraison, linkedBesoins?: LinkedBesoinWithChantier[]) {
     setLivraisonToEdit(livraison)
     setEditDescription(livraison.description)
     setEditFournisseur(livraison.fournisseur ?? '')
     setEditDatePrevue(livraison.date_prevue ?? '')
     setEditMontantTtc(livraison.montant_ttc?.toString() ?? '')
     setEditError('')
+    setEditLinkedBesoins(linkedBesoins ?? [])
+    const montants: Record<string, string> = {}
+    if (linkedBesoins) {
+      for (const b of linkedBesoins) {
+        montants[b.id] = b.montant_unitaire?.toString() ?? ''
+      }
+    }
+    setEditBesoinMontants(montants)
     setShowEditSheet(true)
   }
 
@@ -138,6 +205,17 @@ export function useLivraisonActions(chantierId: string) {
       return
     }
     if (!livraisonToEdit) return
+
+    // Build besoin montant updates if we have linked besoins
+    let besoinMontants: BesoinMontantUpdate[] | undefined
+    if (editLinkedBesoins.length > 0) {
+      besoinMontants = editLinkedBesoins.map((b) => ({
+        besoinId: b.id,
+        montantUnitaire: parseFloat(editBesoinMontants[b.id] ?? '0') || 0,
+        quantite: b.quantite ?? 1,
+      }))
+    }
+
     const parsedMontant = parseFloat(editMontantTtc)
     updateLivraison.mutate(
       {
@@ -147,11 +225,14 @@ export function useLivraisonActions(chantierId: string) {
         fournisseur: editFournisseur.trim() || null,
         datePrevue: editDatePrevue || null,
         montantTtc: !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null,
+        besoinMontants,
       },
       {
         onSuccess: () => {
           setShowEditSheet(false)
           setLivraisonToEdit(null)
+          setEditLinkedBesoins([])
+          setEditBesoinMontants({})
           toast('Livraison modifiée')
         },
         onError: () => toast.error('Erreur lors de la modification'),
@@ -202,6 +283,13 @@ export function useLivraisonActions(chantierId: string) {
     setLivraisonBcFile,
     livraisonError,
     setLivraisonError,
+    livraisonLines,
+    setLivraisonLines,
+    livraisonChantierUnique,
+    setLivraisonChantierUnique,
+    livraisonGlobalChantierId,
+    setLivraisonGlobalChantierId,
+    livraisonTotal,
     handleOpenLivraisonSheet,
     handleCreateLivraison,
     createLivraisonPending: createLivraison.isPending,
@@ -231,6 +319,9 @@ export function useLivraisonActions(chantierId: string) {
     setEditMontantTtc,
     editError,
     setEditError,
+    editLinkedBesoins,
+    editBesoinMontants,
+    setEditBesoinMontants,
     handleEditLivraison,
     handleConfirmEdit,
     updateLivraisonPending: updateLivraison.isPending,

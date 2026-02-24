@@ -198,6 +198,38 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
   )
 }
 
+function BesoinLine({ b, showChantier, userId, userEmail }: {
+  b: LinkedBesoinWithChantier
+  showChantier: boolean
+  userId: string | undefined
+  userEmail: string | undefined
+}) {
+  const lineTotal = b.montant_unitaire != null ? (b.quantite ?? 1) * b.montant_unitaire : null
+  return (
+    <div className="text-sm flex items-baseline justify-between gap-2">
+      <div className="min-w-0 flex-1">
+        <span className="text-foreground">{b.description}</span>
+        {(b.quantite ?? 1) > 1 && (
+          <span className="text-muted-foreground text-xs ml-1">×{b.quantite}</span>
+        )}
+        {showChantier && (
+          <span className="text-muted-foreground text-xs ml-1">— {b.chantiers.nom}</span>
+        )}
+      </div>
+      {b.montant_unitaire != null && (
+        <div className="shrink-0 text-xs text-muted-foreground text-right">
+          {montantFormatter.format(b.montant_unitaire)}
+          {lineTotal != null && (b.quantite ?? 1) > 1 && (
+            <span className="font-medium text-foreground ml-1">
+              = {montantFormatter.format(lineTotal)}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BesoinsList({ besoins, isMultiChantier, userId, userEmail }: {
   besoins: LinkedBesoinWithChantier[]
   isMultiChantier: boolean
@@ -208,46 +240,50 @@ function BesoinsList({ besoins, isMultiChantier, userId, userEmail }: {
     return (
       <div className="space-y-1 pl-4 border-l-2 border-muted">
         {besoins.map((b) => (
-          <div key={b.id} className="text-sm">
-            <span className="text-foreground">{b.description}</span>
-            <span className="text-muted-foreground text-xs ml-2">
-              {getAuthorInitial(b.created_by, userId, userEmail)}
-              {' · '}
-              {formatRelativeTime(b.created_at)}
-            </span>
-          </div>
+          <BesoinLine key={b.id} b={b} showChantier={false} userId={userId} userEmail={userEmail} />
         ))}
       </div>
     )
   }
 
-  // Grouper par chantier
+  // Group by chantier for multi-chantier livraisons
   const groups = new Map<string, { nom: string; besoins: LinkedBesoinWithChantier[] }>()
   for (const b of besoins) {
     const existing = groups.get(b.chantier_id)
-    if (existing) existing.besoins.push(b)
-    else groups.set(b.chantier_id, { nom: b.chantiers.nom, besoins: [b] })
+    if (existing) {
+      existing.besoins.push(b)
+    } else {
+      groups.set(b.chantier_id, { nom: b.chantiers.nom, besoins: [b] })
+    }
   }
 
   return (
     <div className="space-y-2 pl-4 border-l-2 border-muted">
-      {[...groups.values()].map((group) => (
-        <div key={group.nom}>
-          <span className="text-xs font-semibold text-muted-foreground">{group.nom}</span>
-          <div className="space-y-0.5 mt-0.5">
-            {group.besoins.map((b) => (
-              <div key={b.id} className="text-sm">
-                <span className="text-foreground">{b.description}</span>
-                <span className="text-muted-foreground text-xs ml-2">
-                  {getAuthorInitial(b.created_by, userId, userEmail)}
-                  {' · '}
-                  {formatRelativeTime(b.created_at)}
+      {Array.from(groups.entries()).map(([chantierId, group]) => {
+        const groupTotal = group.besoins.reduce((sum, b) => {
+          if (b.montant_unitaire == null) return sum
+          return sum + (b.quantite ?? 1) * b.montant_unitaire
+        }, 0)
+        const hasTotal = group.besoins.some((b) => b.montant_unitaire != null)
+
+        return (
+          <div key={chantierId}>
+            <div className="flex items-center justify-between gap-2 mb-0.5">
+              <span className="text-xs font-semibold text-muted-foreground">{group.nom}</span>
+              {hasTotal && (
+                <span className="text-xs font-semibold text-foreground">
+                  {montantFormatter.format(groupTotal)}
                 </span>
-              </div>
-            ))}
+              )}
+            </div>
+            <div className="space-y-0.5">
+              {group.besoins.map((b) => (
+                <BesoinLine key={b.id} b={b} showChantier={false} userId={userId} userEmail={userEmail} />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

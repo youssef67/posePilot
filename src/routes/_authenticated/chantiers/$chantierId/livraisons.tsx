@@ -10,6 +10,7 @@ import { useLivraisons } from '@/lib/queries/useLivraisons'
 import { useChantier } from '@/lib/queries/useChantier'
 import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllBesoinsForChantier'
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
+import { useChantiers } from '@/lib/queries/useChantiers'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/livraisons',
@@ -24,6 +25,7 @@ function LivraisonsPage() {
   const { data: linkedBesoins } = useAllBesoinsForChantier(chantierId)
   useRealtimeLivraisons(chantierId)
   const livraisonActions = useLivraisonActions(chantierId)
+  const { data: allChantiers } = useChantiers('active')
   const besoinsMap = useMemo(() => buildBesoinsMap(linkedBesoins ?? []), [linkedBesoins])
 
   return (
@@ -63,7 +65,7 @@ function LivraisonsPage() {
         <Fab onClick={livraisonActions.handleOpenLivraisonSheet} />
       </div>
 
-      <LivraisonSheets actions={livraisonActions} />
+      <LivraisonSheets actions={livraisonActions} chantiers={(allChantiers ?? []) as { id: string; nom: string }[]} />
     </div>
   )
 }

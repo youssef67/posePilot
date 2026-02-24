@@ -271,7 +271,7 @@ describe('BesoinsPage — Edit and Delete', () => {
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     expect(mockUpdateBesoinMutate).toHaveBeenCalledWith(
-      { id: 'b1', chantierId: 'abc-123', description: 'Colle modifiée' },
+      { id: 'b1', chantierId: 'abc-123', description: 'Colle modifiée', quantite: 1 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })
@@ -332,7 +332,8 @@ describe('BesoinsPage — Commander Sheet with fournisseur', () => {
 
     expect(await screen.findByText('Commander ce besoin')).toBeInTheDocument()
     expect(screen.getByLabelText('Fournisseur')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmer la commande' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Montant unitaire')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Valider la commande' })).toBeInTheDocument()
   })
 
   it('calls mutation without fournisseur when field is empty', async () => {
@@ -343,10 +344,15 @@ describe('BesoinsPage — Commander Sheet with fournisseur', () => {
     await screen.findByText('Colle pour faïence 20kg')
     await user.click(screen.getByRole('button', { name: 'Commander' }))
     await screen.findByText('Commander ce besoin')
-    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+
+    // Fill montant unitaire (required)
+    const montantInput = screen.getByLabelText('Montant unitaire')
+    await user.type(montantInput, '15.50')
+
+    await user.click(screen.getByRole('button', { name: 'Valider la commande' }))
 
     expect(mockTransformBesoinMutate).toHaveBeenCalledWith(
-      { besoin: mockBesoinsForActions[0], fournisseur: undefined },
+      { besoin: mockBesoinsForActions[0], fournisseur: undefined, montantUnitaire: 15.5 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })
@@ -362,10 +368,15 @@ describe('BesoinsPage — Commander Sheet with fournisseur', () => {
 
     const fournisseurInput = screen.getByLabelText('Fournisseur')
     await user.type(fournisseurInput, 'Leroy Merlin')
-    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+
+    // Fill montant unitaire (required)
+    const montantInput = screen.getByLabelText('Montant unitaire')
+    await user.type(montantInput, '25')
+
+    await user.click(screen.getByRole('button', { name: 'Valider la commande' }))
 
     expect(mockTransformBesoinMutate).toHaveBeenCalledWith(
-      { besoin: mockBesoinsForActions[0], fournisseur: 'Leroy Merlin' },
+      { besoin: mockBesoinsForActions[0], fournisseur: 'Leroy Merlin', montantUnitaire: 25 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })
@@ -416,12 +427,12 @@ describe('BesoinsPage — Grouped selection mode', () => {
     expect(screen.getByRole('button', { name: 'Sélectionner' })).toBeInTheDocument()
   })
 
-  it('does not show "Sélectionner" button with only 1 besoin', async () => {
+  it('shows "Sélectionner" button even with only 1 besoin', async () => {
     setupMocks([mockBesoinsForSelection[0]])
     renderRoute('abc-123')
 
     await screen.findByText('Colle pour faïence 20kg')
-    expect(screen.queryByRole('button', { name: 'Sélectionner' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sélectionner' })).toBeInTheDocument()
   })
 
   it('enters selection mode and shows checkboxes when "Sélectionner" is clicked', async () => {
@@ -496,7 +507,7 @@ describe('BesoinsPage — Grouped selection mode', () => {
     expect(screen.getByLabelText('Intitulé de la commande')).toBeInTheDocument()
 
     // Submit with empty intitulé → validation error
-    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+    await user.click(screen.getByRole('button', { name: 'Valider la commande' }))
     expect(await screen.findByText("L'intitulé de la commande est requis")).toBeInTheDocument()
     expect(mockCreateGroupedLivraisonMutate).not.toHaveBeenCalled()
   })
@@ -524,11 +535,17 @@ describe('BesoinsPage — Grouped selection mode', () => {
     const fournisseurInput = screen.getByLabelText('Fournisseur')
     await user.type(fournisseurInput, 'Point P')
 
-    // Summary shows selected besoins
-    expect(screen.getByText('• Colle pour faïence 20kg')).toBeInTheDocument()
-    expect(screen.getByText('• Joint gris 5kg')).toBeInTheDocument()
+    // Per-besoin lines are shown with montant unitaire inputs
+    expect(screen.getByLabelText('Montant unitaire Colle pour faïence 20kg')).toBeInTheDocument()
+    expect(screen.getByLabelText('Montant unitaire Joint gris 5kg')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Confirmer la commande' }))
+    // Fill montant unitaire for each besoin (required)
+    const montantInputB1 = screen.getByLabelText('Montant unitaire Colle pour faïence 20kg')
+    await user.type(montantInputB1, '12.50')
+    const montantInputB2 = screen.getByLabelText('Montant unitaire Joint gris 5kg')
+    await user.type(montantInputB2, '8')
+
+    await user.click(screen.getByRole('button', { name: 'Valider la commande' }))
 
     expect(mockCreateGroupedLivraisonMutate).toHaveBeenCalledWith(
       {
@@ -536,6 +553,10 @@ describe('BesoinsPage — Grouped selection mode', () => {
         besoinIds: expect.arrayContaining(['b1', 'b2']),
         description: 'Commande carrelage T2',
         fournisseur: 'Point P',
+        besoinMontants: expect.arrayContaining([
+          { besoinId: 'b1', montantUnitaire: 12.5, quantite: 1 },
+          { besoinId: 'b2', montantUnitaire: 8, quantite: 1 },
+        ]),
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )

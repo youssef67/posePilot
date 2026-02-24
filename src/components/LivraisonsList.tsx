@@ -11,7 +11,7 @@ interface LivraisonsListProps {
   onOpenSheet: () => void
   onMarquerPrevu: (id: string) => void
   onConfirmerLivraison: (id: string) => void
-  onEdit?: (livraison: Livraison) => void
+  onEdit?: (livraison: Livraison, linkedBesoins?: LinkedBesoinWithChantier[]) => void
   onDelete?: (livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) => void
   besoinsMap?: Map<string, LinkedBesoinWithChantier[]>
 }
@@ -47,7 +47,7 @@ export function LivraisonsList({
             chantierId={chantierId}
             onMarquerPrevu={onMarquerPrevu}
             onConfirmerLivraison={onConfirmerLivraison}
-            onEdit={onEdit}
+            onEdit={onEdit ? (liv) => onEdit(liv, besoinsMap?.get(liv.id)) : undefined}
             onDelete={onDelete}
             linkedBesoins={besoinsMap?.get(livraison.id)}
           />

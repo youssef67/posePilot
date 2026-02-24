@@ -61,6 +61,7 @@ describe('useUpdateLivraison', () => {
         description: 'Colle modifiée',
         fournisseur: 'Point P',
         datePrevue: '2026-03-15',
+        montantTtc: null,
       })
     })
 
@@ -71,9 +72,10 @@ describe('useUpdateLivraison', () => {
       description: 'Colle modifiée',
       fournisseur: 'Point P',
       date_prevue: '2026-03-15',
+      montant_ttc: null,
     })
     expect(mockEq).toHaveBeenCalledWith('id', 'liv1')
-    expect(mockIn).toHaveBeenCalledWith('status', ['commande', 'prevu'])
+    expect(mockIn).toHaveBeenCalledWith('status', ['prevu', 'commande', 'livraison_prevue', 'a_recuperer'])
     expect(result.current.data).toEqual(updated)
   })
 
@@ -89,6 +91,7 @@ describe('useUpdateLivraison', () => {
         description: 'Test',
         fournisseur: null,
         datePrevue: null,
+        montantTtc: null,
       })
     })
 
@@ -108,6 +111,7 @@ describe('useUpdateLivraison', () => {
         description: 'Test',
         fournisseur: '',
         datePrevue: '',
+        montantTtc: null,
       })
     })
 
@@ -116,6 +120,7 @@ describe('useUpdateLivraison', () => {
       description: 'Test',
       fournisseur: null,
       date_prevue: null,
+      montant_ttc: null,
     })
   })
 
@@ -132,6 +137,7 @@ describe('useUpdateLivraison', () => {
         description: 'Tentative de modification',
         fournisseur: null,
         datePrevue: null,
+        montantTtc: null,
       })
     })
 
@@ -157,6 +163,7 @@ describe('useUpdateLivraison', () => {
         description: 'Modifié',
         fournisseur: 'Point P',
         datePrevue: '2026-04-01',
+        montantTtc: null,
       })
     })
 

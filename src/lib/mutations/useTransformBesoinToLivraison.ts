@@ -6,8 +6,13 @@ export function useTransformBesoinToLivraison() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ besoin, fournisseur, montantTtc }: { besoin: Besoin; fournisseur?: string; montantTtc?: number | null }) => {
+    mutationFn: async ({ besoin, fournisseur, montantTtc, montantUnitaire }: { besoin: Besoin; fournisseur?: string; montantTtc?: number | null; montantUnitaire?: number | null }) => {
       const { data: { user } } = await supabase.auth.getUser()
+
+      // Calculate montant_ttc from unitaire if provided
+      const computedMontantTtc = montantUnitaire != null
+        ? (besoin.quantite ?? 1) * montantUnitaire
+        : montantTtc ?? null
 
       // 1. Créer la livraison
       const { data: livraison, error: livraisonError } = await supabase
@@ -16,7 +21,7 @@ export function useTransformBesoinToLivraison() {
           chantier_id: besoin.chantier_id,
           description: besoin.description,
           fournisseur: fournisseur || null,
-          montant_ttc: montantTtc ?? null,
+          montant_ttc: computedMontantTtc,
           status: 'commande' as const,
           created_by: user?.id ?? null,
         })
@@ -24,10 +29,16 @@ export function useTransformBesoinToLivraison() {
         .single()
       if (livraisonError) throw livraisonError
 
-      // 2. Lier le besoin à la livraison
+      // 2. Lier le besoin à la livraison + set montant_unitaire
+      const besoinUpdate: Record<string, unknown> = {
+        livraison_id: (livraison as unknown as Livraison).id,
+      }
+      if (montantUnitaire != null) {
+        besoinUpdate.montant_unitaire = montantUnitaire
+      }
       const { error: besoinError } = await supabase
         .from('besoins')
-        .update({ livraison_id: (livraison as unknown as Livraison).id })
+        .update(besoinUpdate)
         .eq('id', besoin.id)
       if (besoinError) throw besoinError
 

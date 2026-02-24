@@ -1,7 +1,15 @@
 import { useRef } from 'react'
-import { Euro, FileText, X } from 'lucide-react'
+import { Euro, FileText, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -10,61 +18,202 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { EditLivraisonSheet } from '@/components/EditLivraisonSheet'
 import type { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 
-interface LivraisonSheetsProps {
-  actions: ReturnType<typeof useLivraisonActions>
+interface ChantierOption {
+  id: string
+  nom: string
 }
 
-export function LivraisonSheets({ actions }: LivraisonSheetsProps) {
+interface LivraisonSheetsProps {
+  actions: ReturnType<typeof useLivraisonActions>
+  chantiers: ChantierOption[]
+}
+
+export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
   const bcFileInputRef = useRef<HTMLInputElement>(null)
   return (
     <>
       <Sheet open={actions.showLivraisonSheet} onOpenChange={actions.setShowLivraisonSheet}>
-        <SheetContent side="bottom">
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Nouvelle livraison</SheetTitle>
             <SheetDescription>
-              Décrivez la livraison à créer.
+              Ajoutez les items de la livraison avec leur montant unitaire.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 flex flex-col gap-3">
-            <Textarea
-              placeholder="Ex: Colle pour faïence 20kg"
+            <Input
+              placeholder="Intitulé de la livraison (optionnel)"
               value={actions.livraisonDescription}
               onChange={(e) => {
                 actions.setLivraisonDescription(e.target.value)
                 if (actions.livraisonError) actions.setLivraisonError('')
               }}
               aria-label="Description de la livraison"
-              aria-invalid={!!actions.livraisonError}
-              rows={3}
             />
-            {actions.livraisonError && (
-              <p className="text-sm text-destructive mt-1">{actions.livraisonError}</p>
-            )}
             <Input
               placeholder="Fournisseur (optionnel)"
               value={actions.livraisonFournisseur}
               onChange={(e) => actions.setLivraisonFournisseur(e.target.value)}
               aria-label="Fournisseur"
             />
-            <div className="relative">
-              <Input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                placeholder="Montant TTC (optionnel)"
-                value={actions.livraisonMontant}
-                onChange={(e) => actions.setLivraisonMontant(e.target.value)}
-                aria-label="Montant TTC"
-                className="pr-8"
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="livraison-chantier-unique-toggle" className="text-sm">
+                Chantier unique
+              </Label>
+              <Switch
+                id="livraison-chantier-unique-toggle"
+                checked={actions.livraisonChantierUnique}
+                onCheckedChange={actions.setLivraisonChantierUnique}
               />
-              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             </div>
+            {actions.livraisonChantierUnique && (
+              <Select value={actions.livraisonGlobalChantierId} onValueChange={actions.setLivraisonGlobalChantierId}>
+                <SelectTrigger aria-label="Chantier global">
+                  <SelectValue placeholder="Choisir un chantier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {chantiers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {actions.livraisonLines.map((line, i) => {
+                const pu = parseFloat(line.montantUnitaire)
+                const lineTotal = !isNaN(pu) ? line.quantite * pu : 0
+                return (
+                  <div key={i} className="rounded-lg border border-border p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground w-5">{i + 1}</span>
+                      <Input
+                        placeholder="Description"
+                        value={line.description}
+                        onChange={(e) => {
+                          actions.setLivraisonLines((prev) =>
+                            prev.map((l, idx) => idx === i ? { ...l, description: e.target.value } : l),
+                          )
+                          if (actions.livraisonError) actions.setLivraisonError('')
+                        }}
+                        aria-label={`Description item ${i + 1}`}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={line.quantite}
+                        onChange={(e) => {
+                          const q = parseInt(e.target.value, 10)
+                          actions.setLivraisonLines((prev) =>
+                            prev.map((l, idx) => idx === i ? { ...l, quantite: isNaN(q) || q < 1 ? 1 : q } : l),
+                          )
+                        }}
+                        aria-label={`Quantité item ${i + 1}`}
+                        className="w-16"
+                      />
+                      {actions.livraisonLines.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground"
+                          onClick={() => actions.setLivraisonLines((prev) => prev.filter((_, idx) => idx !== i))}
+                          aria-label={`Supprimer item ${i + 1}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 pl-7">
+                      <div className="relative flex-1">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min="0"
+                          placeholder="P.U."
+                          value={line.montantUnitaire}
+                          onChange={(e) =>
+                            actions.setLivraisonLines((prev) =>
+                              prev.map((l, idx) => idx === i ? { ...l, montantUnitaire: e.target.value } : l),
+                            )
+                          }
+                          aria-label={`Montant unitaire item ${i + 1}`}
+                          className="pr-8"
+                        />
+                        <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <span className="text-sm font-medium w-24 text-right">
+                        {lineTotal > 0
+                          ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(lineTotal)
+                          : '—'}
+                      </span>
+                    </div>
+                    {!actions.livraisonChantierUnique && (
+                      <div className="pl-7">
+                        <Select
+                          value={line.chantierId}
+                          onValueChange={(v) =>
+                            actions.setLivraisonLines((prev) =>
+                              prev.map((l, idx) => idx === i ? { ...l, chantierId: v } : l),
+                            )
+                          }
+                        >
+                          <SelectTrigger aria-label={`Chantier item ${i + 1}`}>
+                            <SelectValue placeholder="Choisir un chantier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {chantiers.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.nom}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => actions.setLivraisonLines((prev) => [...prev, {
+                description: '',
+                quantite: 1,
+                montantUnitaire: '',
+                chantierId: actions.livraisonChantierUnique ? actions.livraisonGlobalChantierId : '',
+              }])}
+              className="w-full"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter un item
+            </Button>
+
+            {actions.livraisonTotal > 0 && (
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-sm font-semibold">Total livraison</span>
+                <span className="text-sm font-semibold">
+                  {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(actions.livraisonTotal)}
+                </span>
+              </div>
+            )}
+
+            {actions.livraisonError && (
+              <p className="text-sm text-destructive">{actions.livraisonError}</p>
+            )}
+
             <div>
               <input
                 ref={bcFileInputRef}
@@ -108,7 +257,7 @@ export function LivraisonSheets({ actions }: LivraisonSheetsProps) {
               disabled={actions.createLivraisonPending}
               className="w-full"
             >
-              Créer la livraison
+              {actions.createLivraisonPending ? 'Création...' : 'Créer la livraison'}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -171,6 +320,11 @@ export function LivraisonSheets({ actions }: LivraisonSheetsProps) {
         onErrorChange={actions.setEditError}
         onConfirm={actions.handleConfirmEdit}
         isPending={actions.updateLivraisonPending}
+        linkedBesoins={actions.editLinkedBesoins}
+        besoinMontants={actions.editBesoinMontants}
+        onBesoinMontantChange={(besoinId, value) =>
+          actions.setEditBesoinMontants((prev) => ({ ...prev, [besoinId]: value }))
+        }
       />
 
       <Sheet open={actions.showDeleteSheet} onOpenChange={actions.setShowDeleteSheet}>

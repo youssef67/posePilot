@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { ClipboardList, Euro, MoreVertical, Trash2 } from 'lucide-react'
+import { ClipboardList, Euro, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -21,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -36,16 +38,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { Fab } from '@/components/Fab'
+import { BesoinLineForm, type BesoinLineValue } from '@/components/BesoinLineForm'
 import { useAllPendingBesoins, type BesoinWithChantier } from '@/lib/queries/useAllPendingBesoins'
 import { useBulkTransformBesoins } from '@/lib/mutations/useBulkTransformBesoins'
-import { useCreateBesoin } from '@/lib/mutations/useCreateBesoin'
+import { useCreateBesoins } from '@/lib/mutations/useCreateBesoins'
 import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
+import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { useRealtimeAllPendingBesoins } from '@/lib/subscriptions/useRealtimeAllPendingBesoins'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
-import { parseQuantite } from '@/lib/utils/parseQuantite'
 import { useAuth } from '@/lib/auth'
 
 export const Route = createFileRoute('/_authenticated/besoins')({
@@ -97,17 +100,57 @@ function BesoinsPage() {
   const { data: besoins, isLoading } = useAllPendingBesoins()
   const { data: chantiers } = useChantiers()
   const bulkTransform = useBulkTransformBesoins()
-  const createBesoin = useCreateBesoin()
+  const createBesoins = useCreateBesoins()
   const deleteBesoin = useDeleteBesoin()
+  const updateBesoin = useUpdateBesoin()
   const { user } = useAuth()
   useRealtimeAllPendingBesoins()
 
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
+  // Edit sheet
+  const [besoinToEdit, setBesoinToEdit] = useState<BesoinWithChantier | null>(null)
+  const [showEditSheet, setShowEditSheet] = useState(false)
+  const [editDescription, setEditDescription] = useState('')
+  const [editQuantite, setEditQuantite] = useState(1)
+  const [editError, setEditError] = useState('')
+
   // Delete dialog
   const [besoinToDelete, setBesoinToDelete] = useState<BesoinWithChantier | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  function handleEdit(besoin: BesoinWithChantier) {
+    setBesoinToEdit(besoin)
+    setEditDescription(besoin.description)
+    setEditQuantite(besoin.quantite ?? 1)
+    setEditError('')
+    setShowEditSheet(true)
+  }
+
+  function handleConfirmEdit() {
+    const trimmed = editDescription.trim()
+    if (!trimmed) {
+      setEditError('La description est requise')
+      return
+    }
+    if (editQuantite < 1) {
+      setEditError('La quantité doit être au moins 1')
+      return
+    }
+    if (!besoinToEdit) return
+    updateBesoin.mutate(
+      { id: besoinToEdit.id, chantierId: besoinToEdit.chantier_id, description: trimmed, quantite: editQuantite },
+      {
+        onSuccess: () => {
+          setShowEditSheet(false)
+          setBesoinToEdit(null)
+          toast('Besoin modifié')
+        },
+        onError: () => toast.error('Erreur lors de la modification'),
+      },
+    )
+  }
 
   function handleDelete(besoin: BesoinWithChantier) {
     setBesoinToDelete(besoin)
@@ -171,61 +214,69 @@ function BesoinsPage() {
   const [bulkDescription, setBulkDescription] = useState('')
   const [bulkDescError, setBulkDescError] = useState('')
   const [bulkFournisseur, setBulkFournisseur] = useState('')
-  const [bulkMontant, setBulkMontant] = useState('')
+  const [bulkMontants, setBulkMontants] = useState<Record<string, string>>({})
 
-  // Sheet creation besoin
+  // Sheet creation besoin multi-lignes
   const [showSheet, setShowSheet] = useState(false)
-  const [selectedChantierId, setSelectedChantierId] = useState('')
-  const [description, setDescription] = useState('')
-  const [chantierError, setChantierError] = useState('')
-  const [descError, setDescError] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
+  const [chantierUnique, setChantierUnique] = useState(false)
+  const [globalChantierId, setGlobalChantierId] = useState('')
+  const emptyLine = (): BesoinLineValue => ({ description: '', quantite: 1, chantierId: '' })
+  const [lines, setLines] = useState<BesoinLineValue[]>([emptyLine()])
+  const [createError, setCreateError] = useState('')
 
   function handleOpenSheet() {
-    setSelectedChantierId('')
-    setDescription('')
-    setChantierError('')
-    setDescError('')
+    setChantierUnique(false)
+    setGlobalChantierId('')
+    setLines([emptyLine()])
+    setCreateError('')
     setShowSheet(true)
   }
 
-  async function handleCreate() {
-    let hasError = false
-    if (!selectedChantierId) {
-      setChantierError('Sélectionnez un chantier')
-      hasError = true
-    }
-    const lines = description
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
-    if (lines.length === 0) {
-      setDescError('La description est requise')
-      hasError = true
-    }
-    if (hasError) return
+  function handleLineChange(index: number, value: BesoinLineValue) {
+    setLines((prev) => prev.map((l, i) => (i === index ? value : l)))
+    if (createError) setCreateError('')
+  }
 
-    setIsCreating(true)
-    try {
-      for (const line of lines) {
-        const { description: desc, quantite } = parseQuantite(line)
-        await createBesoin.mutateAsync({
-          chantierId: selectedChantierId,
-          description: desc,
-          quantite,
-        })
-      }
-      setShowSheet(false)
-      toast(
-        lines.length > 1
-          ? `${lines.length} besoins créés`
-          : 'Besoin créé',
-      )
-    } catch {
-      toast.error('Erreur lors de la création')
-    } finally {
-      setIsCreating(false)
+  function handleRemoveLine(index: number) {
+    setLines((prev) => {
+      const next = prev.filter((_, i) => i !== index)
+      return next.length === 0 ? [emptyLine()] : next
+    })
+  }
+
+  function handleAddLine() {
+    setLines((prev) => [...prev, emptyLine()])
+  }
+
+  function handleCreate() {
+    const filled = lines.filter((l) => l.description.trim())
+    if (filled.length === 0) {
+      setCreateError('Au moins un besoin est requis')
+      return
     }
+
+    const missingChantier = filled.some((l) => {
+      const cid = chantierUnique ? globalChantierId : l.chantierId
+      return !cid
+    })
+    if (missingChantier) {
+      setCreateError('Sélectionnez un chantier pour chaque ligne')
+      return
+    }
+
+    const batch = filled.map((l) => ({
+      chantier_id: chantierUnique ? globalChantierId : l.chantierId,
+      description: l.description.trim(),
+      quantite: l.quantite,
+    }))
+
+    createBesoins.mutate(batch, {
+      onSuccess: () => {
+        setShowSheet(false)
+        toast(batch.length > 1 ? `${batch.length} besoins créés` : 'Besoin créé')
+      },
+      onError: () => toast.error('Erreur lors de la création'),
+    })
   }
 
   const groups = useMemo(() => groupByChantier(besoins ?? []), [besoins])
@@ -293,7 +344,7 @@ function BesoinsPage() {
     setBulkDescription('')
     setBulkDescError('')
     setBulkFournisseur('')
-    setBulkMontant('')
+    setBulkMontants({})
     setShowBulkSheet(true)
   }
 
@@ -307,15 +358,28 @@ function BesoinsPage() {
     const selectedBesoins = (besoins ?? []).filter((b) => selectedIds.has(b.id))
     if (selectedBesoins.length === 0) return
 
-    const parsedMontant = parseFloat(bulkMontant)
-    const montantTtc = !isNaN(parsedMontant) && parsedMontant > 0 ? parsedMontant : null
+    // Validate all montant_unitaire are filled
+    const missingMontant = selectedBesoins.some((b) => {
+      const val = parseFloat(bulkMontants[b.id] ?? '')
+      return isNaN(val) || val < 0
+    })
+    if (missingMontant) {
+      setBulkDescError('Montant unitaire requis pour chaque ligne')
+      return
+    }
+
+    const besoinMontants = selectedBesoins.map((b) => ({
+      besoinId: b.id,
+      montantUnitaire: parseFloat(bulkMontants[b.id]),
+      quantite: b.quantite ?? 1,
+    }))
 
     bulkTransform.mutate(
       {
         besoins: selectedBesoins,
         description: trimmedDesc,
         fournisseur: bulkFournisseur.trim() || undefined,
-        montantTtc,
+        besoinMontants,
       },
       {
         onSuccess: () => {
@@ -328,6 +392,15 @@ function BesoinsPage() {
       },
     )
   }
+
+  const bulkTotal = useMemo(() => {
+    const selectedBesoins = (besoins ?? []).filter((b) => selectedIds.has(b.id))
+    return selectedBesoins.reduce((sum, b) => {
+      const pu = parseFloat(bulkMontants[b.id] ?? '')
+      if (isNaN(pu)) return sum
+      return sum + (b.quantite ?? 1) * pu
+    }, 0)
+  }, [besoins, selectedIds, bulkMontants])
 
   const totalBesoins = besoins?.length ?? 0
   const showSelectButton = !selectionMode && totalBesoins >= 1
@@ -444,6 +517,10 @@ function BesoinsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleEdit(besoin)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Modifier
+                                </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onSelect={() => handleDelete(besoin)}>
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Supprimer
@@ -510,11 +587,11 @@ function BesoinsPage() {
 
       {/* Sheet bulk commande */}
       <Sheet open={showBulkSheet} onOpenChange={setShowBulkSheet}>
-        <SheetContent side="bottom">
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Commander {selectedIds.size} besoin{selectedIds.size > 1 ? 's' : ''}</SheetTitle>
             <SheetDescription>
-              Créer une commande regroupant les besoins sélectionnés.
+              Renseignez le fournisseur et le montant unitaire pour chaque besoin.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 flex flex-col gap-3">
@@ -539,28 +616,50 @@ function BesoinsPage() {
               onChange={(e) => setBulkFournisseur(e.target.value)}
               aria-label="Fournisseur"
             />
-            <div className="relative">
-              <Input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                placeholder="Montant TTC (optionnel)"
-                value={bulkMontant}
-                onChange={(e) => setBulkMontant(e.target.value)}
-                aria-label="Montant TTC"
-                className="pr-8"
-              />
-              <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <div className="flex flex-col gap-2">
+              {(besoins ?? []).filter((b) => selectedIds.has(b.id)).map((b) => {
+                const pu = parseFloat(bulkMontants[b.id] ?? '')
+                const lineTotal = !isNaN(pu) ? (b.quantite ?? 1) * pu : 0
+                return (
+                  <div key={b.id} className="rounded-lg border border-border p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium truncate flex-1">{b.description}</p>
+                      <span className="text-xs text-muted-foreground ml-2">Qté: {b.quantite ?? 1}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{b.chantiers.nom}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min="0"
+                          placeholder="P.U."
+                          value={bulkMontants[b.id] ?? ''}
+                          onChange={(e) => setBulkMontants((prev) => ({ ...prev, [b.id]: e.target.value }))}
+                          aria-label={`Montant unitaire ${b.description}`}
+                          className="pr-8"
+                        />
+                        <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <span className="text-sm font-medium w-24 text-right">
+                        {lineTotal > 0
+                          ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(lineTotal)
+                          : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-            <div>
-              <p className="text-sm font-medium mb-1">Besoins inclus :</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {(besoins ?? []).filter((b) => selectedIds.has(b.id)).map((b) => (
-                  <li key={b.id} className="truncate">• {b.description}</li>
-                ))}
-              </ul>
-            </div>
+            {bulkTotal > 0 && (
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-sm font-semibold">Total livraison</span>
+                <span className="text-sm font-semibold">
+                  {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(bulkTotal)}
+                </span>
+              </div>
+            )}
           </div>
           <SheetFooter>
             <Button
@@ -568,7 +667,7 @@ function BesoinsPage() {
               disabled={bulkTransform.isPending}
               className="w-full"
             >
-              Confirmer la commande
+              Valider la commande
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -592,24 +691,78 @@ function BesoinsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Sheet open={showSheet} onOpenChange={setShowSheet}>
+      {/* Sheet edition besoin */}
+      <Sheet open={showEditSheet} onOpenChange={setShowEditSheet}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>Nouveau besoin</SheetTitle>
+            <SheetTitle>Modifier le besoin</SheetTitle>
+            <SheetDescription>Modifiez la description et la quantité.</SheetDescription>
+          </SheetHeader>
+          <div className="px-4 flex flex-col gap-3">
+            <Textarea
+              value={editDescription}
+              onChange={(e) => {
+                setEditDescription(e.target.value)
+                if (editError) setEditError('')
+              }}
+              aria-label="Description du besoin (édition)"
+              aria-invalid={!!editError}
+              rows={3}
+            />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="edit-quantite-global" className="text-sm whitespace-nowrap">Quantité</Label>
+              <Input
+                id="edit-quantite-global"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={editQuantite}
+                onChange={(e) => {
+                  setEditQuantite(Math.max(1, parseInt(e.target.value) || 1))
+                  if (editError) setEditError('')
+                }}
+                aria-label="Quantité"
+                className="w-20"
+              />
+            </div>
+            {editError && (
+              <p className="text-sm text-destructive mt-1">{editError}</p>
+            )}
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleConfirmEdit}
+              disabled={updateBesoin.isPending}
+              className="w-full"
+            >
+              Enregistrer
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showSheet} onOpenChange={setShowSheet}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Nouveau(x) besoin(s)</SheetTitle>
             <SheetDescription>
-              Sélectionnez le chantier et décrivez le besoin. Une ligne = un besoin.
+              Ajoutez un ou plusieurs besoins. Chaque ligne = un besoin.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 flex flex-col gap-3">
-            <div>
-              <Select
-                value={selectedChantierId}
-                onValueChange={(v) => {
-                  setSelectedChantierId(v)
-                  if (chantierError) setChantierError('')
-                }}
-              >
-                <SelectTrigger aria-label="Chantier" aria-invalid={!!chantierError}>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="chantier-unique-toggle" className="text-sm">
+                Chantier unique
+              </Label>
+              <Switch
+                id="chantier-unique-toggle"
+                checked={chantierUnique}
+                onCheckedChange={setChantierUnique}
+              />
+            </div>
+            {chantierUnique && (
+              <Select value={globalChantierId} onValueChange={setGlobalChantierId}>
+                <SelectTrigger aria-label="Chantier global">
                   <SelectValue placeholder="Choisir un chantier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -620,37 +773,41 @@ function BesoinsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {chantierError && (
-                <p className="text-sm text-destructive mt-1">{chantierError}</p>
-              )}
+            )}
+            <div className="flex flex-col gap-2">
+              {lines.map((line, i) => (
+                <BesoinLineForm
+                  key={i}
+                  value={line}
+                  onChange={(v) => handleLineChange(i, v)}
+                  onRemove={lines.length > 1 ? () => handleRemoveLine(i) : undefined}
+                  showChantierSelect={!chantierUnique}
+                  chantiers={chantiers ?? []}
+                  autoFocus={i === lines.length - 1 && i > 0}
+                  index={i}
+                />
+              ))}
             </div>
-            <div>
-              <Textarea
-                placeholder={"Ex: Colle pour faïence 20kg\n3x Sacs de ciment\nMortier x2"}
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value)
-                  if (descError) setDescError('')
-                }}
-                aria-label="Description du besoin"
-                aria-invalid={!!descError}
-                rows={4}
-              />
-              {descError && (
-                <p className="text-sm text-destructive mt-1">{descError}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Une ligne par besoin. Ajoutez «3x» ou «x3» pour la quantité.
-              </p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddLine}
+              className="w-full"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter une ligne
+            </Button>
+            {createError && (
+              <p className="text-sm text-destructive">{createError}</p>
+            )}
           </div>
           <SheetFooter>
             <Button
               onClick={handleCreate}
-              disabled={isCreating}
+              disabled={createBesoins.isPending}
               className="w-full"
             >
-              {isCreating ? 'Création...' : 'Créer'}
+              {createBesoins.isPending ? 'Création...' : `Créer ${lines.filter((l) => l.description.trim()).length || ''} besoin(s)`}
             </Button>
           </SheetFooter>
         </SheetContent>

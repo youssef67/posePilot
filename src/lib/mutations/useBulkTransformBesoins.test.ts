@@ -45,152 +45,143 @@ function createWrapper() {
     createElement(QueryClientProvider, { client: queryClient }, children)
 }
 
+function setupMocks(opts?: { besoinUpdateError?: Error }) {
+  const livraison = { id: 'liv-1', chantier_id: null, description: 'Commande groupée' }
+
+  const mockIs = vi.fn().mockResolvedValue({ error: opts?.besoinUpdateError ?? null })
+  const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+  const mockBesoinUpdate = vi.fn().mockReturnValue({ eq: mockEq })
+
+  let callCount = 0
+  vi.mocked(supabase.from).mockImplementation((table: string) => {
+    if (table === 'livraisons' && callCount === 0) {
+      callCount++
+      return {
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: livraison, error: null }),
+          }),
+        }),
+      } as never
+    }
+    return { update: mockBesoinUpdate } as never
+  })
+
+  return { mockBesoinUpdate, mockEq, mockIs }
+}
+
 describe('useBulkTransformBesoins', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: 'user-1' } } } as never)
   })
 
-  it('creates one livraison per besoin and links them', async () => {
-    const livraison1 = { id: 'liv-1', chantier_id: 'ch1', description: 'Colle pour faïence 20kg' }
-    const livraison2 = { id: 'liv-2', chantier_id: 'ch2', description: 'Joint gris 5kg' }
-
-    const mockEqBesoin = vi.fn().mockResolvedValue({ error: null })
-    const mockUpdateBesoin = vi.fn().mockReturnValue({ eq: mockEqBesoin })
-
-    let insertCall = 0
-    vi.mocked(supabase.from).mockImplementation((table: string) => {
-      if (table === 'livraisons') {
-        const currentLivraison = insertCall === 0 ? livraison1 : livraison2
-        insertCall++
-        return {
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: currentLivraison, error: null }),
-            }),
-          }),
-        } as never
-      }
-      if (table === 'besoins') {
-        return { update: mockUpdateBesoin } as never
-      }
-      return {} as never
-    })
+  it('creates one livraison and links all besoins individually', async () => {
+    const { mockBesoinUpdate, mockEq } = setupMocks()
 
     const { result } = renderHook(() => useBulkTransformBesoins(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ besoins: mockBesoins })
+      result.current.mutate({ besoins: mockBesoins, description: 'Commande groupée' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-    expect(result.current.data?.succeeded).toHaveLength(2)
-    expect(result.current.data?.failedCount).toBe(0)
-    expect(mockUpdateBesoin).toHaveBeenCalledWith({ livraison_id: 'liv-1' })
-    expect(mockUpdateBesoin).toHaveBeenCalledWith({ livraison_id: 'liv-2' })
-    expect(mockEqBesoin).toHaveBeenCalledWith('id', 'b1')
-    expect(mockEqBesoin).toHaveBeenCalledWith('id', 'b2')
+    expect(result.current.data).toEqual(expect.objectContaining({ id: 'liv-1' }))
+    // Each besoin updated individually
+    expect(mockBesoinUpdate).toHaveBeenCalledTimes(2)
+    expect(mockBesoinUpdate).toHaveBeenCalledWith({ livraison_id: 'liv-1' })
+    expect(mockEq).toHaveBeenCalledWith('id', 'b1')
+    expect(mockEq).toHaveBeenCalledWith('id', 'b2')
+  })
+
+  it('includes montant_unitaire in update when besoinMontants provided', async () => {
+    const { mockBesoinUpdate, mockEq } = setupMocks()
+
+    const { result } = renderHook(() => useBulkTransformBesoins(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({
+        besoins: mockBesoins,
+        description: 'Commande',
+        besoinMontants: [
+          { besoinId: 'b1', montantUnitaire: 10, quantite: 2 },
+          { besoinId: 'b2', montantUnitaire: 5, quantite: 3 },
+        ],
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(mockBesoinUpdate).toHaveBeenCalledWith({ livraison_id: 'liv-1', montant_unitaire: 10 })
+    expect(mockBesoinUpdate).toHaveBeenCalledWith({ livraison_id: 'liv-1', montant_unitaire: 5 })
+    expect(mockEq).toHaveBeenCalledWith('id', 'b1')
+    expect(mockEq).toHaveBeenCalledWith('id', 'b2')
   })
 
   it('throws on livraison insert error', async () => {
-    vi.mocked(supabase.from).mockImplementation((table: string) => {
-      if (table === 'livraisons') {
-        return {
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: new Error('Insert failed') }),
-            }),
+    vi.mocked(supabase.from).mockImplementation(() => {
+      return {
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: new Error('Insert failed') }),
           }),
-        } as never
-      }
-      return {} as never
+        }),
+      } as never
     })
 
     const { result } = renderHook(() => useBulkTransformBesoins(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ besoins: [mockBesoins[0]] })
+      result.current.mutate({ besoins: [mockBesoins[0]], description: 'Test' })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error?.message).toMatch(/Échec de la transformation/)
+    expect(result.current.error?.message).toBe('Insert failed')
   })
 
-  it('returns partial success when some besoins fail', async () => {
-    const livraison1 = { id: 'liv-1', chantier_id: 'ch1', description: 'Colle pour faïence 20kg' }
+  it('computes chantier_id as null for multi-chantier besoins', async () => {
+    const mockInsert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: { id: 'liv-1', chantier_id: null }, error: null }),
+      }),
+    })
 
-    let insertCall = 0
+    const mockIs = vi.fn().mockResolvedValue({ error: null })
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs })
+    const mockBesoinUpdate = vi.fn().mockReturnValue({ eq: mockEq })
+
+    let callCount = 0
     vi.mocked(supabase.from).mockImplementation((table: string) => {
-      if (table === 'livraisons') {
-        insertCall++
-        if (insertCall === 1) {
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: livraison1, error: null }),
-              }),
-            }),
-          } as never
-        }
-        return {
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: new Error('Insert failed') }),
-            }),
-          }),
-        } as never
+      if (table === 'livraisons' && callCount === 0) {
+        callCount++
+        return { insert: mockInsert } as never
       }
-      if (table === 'besoins') {
-        return {
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        } as never
-      }
-      return {} as never
+      return { update: mockBesoinUpdate } as never
     })
 
     const { result } = renderHook(() => useBulkTransformBesoins(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ besoins: mockBesoins })
+      result.current.mutate({ besoins: mockBesoins, description: 'Multi-chantier' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-    expect(result.current.data?.succeeded).toHaveLength(1)
-    expect(result.current.data?.failedCount).toBe(1)
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ chantier_id: null }),
+    )
   })
 
   it('throws on besoin update error', async () => {
-    vi.mocked(supabase.from).mockImplementation((table: string) => {
-      if (table === 'livraisons') {
-        return {
-          insert: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: { id: 'liv-1' }, error: null }),
-            }),
-          }),
-        } as never
-      }
-      if (table === 'besoins') {
-        return {
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: new Error('Update failed') }),
-          }),
-        } as never
-      }
-      return {} as never
-    })
+    setupMocks({ besoinUpdateError: new Error('Update failed') })
 
     const { result } = renderHook(() => useBulkTransformBesoins(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ besoins: [mockBesoins[0]] })
+      result.current.mutate({ besoins: [mockBesoins[0]], description: 'Test' })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error?.message).toMatch(/Échec de la transformation/)
+    expect(result.current.error?.message).toBe('Update failed')
   })
 })
