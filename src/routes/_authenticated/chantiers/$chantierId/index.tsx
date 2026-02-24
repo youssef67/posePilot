@@ -43,7 +43,8 @@ import { useRealtimeBesoins } from '@/lib/subscriptions/useRealtimeBesoins'
 import { useRealtimeLivraisons } from '@/lib/subscriptions/useRealtimeLivraisons'
 import { useRealtimeInventaire } from '@/lib/subscriptions/useRealtimeInventaire'
 import { useCreatePlot } from '@/lib/mutations/useCreatePlot'
-import { useCreateBesoin } from '@/lib/mutations/useCreateBesoin'
+import { useCreateBesoins } from '@/lib/mutations/useCreateBesoins'
+import { BesoinLineForm, type BesoinLineValue } from '@/components/BesoinLineForm'
 import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
 import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
@@ -84,7 +85,7 @@ function ChantierIndexPage() {
   useRealtimeLivraisons(chantierId)
   useRealtimeInventaire(chantierId)
   const createPlot = useCreatePlot()
-  const createBesoin = useCreateBesoin()
+  const createBesoins = useCreateBesoins()
   const updateBesoin = useUpdateBesoin()
   const deleteBesoin = useDeleteBesoin()
   const { data: allLinkedBesoins } = useAllBesoinsForChantier(chantierId)
@@ -146,8 +147,9 @@ function ChantierIndexPage() {
   const [showTerminerDialog, setShowTerminerDialog] = useState(false)
   const [showSupprimerDialog, setShowSupprimerDialog] = useState(false)
   const [showBesoinSheet, setShowBesoinSheet] = useState(false)
-  const [besoinDescription, setBesoinDescription] = useState('')
-  const [besoinError, setBesoinError] = useState('')
+  const emptyBesoinLine = (): BesoinLineValue => ({ description: '', quantite: 1, chantierId })
+  const [besoinLines, setBesoinLines] = useState<BesoinLineValue[]>([emptyBesoinLine()])
+  const [besoinCreateError, setBesoinCreateError] = useState('')
   const [showCommanderSheet, setShowCommanderSheet] = useState(false)
   const [besoinToCommand, setBesoinToCommand] = useState<Besoin | null>(null)
   const [commanderFournisseur, setCommanderFournisseur] = useState('')
@@ -219,29 +221,47 @@ function ChantierIndexPage() {
   }
 
   function handleOpenBesoinSheet() {
-    setBesoinDescription('')
-    setBesoinError('')
+    setBesoinLines([emptyBesoinLine()])
+    setBesoinCreateError('')
     setShowBesoinSheet(true)
   }
 
-  function handleCreateBesoin() {
-    const trimmed = besoinDescription.trim()
-    if (!trimmed) {
-      setBesoinError('La description est requise')
+  function handleBesoinLineChange(index: number, value: BesoinLineValue) {
+    setBesoinLines((prev) => prev.map((l, i) => (i === index ? value : l)))
+    if (besoinCreateError) setBesoinCreateError('')
+  }
+
+  function handleRemoveBesoinLine(index: number) {
+    setBesoinLines((prev) => {
+      const next = prev.filter((_, i) => i !== index)
+      return next.length === 0 ? [emptyBesoinLine()] : next
+    })
+  }
+
+  function handleAddBesoinLine() {
+    setBesoinLines((prev) => [...prev, emptyBesoinLine()])
+  }
+
+  function handleCreateBesoins() {
+    const filled = besoinLines.filter((l) => l.description.trim())
+    if (filled.length === 0) {
+      setBesoinCreateError('Au moins un besoin est requis')
       return
     }
-    createBesoin.mutate(
-      { chantierId, description: trimmed },
-      {
-        onSuccess: () => {
-          setShowBesoinSheet(false)
-          toast('Besoin créé')
-        },
-        onError: () => {
-          toast.error('Erreur lors de la création du besoin')
-        },
+
+    const batch = filled.map((l) => ({
+      chantier_id: chantierId,
+      description: l.description.trim(),
+      quantite: l.quantite,
+    }))
+
+    createBesoins.mutate(batch, {
+      onSuccess: () => {
+        setShowBesoinSheet(false)
+        toast(batch.length > 1 ? `${batch.length} besoins créés` : 'Besoin créé')
       },
-    )
+      onError: () => toast.error('Erreur lors de la création'),
+    })
   }
 
   function handleEditBesoin(besoin: Besoin) {
@@ -702,36 +722,48 @@ function ChantierIndexPage() {
       </Sheet>
 
       <Sheet open={showBesoinSheet} onOpenChange={setShowBesoinSheet}>
-        <SheetContent side="bottom">
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Nouveau besoin</SheetTitle>
+            <SheetTitle>Nouveau(x) besoin(s)</SheetTitle>
             <SheetDescription>
-              Décrivez le matériel ou la fourniture nécessaire.
+              Ajoutez un ou plusieurs besoins pour ce chantier.
             </SheetDescription>
           </SheetHeader>
-          <div className="px-4">
-            <Textarea
-              placeholder="Ex: Colle pour faïence 20kg"
-              value={besoinDescription}
-              onChange={(e) => {
-                setBesoinDescription(e.target.value)
-                if (besoinError) setBesoinError('')
-              }}
-              aria-label="Description du besoin"
-              aria-invalid={!!besoinError}
-              rows={3}
-            />
-            {besoinError && (
-              <p className="text-sm text-destructive mt-1">{besoinError}</p>
+          <div className="px-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              {besoinLines.map((line, i) => (
+                <BesoinLineForm
+                  key={i}
+                  value={line}
+                  onChange={(v) => handleBesoinLineChange(i, v)}
+                  onRemove={besoinLines.length > 1 ? () => handleRemoveBesoinLine(i) : undefined}
+                  showChantierSelect={false}
+                  chantiers={[]}
+                  autoFocus={i === besoinLines.length - 1 && i > 0}
+                  index={i}
+                />
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddBesoinLine}
+              className="w-full"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter une ligne
+            </Button>
+            {besoinCreateError && (
+              <p className="text-sm text-destructive">{besoinCreateError}</p>
             )}
           </div>
           <SheetFooter>
             <Button
-              onClick={handleCreateBesoin}
-              disabled={createBesoin.isPending}
+              onClick={handleCreateBesoins}
+              disabled={createBesoins.isPending}
               className="w-full"
             >
-              Créer le besoin
+              {createBesoins.isPending ? 'Création...' : `Créer ${besoinLines.filter((l) => l.description.trim()).length || ''} besoin(s)`}
             </Button>
           </SheetFooter>
         </SheetContent>
