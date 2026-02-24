@@ -517,6 +517,7 @@ function ChantierIndexPage() {
               onOpenSheet={livraisonActions.handleOpenLivraisonSheet}
               onMarquerPrevu={livraisonActions.handleMarquerPrevu}
               onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
+              onMarquerRecupere={livraisonActions.handleMarquerRecupere}
               onEdit={livraisonActions.handleEditLivraison}
               onDelete={livraisonActions.handleDeleteLivraison}
               besoinsMap={besoinsMap}

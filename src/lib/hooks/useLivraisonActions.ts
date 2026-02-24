@@ -180,6 +180,16 @@ export function useLivraisonActions(chantierId = '') {
     )
   }
 
+  function handleMarquerRecupere(id: string) {
+    updateLivraisonStatus.mutate(
+      { livraisonId: id, chantierId, newStatus: 'recupere' },
+      {
+        onSuccess: () => toast('Livraison marquée récupérée'),
+        onError: () => toast.error('Erreur lors de la mise à jour'),
+      },
+    )
+  }
+
   function handleEditLivraison(livraison: Livraison, linkedBesoins?: LinkedBesoinWithChantier[]) {
     setLivraisonToEdit(livraison)
     setEditDescription(livraison.description)
@@ -305,6 +315,7 @@ export function useLivraisonActions(chantierId = '') {
     updateStatusPending: updateLivraisonStatus.isPending,
     // Confirmer livraison
     handleConfirmerLivraison,
+    handleMarquerRecupere,
     // Édition
     livraisonToEdit,
     showEditSheet,

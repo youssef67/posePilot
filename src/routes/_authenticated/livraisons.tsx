@@ -94,6 +94,7 @@ function LivraisonsPage() {
               chantierId={liv.chantier_id}
               onMarquerPrevu={livraisonActions.handleMarquerPrevu}
               onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
+              onMarquerRecupere={livraisonActions.handleMarquerRecupere}
               onEdit={(l) => livraisonActions.handleEditLivraison(l, besoinsMap.get(l.id))}
               onDelete={livraisonActions.handleDeleteLivraison}
               chantierNom={liv.chantiers?.nom}

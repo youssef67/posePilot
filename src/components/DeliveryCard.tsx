@@ -51,6 +51,7 @@ interface DeliveryCardProps {
   chantierId: string | null
   onMarquerPrevu: (id: string) => void
   onConfirmerLivraison: (id: string) => void
+  onMarquerRecupere?: (id: string) => void
   onEdit?: (livraison: Livraison) => void
   onDelete?: (livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) => void
   chantierNom?: string
@@ -58,7 +59,7 @@ interface DeliveryCardProps {
   linkedBesoins?: LinkedBesoinWithChantier[]
 }
 
-export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
+export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onMarquerRecupere, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
   const { user } = useAuth()
   const config = STATUS_CONFIG[livraison.status] ?? FALLBACK_CONFIG
   const [expanded, setExpanded] = useState(false)
@@ -161,13 +162,24 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             )}
           </div>
           {livraison.status === 'commande' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onMarquerPrevu(livraison.id)}
-            >
-              Marquer prévu
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onMarquerPrevu(livraison.id)}
+              >
+                Marquer prévu
+              </Button>
+              {onMarquerRecupere && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onMarquerRecupere(livraison.id)}
+                >
+                  Récupéré
+                </Button>
+              )}
+            </div>
           )}
           {(livraison.status === 'prevu' || livraison.status === 'livraison_prevue' || livraison.status === 'a_recuperer') && (
             <Button
