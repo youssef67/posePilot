@@ -119,13 +119,13 @@ function ChantierIndexPage() {
         (acc, b) => acc + (b.quantite ?? 1) * b.montant_unitaire!,
         0,
       )
-      return sum > 0 ? sum : null
+      return sum > 0 ? sum * 1.2 : null
     }
     // Fallback for legacy livraisons without montant_unitaire on besoins
     const sum = (livraisons ?? [])
       .filter(l => l.montant_ttc != null)
       .reduce((acc, l) => acc + (l.montant_ttc ?? 0), 0)
-    return sum > 0 ? sum : null
+    return sum > 0 ? sum * 1.2 : null
   }, [livraisons, allLinkedBesoins])
 
   const [filteredPlots, setFilteredPlots] = useState<NonNullable<typeof plots>>([])

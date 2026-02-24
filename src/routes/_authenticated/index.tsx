@@ -116,7 +116,7 @@ function HomePage() {
                   </Badge>
                 }
                 indicator={indicator}
-                secondaryInfo={depenses ? montantFormatter.format(depenses) : undefined}
+                secondaryInfo={depenses ? montantFormatter.format(depenses * 1.2) : undefined}
                 statusColor={STATUS_COLORS[computeStatus(chantier.progress_done, chantier.progress_total)]}
                 isBlocked={chantier.has_blocking_note}
                 onClick={() => navigate({ to: '/chantiers/$chantierId', params: { chantierId: chantier.id } })}
