@@ -110,6 +110,7 @@ export function useCreateLivraison() {
       queryClient.invalidateQueries({ queryKey: ['livraisons-count', effectiveChantierId] })
       queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
       queryClient.invalidateQueries({ queryKey: ['all-linked-besoins'] })
+      queryClient.invalidateQueries({ queryKey: ['all-besoins', effectiveChantierId] })
       queryClient.invalidateQueries({ queryKey: ['besoins'] })
     },
   })
