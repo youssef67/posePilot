@@ -1,5 +1,5 @@
-import { Link, useRouterState } from '@tanstack/react-router'
-import { Home, ClipboardList, Truck, Bell } from 'lucide-react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Home, ClipboardList, Truck, Bell, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useUnreadActivityCount } from '@/lib/queries/useUnreadActivityCount'
 import { useAllPendingBesoinsCount } from '@/lib/queries/useAllPendingBesoinsCount'
@@ -16,7 +16,8 @@ const tabs = [
 export function BottomNavigation() {
   const routerState = useRouterState()
   const pathname = routerState.location.pathname
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const userId = user?.id ?? ''
   const { data: unreadCount } = useUnreadActivityCount(userId)
   const { data: pendingBesoinsCount } = useAllPendingBesoinsCount()
@@ -69,6 +70,18 @@ export function BottomNavigation() {
             </Link>
           )
         })}
+        <button
+          type="button"
+          aria-label="Se déconnecter"
+          onClick={async () => {
+            await signOut()
+            navigate({ to: '/login' })
+          }}
+          className="relative flex min-h-[48px] min-w-[48px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <LogOut className="h-6 w-6" />
+          <span className="text-[10px] font-medium leading-tight">Sortir</span>
+        </button>
       </div>
     </nav>
   )
