@@ -84,7 +84,7 @@ describe('useAddVariantePiece', () => {
   it('rolls back cache on mutation error', async () => {
     const queryClient = createQueryClient()
     const previousPieces = [
-      { id: 'existing-1', variante_id: 'var-1', nom: 'Existing', created_at: '2026-01-01T00:00:00Z' },
+      { id: 'existing-1', variante_id: 'var-1', nom: 'Existing', task_overrides: null, created_at: '2026-01-01T00:00:00Z' },
     ]
     queryClient.setQueryData(['variante-pieces', 'var-1'], previousPieces)
 

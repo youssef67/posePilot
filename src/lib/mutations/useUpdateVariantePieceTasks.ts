@@ -4,43 +4,44 @@ import type { Database } from '@/types/database'
 
 type VariantePieceRow = Database['public']['Tables']['variante_pieces']['Row']
 
-export function useAddVariantePiece() {
+export function useUpdateVariantePieceTasks() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ varianteId, nom }: { varianteId: string; nom: string; plotId: string }) => {
+    mutationFn: async ({
+      pieceId,
+      taskOverrides,
+    }: {
+      pieceId: string
+      taskOverrides: string[] | null
+      varianteId: string
+    }) => {
       const { data, error } = await supabase
         .from('variante_pieces')
-        .insert({ variante_id: varianteId, nom })
+        .update({ task_overrides: taskOverrides })
+        .eq('id', pieceId)
         .select()
         .single()
       if (error) throw error
       return data
     },
-    onMutate: async ({ varianteId, nom }) => {
+    onMutate: async ({ pieceId, taskOverrides, varianteId }) => {
       await queryClient.cancelQueries({ queryKey: ['variante-pieces', varianteId] })
       const previous = queryClient.getQueryData<VariantePieceRow[]>(['variante-pieces', varianteId])
       queryClient.setQueryData<VariantePieceRow[]>(
         ['variante-pieces', varianteId],
-        (old) => [
-          ...(old ?? []),
-          {
-            id: crypto.randomUUID(),
-            variante_id: varianteId,
-            nom,
-            task_overrides: null,
-            created_at: new Date().toISOString(),
-          },
-        ],
+        (old) =>
+          old?.map((p) =>
+            p.id === pieceId ? { ...p, task_overrides: taskOverrides } : p,
+          ),
       )
       return { previous }
     },
     onError: (_err, { varianteId }, context) => {
       queryClient.setQueryData(['variante-pieces', varianteId], context?.previous)
     },
-    onSettled: (_data, _err, { varianteId, plotId }) => {
+    onSettled: (_data, _err, { varianteId }) => {
       queryClient.invalidateQueries({ queryKey: ['variante-pieces', varianteId] })
-      queryClient.invalidateQueries({ queryKey: ['variantes', plotId] })
     },
   })
 }

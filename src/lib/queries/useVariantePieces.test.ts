@@ -17,12 +17,14 @@ const mockPieces = [
     id: 'piece-1',
     variante_id: 'var-1',
     nom: 'Séjour',
+    task_overrides: null,
     created_at: '2026-01-01T00:00:00Z',
   },
   {
     id: 'piece-2',
     variante_id: 'var-1',
     nom: 'Chambre',
+    task_overrides: null,
     created_at: '2026-01-02T00:00:00Z',
   },
 ]
@@ -48,13 +50,12 @@ describe('useVariantePieces', () => {
 
     const { result } = renderHook(() => useVariantePieces('var-1'), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockPieces))
 
     expect(supabase.from).toHaveBeenCalledWith('variante_pieces')
     expect(mockSelect).toHaveBeenCalledWith('*')
     expect(mockEq).toHaveBeenCalledWith('variante_id', 'var-1')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: true })
-    expect(result.current.data).toEqual(mockPieces)
   })
 
   it('uses query key ["variante-pieces", varianteId]', async () => {

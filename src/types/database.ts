@@ -117,18 +117,21 @@ export type Database = {
           id: string
           variante_id: string
           nom: string
+          task_overrides: string[] | null
           created_at: string
         }
         Insert: {
           id?: string
           variante_id: string
           nom: string
+          task_overrides?: string[] | null
           created_at?: string
         }
         Update: {
           id?: string
           variante_id?: string
           nom?: string
+          task_overrides?: string[] | null
           created_at?: string
         }
         Relationships: []

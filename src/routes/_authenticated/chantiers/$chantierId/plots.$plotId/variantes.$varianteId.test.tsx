@@ -18,12 +18,16 @@ const mockDeleteDocumentMutate = vi.fn()
 const mockToggleRequiredMutate = vi.fn()
 const mockToastError = vi.fn()
 
-vi.mock('sonner', () => ({
-  toast: Object.assign(vi.fn(), {
-    error: (...args: unknown[]) => mockToastError(...args),
-    success: vi.fn(),
-  }),
-}))
+vi.mock('sonner', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('sonner')>()
+  return {
+    ...actual,
+    toast: Object.assign(vi.fn(), {
+      error: (...args: unknown[]) => mockToastError(...args),
+      success: vi.fn(),
+    }),
+  }
+})
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -115,6 +119,13 @@ vi.mock('@/lib/mutations/useToggleDocumentRequired', () => ({
   }),
 }))
 
+vi.mock('@/lib/mutations/useUpdateVariantePieceTasks', () => ({
+  useUpdateVariantePieceTasks: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}))
+
 import { supabase } from '@/lib/supabase'
 
 const mockChantier = {
@@ -149,12 +160,14 @@ const mockPieces = [
     id: 'piece-1',
     variante_id: 'var-1',
     nom: 'Séjour',
+    task_overrides: null,
     created_at: '2026-01-01T00:00:00Z',
   },
   {
     id: 'piece-2',
     variante_id: 'var-1',
     nom: 'Chambre',
+    task_overrides: null,
     created_at: '2026-01-02T00:00:00Z',
   },
 ]

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ import { useDeleteVariante } from '@/lib/mutations/useDeleteVariante'
 import { useAddVarianteDocument } from '@/lib/mutations/useAddVarianteDocument'
 import { useDeleteVarianteDocument } from '@/lib/mutations/useDeleteVarianteDocument'
 import { useToggleDocumentRequired } from '@/lib/mutations/useToggleDocumentRequired'
+import { useUpdateVariantePieceTasks } from '@/lib/mutations/useUpdateVariantePieceTasks'
 import { useVariantes } from '@/lib/queries/useVariantes'
 
 export const Route = createFileRoute(
@@ -52,6 +54,7 @@ function VarianteDetailPage() {
   const addDocument = useAddVarianteDocument()
   const deleteDocument = useDeleteVarianteDocument()
   const toggleRequired = useToggleDocumentRequired()
+  const updatePieceTasks = useUpdateVariantePieceTasks()
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [newPieceName, setNewPieceName] = useState('')
@@ -226,50 +229,84 @@ function VarianteDetailPage() {
 
         {pieces && pieces.length > 0 ? (
           <div className="border border-border rounded-lg divide-y divide-border mb-4">
-            {pieces.map((piece) => (
-              <div key={piece.id}>
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <button
-                    type="button"
-                    className="shrink-0 text-muted-foreground"
-                    onClick={() => togglePiece(piece.id)}
-                    aria-label={expandedPieces.has(piece.id) ? `Replier ${piece.nom}` : `Déplier ${piece.nom}`}
-                  >
-                    {expandedPieces.has(piece.id) ? (
-                      <ChevronDown className="size-4" />
-                    ) : (
-                      <ChevronRight className="size-4" />
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground">{piece.nom}</span>
-                    <p className="text-xs text-muted-foreground">
-                      {taskDefinitions.length} tâche{taskDefinitions.length !== 1 ? 's' : ''} héritée{taskDefinitions.length !== 1 ? 's' : ''} du plot
-                    </p>
+            {pieces.map((piece) => {
+              const effectiveTasks = piece.task_overrides ?? taskDefinitions
+              const isCustomized = piece.task_overrides !== null
+              return (
+                <div key={piece.id}>
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <button
+                      type="button"
+                      className="shrink-0 text-muted-foreground"
+                      onClick={() => togglePiece(piece.id)}
+                      aria-label={expandedPieces.has(piece.id) ? `Replier ${piece.nom}` : `Déplier ${piece.nom}`}
+                    >
+                      {expandedPieces.has(piece.id) ? (
+                        <ChevronDown className="size-4" />
+                      ) : (
+                        <ChevronRight className="size-4" />
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground">{piece.nom}</span>
+                      <p className="text-xs text-muted-foreground">
+                        {effectiveTasks.length} tâche{effectiveTasks.length !== 1 ? 's' : ''}
+                        {isCustomized ? ' (personnalisées)' : ' héritées du plot'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => handleDeletePiece(piece.id)}
+                      aria-label={`Supprimer ${piece.nom}`}
+                    >
+                      <X className="size-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => handleDeletePiece(piece.id)}
-                    aria-label={`Supprimer ${piece.nom}`}
-                  >
-                    <X className="size-4" />
-                  </Button>
+                  {expandedPieces.has(piece.id) && taskDefinitions.length > 0 && (
+                    <div className="px-10 pb-2.5 space-y-2">
+                      {taskDefinitions.map((task) => {
+                        const isChecked = effectiveTasks.includes(task)
+                        return (
+                          <div key={task} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`task-${piece.id}-${task}`}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                const newTasks = checked
+                                  ? [...effectiveTasks, task].sort(
+                                      (a, b) => taskDefinitions.indexOf(a) - taskDefinitions.indexOf(b),
+                                    )
+                                  : effectiveTasks.filter((t) => t !== task)
+                                // If all tasks are selected, reset to null (inherit from plot)
+                                const overrides =
+                                  newTasks.length === taskDefinitions.length &&
+                                  taskDefinitions.every((t) => newTasks.includes(t))
+                                    ? null
+                                    : newTasks
+                                updatePieceTasks.mutate({
+                                  pieceId: piece.id,
+                                  taskOverrides: overrides,
+                                  varianteId,
+                                })
+                              }}
+                              aria-label={`${task} pour ${piece.nom}`}
+                            />
+                            <Label
+                              htmlFor={`task-${piece.id}-${task}`}
+                              className="text-xs text-muted-foreground cursor-pointer"
+                            >
+                              {task}
+                            </Label>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-                {expandedPieces.has(piece.id) && taskDefinitions.length > 0 && (
-                  <div className="px-10 pb-2.5">
-                    <ul className="space-y-1">
-                      {taskDefinitions.map((task) => (
-                        <li key={task} className="text-xs text-muted-foreground">
-                          {task}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground mb-4">
