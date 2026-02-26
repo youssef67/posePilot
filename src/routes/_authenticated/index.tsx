@@ -33,7 +33,8 @@ function HomePage() {
     for (const b of allLinkedBesoins ?? []) {
       if (b.montant_unitaire != null) {
         const amount = (b.quantite ?? 1) * b.montant_unitaire
-        map.set(b.chantier_id, (map.get(b.chantier_id) ?? 0) + amount)
+        const cid = b.chantier_id ?? ''
+        map.set(cid, (map.get(cid) ?? 0) + amount)
       }
     }
     // Fallback: livraisons without besoins that have montant_unitaire (legacy)

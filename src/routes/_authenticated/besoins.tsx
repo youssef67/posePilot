@@ -217,7 +217,7 @@ function BesoinsPage() {
 
     for (const besoin of selectedBesoins) {
       try {
-        await deleteBesoin.mutateAsync({ id: besoin.id, chantierId: besoin.chantier_id })
+        await deleteBesoin.mutateAsync({ id: besoin.id, chantierId: besoin.chantier_id ?? '' })
         successCount++
       } catch {
         failCount++

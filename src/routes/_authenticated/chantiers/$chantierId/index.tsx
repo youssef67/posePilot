@@ -149,7 +149,7 @@ function ChantierIndexPage() {
   const [showTerminerDialog, setShowTerminerDialog] = useState(false)
   const [showSupprimerDialog, setShowSupprimerDialog] = useState(false)
   const [showBesoinSheet, setShowBesoinSheet] = useState(false)
-  const emptyBesoinLine = (): BesoinLineValue => ({ description: '', quantite: 1, chantierId })
+  const emptyBesoinLine = (): BesoinLineValue => ({ description: '', quantite: '1', chantierId })
   const [besoinLines, setBesoinLines] = useState<BesoinLineValue[]>([emptyBesoinLine()])
   const [besoinCreateError, setBesoinCreateError] = useState('')
   const [showCommanderSheet, setShowCommanderSheet] = useState(false)
@@ -277,11 +277,14 @@ function ChantierIndexPage() {
       return
     }
 
-    const batch = filled.map((l) => ({
-      chantier_id: chantierId,
-      description: l.description.trim(),
-      quantite: l.quantite,
-    }))
+    const batch = filled.map((l) => {
+      const qty = parseFloat(l.quantite)
+      return {
+        chantier_id: chantierId,
+        description: l.description.trim(),
+        quantite: isNaN(qty) || qty < 1 ? 1 : qty,
+      }
+    })
 
     createBesoins.mutate(batch, {
       onSuccess: () => {
