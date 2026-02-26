@@ -569,7 +569,6 @@ function ChantierIndexPage() {
               onMarquerPrevu={livraisonActions.handleMarquerPrevu}
               onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
               onMarquerRecupere={livraisonActions.handleMarquerRecupere}
-              onRevenirStatut={livraisonActions.handleRevenirStatut}
               onEdit={livraisonActions.handleEditLivraison}
               onDelete={livraisonActions.handleDeleteLivraison}
               besoinsMap={besoinsMap}

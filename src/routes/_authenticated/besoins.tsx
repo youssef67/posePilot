@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { ClipboardList, Euro, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ClipboardList, Euro, MoreVertical, Pencil, Plus, Trash2, Warehouse } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -46,8 +46,11 @@ import { useBulkTransformBesoins } from '@/lib/mutations/useBulkTransformBesoins
 import { useCreateBesoins } from '@/lib/mutations/useCreateBesoins'
 import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
+import { useFournirBesoinDepuisDepot } from '@/lib/mutations/useFournirBesoinDepuisDepot'
 import { useChantiers } from '@/lib/queries/useChantiers'
+import { useDepotArticles } from '@/lib/queries/useDepotArticles'
 import { useRealtimeAllPendingBesoins } from '@/lib/subscriptions/useRealtimeAllPendingBesoins'
+import { DepotFournirSheet } from '@/components/DepotFournirSheet'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { useAuth } from '@/lib/auth'
 
@@ -65,12 +68,13 @@ function groupByChantier(besoins: BesoinWithChantier[]): ChantierGroup[] {
   const map = new Map<string, ChantierGroup>()
 
   for (const besoin of besoins) {
-    const existing = map.get(besoin.chantier_id)
+    const cid = besoin.chantier_id ?? ''
+    const existing = map.get(cid)
     if (existing) {
       existing.besoins.push(besoin)
     } else {
-      map.set(besoin.chantier_id, {
-        chantierId: besoin.chantier_id,
+      map.set(cid, {
+        chantierId: cid,
         chantierNom: besoin.chantiers.nom,
         besoins: [besoin],
       })
@@ -99,12 +103,16 @@ function getAuthorInitial(
 function BesoinsPage() {
   const { data: besoins, isLoading } = useAllPendingBesoins()
   const { data: chantiers } = useChantiers()
+  const { data: depotArticles } = useDepotArticles()
   const bulkTransform = useBulkTransformBesoins()
   const createBesoins = useCreateBesoins()
   const deleteBesoin = useDeleteBesoin()
   const updateBesoin = useUpdateBesoin()
+  const fournirDepot = useFournirBesoinDepuisDepot()
   const { user } = useAuth()
   useRealtimeAllPendingBesoins()
+
+  const hasDepotStock = (depotArticles ?? []).some((a) => a.quantite > 0)
 
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -113,7 +121,7 @@ function BesoinsPage() {
   const [besoinToEdit, setBesoinToEdit] = useState<BesoinWithChantier | null>(null)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [editDescription, setEditDescription] = useState('')
-  const [editQuantite, setEditQuantite] = useState(1)
+  const [editQuantite, setEditQuantite] = useState('1')
   const [editError, setEditError] = useState('')
 
   // Delete dialog
@@ -123,7 +131,7 @@ function BesoinsPage() {
   function handleEdit(besoin: BesoinWithChantier) {
     setBesoinToEdit(besoin)
     setEditDescription(besoin.description)
-    setEditQuantite(besoin.quantite ?? 1)
+    setEditQuantite(String(besoin.quantite ?? 1))
     setEditError('')
     setShowEditSheet(true)
   }
@@ -134,13 +142,14 @@ function BesoinsPage() {
       setEditError('La description est requise')
       return
     }
-    if (editQuantite < 1) {
+    const qty = parseFloat(editQuantite)
+    if (isNaN(qty) || qty < 1) {
       setEditError('La quantité doit être au moins 1')
       return
     }
     if (!besoinToEdit) return
     updateBesoin.mutate(
-      { id: besoinToEdit.id, chantierId: besoinToEdit.chantier_id, description: trimmed, quantite: editQuantite },
+      { id: besoinToEdit.id, chantierId: besoinToEdit.chantier_id ?? '', description: trimmed, quantite: qty },
       {
         onSuccess: () => {
           setShowEditSheet(false)
@@ -160,7 +169,7 @@ function BesoinsPage() {
   function handleConfirmDelete() {
     if (!besoinToDelete) return
     deleteBesoin.mutate(
-      { id: besoinToDelete.id, chantierId: besoinToDelete.chantier_id },
+      { id: besoinToDelete.id, chantierId: besoinToDelete.chantier_id ?? '' },
       {
         onSuccess: () => {
           setShowDeleteDialog(false)
@@ -170,6 +179,24 @@ function BesoinsPage() {
         onError: () => toast.error('Erreur lors de la suppression'),
       },
     )
+  }
+
+  // Depot fournir sheet
+  const [besoinToFournir, setBesoinToFournir] = useState<BesoinWithChantier | null>(null)
+  const [showFournirSheet, setShowFournirSheet] = useState(false)
+
+  function handleFournirDepot(besoin: BesoinWithChantier) {
+    setBesoinToFournir(besoin)
+    setShowFournirSheet(true)
+  }
+
+  function handleConfirmFournir(params: { besoinId: string; articleId: string; quantite: number }) {
+    fournirDepot.mutate(params, {
+      onSuccess: () => {
+        setShowFournirSheet(false)
+        setBesoinToFournir(null)
+      },
+    })
   }
 
   // Bulk delete
@@ -220,7 +247,7 @@ function BesoinsPage() {
   const [showSheet, setShowSheet] = useState(false)
   const [chantierUnique, setChantierUnique] = useState(false)
   const [globalChantierId, setGlobalChantierId] = useState('')
-  const emptyLine = (): BesoinLineValue => ({ description: '', quantite: 1, chantierId: '' })
+  const emptyLine = (): BesoinLineValue => ({ description: '', quantite: '1', chantierId: '' })
   const [lines, setLines] = useState<BesoinLineValue[]>([emptyLine()])
   const [createError, setCreateError] = useState('')
 
@@ -264,11 +291,14 @@ function BesoinsPage() {
       return
     }
 
-    const batch = filled.map((l) => ({
-      chantier_id: chantierUnique ? globalChantierId : l.chantierId,
-      description: l.description.trim(),
-      quantite: l.quantite,
-    }))
+    const batch = filled.map((l) => {
+      const qty = parseFloat(l.quantite)
+      return {
+        chantier_id: chantierUnique ? globalChantierId : l.chantierId,
+        description: l.description.trim(),
+        quantite: isNaN(qty) || qty < 1 ? 1 : qty,
+      }
+    })
 
     createBesoins.mutate(batch, {
       onSuccess: () => {
@@ -517,6 +547,12 @@ function BesoinsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {hasDepotStock && !besoin.livraison_id && (
+                                  <DropdownMenuItem onSelect={() => handleFournirDepot(besoin)}>
+                                    <Warehouse className="mr-2 h-4 w-4" />
+                                    Fournir depuis le dépôt
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onSelect={() => handleEdit(besoin)}>
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Modifier
@@ -714,11 +750,11 @@ function BesoinsPage() {
               <Input
                 id="edit-quantite-global"
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 min={1}
                 value={editQuantite}
                 onChange={(e) => {
-                  setEditQuantite(Math.max(1, parseInt(e.target.value) || 1))
+                  setEditQuantite(e.target.value)
                   if (editError) setEditError('')
                 }}
                 aria-label="Quantité"
@@ -812,6 +848,16 @@ function BesoinsPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <DepotFournirSheet
+        besoin={besoinToFournir}
+        chantierNom={besoinToFournir ? groups.find((g) => g.chantierId === besoinToFournir.chantier_id)?.chantierNom : undefined}
+        open={showFournirSheet}
+        onOpenChange={setShowFournirSheet}
+        onConfirm={handleConfirmFournir}
+        articles={depotArticles ?? []}
+        isPending={fournirDepot.isPending}
+      />
     </div>
   )
 }
