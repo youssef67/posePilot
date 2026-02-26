@@ -14,6 +14,8 @@ export type Database = {
           progress_total: number
           has_blocking_note: boolean
           has_open_reservation: boolean
+          ajustement_depenses: number
+          cout_sous_traitance: number
           created_at: string
           created_by: string | null
         }
@@ -26,6 +28,8 @@ export type Database = {
           progress_total?: number
           has_blocking_note?: boolean
           has_open_reservation?: boolean
+          ajustement_depenses?: number
+          cout_sous_traitance?: number
           created_at?: string
           created_by?: string | null
         }
@@ -38,6 +42,8 @@ export type Database = {
           progress_total?: number
           has_blocking_note?: boolean
           has_open_reservation?: boolean
+          ajustement_depenses?: number
+          cout_sous_traitance?: number
           created_at?: string
           created_by?: string | null
         }
@@ -439,6 +445,7 @@ export type Database = {
           chantier_id: string | null
           description: string
           status: string
+          destination: 'chantier' | 'depot'
           date_prevue: string | null
           bc_file_url: string | null
           bc_file_name: string | null
@@ -456,6 +463,7 @@ export type Database = {
           chantier_id?: string | null
           description: string
           status?: string
+          destination?: 'chantier' | 'depot'
           date_prevue?: string | null
           bc_file_url?: string | null
           bc_file_name?: string | null
@@ -473,6 +481,7 @@ export type Database = {
           chantier_id?: string | null
           description?: string
           status?: string
+          destination?: 'chantier' | 'depot'
           date_prevue?: string | null
           bc_file_url?: string | null
           bc_file_name?: string | null
@@ -490,30 +499,33 @@ export type Database = {
       besoins: {
         Row: {
           id: string
-          chantier_id: string
+          chantier_id: string | null
           description: string
           quantite: number
           montant_unitaire: number | null
+          is_depot: boolean
           livraison_id: string | null
           created_at: string
           created_by: string | null
         }
         Insert: {
           id?: string
-          chantier_id: string
+          chantier_id?: string | null
           description: string
           quantite?: number
           montant_unitaire?: number | null
+          is_depot?: boolean
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null
         }
         Update: {
           id?: string
-          chantier_id?: string
+          chantier_id?: string | null
           description?: string
           quantite?: number
           montant_unitaire?: number | null
+          is_depot?: boolean
           livraison_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -574,6 +586,78 @@ export type Database = {
           photo_url?: string
           created_by?: string
           created_at?: string
+        }
+        Relationships: []
+      }
+      depot_articles: {
+        Row: {
+          id: string
+          designation: string
+          quantite: number
+          valeur_totale: number
+          unite: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          designation: string
+          quantite?: number
+          valeur_totale?: number
+          unite?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          designation?: string
+          quantite?: number
+          valeur_totale?: number
+          unite?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: []
+      }
+      depot_mouvements: {
+        Row: {
+          id: string
+          article_id: string
+          type: 'entree' | 'sortie' | 'transfert_chantier'
+          quantite: number
+          prix_unitaire: number
+          montant_total: number
+          livraison_id: string | null
+          chantier_id: string | null
+          note: string | null
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          article_id: string
+          type: 'entree' | 'sortie' | 'transfert_chantier'
+          quantite: number
+          prix_unitaire: number
+          montant_total: number
+          livraison_id?: string | null
+          chantier_id?: string | null
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          article_id?: string
+          type?: 'entree' | 'sortie' | 'transfert_chantier'
+          quantite?: number
+          prix_unitaire?: number
+          montant_total?: number
+          livraison_id?: string | null
+          chantier_id?: string | null
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
         }
         Relationships: []
       }
@@ -665,7 +749,9 @@ export type Database = {
       delivery_status: 'commande' | 'prevu' | 'livre'
       plinth_status: 'non_commandees' | 'commandees' | 'faconnees'
       reservation_status: 'ouvert' | 'resolu'
-      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'besoin_updated' | 'besoin_deleted' | 'livraison_created' | 'livraison_status_changed' | 'livraison_updated' | 'livraison_deleted' | 'inventaire_added' | 'inventaire_updated' | 'reservation_created' | 'reservation_resolved'
+      livraison_destination: 'chantier' | 'depot'
+      depot_mouvement_type: 'entree' | 'sortie' | 'transfert_chantier'
+      activity_event_type: 'task_status_changed' | 'note_added' | 'photo_added' | 'blocking_noted' | 'besoin_added' | 'besoin_ordered' | 'besoin_updated' | 'besoin_deleted' | 'livraison_created' | 'livraison_status_changed' | 'livraison_updated' | 'livraison_deleted' | 'inventaire_added' | 'inventaire_updated' | 'reservation_created' | 'reservation_resolved' | 'depot_entree' | 'depot_sortie' | 'depot_transfert'
     }
     CompositeTypes: { [_ in never]: never }
   }
@@ -768,13 +854,40 @@ export interface Reservation {
   pieces?: { nom: string }
 }
 
+// Type miroir de la table depot_articles (038_depot_entreprise.sql)
+export interface DepotArticle {
+  id: string
+  designation: string
+  quantite: number
+  valeur_totale: number
+  unite: string | null
+  created_at: string
+  created_by: string | null
+}
+
+// Type miroir de la table depot_mouvements (038_depot_entreprise.sql)
+export interface DepotMouvement {
+  id: string
+  article_id: string
+  type: 'entree' | 'sortie' | 'transfert_chantier'
+  quantite: number
+  prix_unitaire: number
+  montant_total: number
+  livraison_id: string | null
+  chantier_id: string | null
+  note: string | null
+  created_at: string
+  created_by: string | null
+}
+
 // Type miroir de la table besoins (016_besoins_livraisons.sql)
 export interface Besoin {
   id: string
-  chantier_id: string
+  chantier_id: string | null
   description: string
   quantite: number
   montant_unitaire: number | null
+  is_depot: boolean
   livraison_id: string | null
   created_at: string
   created_by: string | null
@@ -792,6 +905,7 @@ export interface Livraison {
   chantier_id: string | null
   description: string
   status: 'commande' | 'prevu' | 'livraison_prevue' | 'a_recuperer' | 'receptionne' | 'recupere' | 'livre'
+  destination: 'chantier' | 'depot'
   fournisseur: string | null
   date_prevue: string | null
   montant_ttc: number | null

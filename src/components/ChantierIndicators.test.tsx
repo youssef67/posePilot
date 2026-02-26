@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ChantierIndicators } from './ChantierIndicators'
 import type { LotPretACarreler, MetrageVsInventaire } from '@/lib/utils/computeChantierIndicators'
 import type { Livraison } from '@/types/database'
@@ -169,5 +170,89 @@ describe('ChantierIndicators', () => {
       />,
     )
     expect(container.firstChild).toBeNull()
+  })
+
+  it('shows total dépenses with ajustement when positive', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        totalDepenses={1000}
+        ajustementDepenses={500}
+      />,
+    )
+    // 1000 + 500 = 1500
+    expect(screen.getByText(/1[\s\u202f]500,00/)).toBeInTheDocument()
+    expect(screen.getByText(/ajust\./)).toBeInTheDocument()
+  })
+
+  it('shows total dépenses with negative ajustement', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        totalDepenses={1000}
+        ajustementDepenses={-200}
+      />,
+    )
+    // 1000 - 200 = 800
+    expect(screen.getByText(/800,00/)).toBeInTheDocument()
+  })
+
+  it('shows sous-traitance line when > 0', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        coutSousTraitance={3200}
+      />,
+    )
+    expect(screen.getByText(/3[\s\u202f]200,00/)).toBeInTheDocument()
+    expect(screen.getByText(/sous-traitance/)).toBeInTheDocument()
+  })
+
+  it('hides sous-traitance line when 0', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={1}
+        livraisonsPrevues={[]}
+        coutSousTraitance={0}
+      />,
+    )
+    expect(screen.queryByText(/sous-traitance/)).not.toBeInTheDocument()
+  })
+
+  it('shows edit button and calls onEditFinances on click', async () => {
+    const user = userEvent.setup()
+    const handleEdit = vi.fn()
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        totalDepenses={500}
+        onEditFinances={handleEdit}
+      />,
+    )
+    const editBtn = screen.getByRole('button', { name: /modifier les finances/i })
+    expect(editBtn).toBeInTheDocument()
+    await user.click(editBtn)
+    expect(handleEdit).toHaveBeenCalledOnce()
+  })
+
+  it('hides edit button when onEditFinances is not provided', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        totalDepenses={500}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /modifier les finances/i })).not.toBeInTheDocument()
   })
 })

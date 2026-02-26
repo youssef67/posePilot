@@ -50,6 +50,7 @@ import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
 import { useCreateGroupedLivraison } from '@/lib/mutations/useCreateGroupedLivraison'
 import { useUpdateChantierStatus } from '@/lib/mutations/useUpdateChantierStatus'
+import { useUpdateChantierFinances } from '@/lib/mutations/useUpdateChantierFinances'
 import { useChantier } from '@/lib/queries/useChantier'
 import { useBesoins } from '@/lib/queries/useBesoins'
 import { useLivraisons } from '@/lib/queries/useLivraisons'
@@ -95,6 +96,7 @@ function ChantierIndexPage() {
   const besoinsMap = useMemo(() => buildBesoinsMap(allLinkedBesoins ?? []), [allLinkedBesoins])
   const createGroupedLivraison = useCreateGroupedLivraison()
   const updateStatus = useUpdateChantierStatus()
+  const updateFinances = useUpdateChantierFinances()
 
   const lotsPretsACarreler = useMemo(
     () => chantier?.type === 'complet' ? findLotsPretsACarreler(lotsWithTaches ?? []) : undefined,
@@ -169,6 +171,32 @@ function ChantierIndexPage() {
   const [groupeDescription, setGroupeDescription] = useState('')
   const [groupeFournisseur, setGroupeFournisseur] = useState('')
   const [groupeError, setGroupeError] = useState('')
+
+  // --- Finances sheet state ---
+  const [showFinancesSheet, setShowFinancesSheet] = useState(false)
+  const [finAjustement, setFinAjustement] = useState('')
+  const [finSousTraitance, setFinSousTraitance] = useState('')
+
+  function handleOpenFinancesSheet() {
+    setFinAjustement(String(chantier?.ajustement_depenses ?? 0))
+    setFinSousTraitance(String(chantier?.cout_sous_traitance ?? 0))
+    setShowFinancesSheet(true)
+  }
+
+  function handleSaveFinances() {
+    const ajustement = parseFloat(finAjustement) || 0
+    const sousTraitance = Math.max(0, parseFloat(finSousTraitance) || 0)
+    updateFinances.mutate(
+      { chantierId, ajustement_depenses: ajustement, cout_sous_traitance: sousTraitance },
+      {
+        onSuccess: () => {
+          setShowFinancesSheet(false)
+          toast('Finances mises à jour')
+        },
+        onError: () => toast.error('Erreur lors de la mise à jour'),
+      },
+    )
+  }
 
   function handleTerminer() {
     updateStatus.mutate(
@@ -500,6 +528,9 @@ function ChantierIndexPage() {
               besoinsEnAttente={besoins?.length ?? 0}
               livraisonsPrevues={livraisonsPrevues}
               totalDepenses={totalDepenses}
+              ajustementDepenses={chantier.ajustement_depenses}
+              coutSousTraitance={chantier.cout_sous_traitance}
+              onEditFinances={handleOpenFinancesSheet}
             />
 
             <div className="flex items-center justify-between mb-3">
@@ -538,6 +569,7 @@ function ChantierIndexPage() {
               onMarquerPrevu={livraisonActions.handleMarquerPrevu}
               onConfirmerLivraison={livraisonActions.handleConfirmerLivraison}
               onMarquerRecupere={livraisonActions.handleMarquerRecupere}
+              onRevenirStatut={livraisonActions.handleRevenirStatut}
               onEdit={livraisonActions.handleEditLivraison}
               onDelete={livraisonActions.handleDeleteLivraison}
               besoinsMap={besoinsMap}
@@ -578,6 +610,9 @@ function ChantierIndexPage() {
               besoinsEnAttente={besoins?.length ?? 0}
               livraisonsPrevues={livraisonsPrevues}
               totalDepenses={totalDepenses}
+              ajustementDepenses={chantier.ajustement_depenses}
+              coutSousTraitance={chantier.cout_sous_traitance}
+              onEditFinances={handleOpenFinancesSheet}
             />
 
             <div className="flex flex-col gap-3">
@@ -842,6 +877,60 @@ function ChantierIndexPage() {
               className="w-full"
             >
               Confirmer la commande
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showFinancesSheet} onOpenChange={setShowFinancesSheet}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Modifier les finances</SheetTitle>
+            <SheetDescription>
+              Ajustez le montant des dépenses et la sous-traitance pour ce chantier.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="px-4 flex flex-col gap-4">
+            <div>
+              <label htmlFor="fin-ajustement" className="text-sm font-medium mb-1 block">
+                Ajustement dépenses
+              </label>
+              <Input
+                id="fin-ajustement"
+                type="number"
+                step="any"
+                value={finAjustement}
+                onChange={(e) => setFinAjustement(e.target.value)}
+                aria-label="Ajustement dépenses"
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Valeur positive pour ajouter, négative pour retrancher
+              </p>
+            </div>
+            <div>
+              <label htmlFor="fin-sous-traitance" className="text-sm font-medium mb-1 block">
+                Coût sous-traitance
+              </label>
+              <Input
+                id="fin-sous-traitance"
+                type="number"
+                step="any"
+                min="0"
+                value={finSousTraitance}
+                onChange={(e) => setFinSousTraitance(e.target.value)}
+                aria-label="Coût sous-traitance"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <SheetFooter>
+            <Button
+              onClick={handleSaveFinances}
+              disabled={updateFinances.isPending}
+              className="w-full"
+            >
+              {updateFinances.isPending ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </SheetFooter>
         </SheetContent>

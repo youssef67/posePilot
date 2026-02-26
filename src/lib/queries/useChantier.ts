@@ -9,6 +9,8 @@ export interface ChantierRow {
   progress_done: number
   progress_total: number
   has_blocking_note: boolean
+  ajustement_depenses: number
+  cout_sous_traitance: number
   created_by: string
   created_at: string
 }

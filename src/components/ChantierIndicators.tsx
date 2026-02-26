@@ -1,8 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import { Banknote, Calendar, Hammer, Package, Ruler } from 'lucide-react'
+import { Banknote, Calendar, Hammer, HardHat, Package, Pencil, Ruler } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import type { LotPretACarreler, MetrageVsInventaire } from '@/lib/utils/computeChantierIndicators'
 import type { Livraison } from '@/types/database'
+
+const formatEUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
 
 interface ChantierIndicatorsProps {
   chantierId: string
@@ -11,6 +14,9 @@ interface ChantierIndicatorsProps {
   besoinsEnAttente: number
   livraisonsPrevues: Livraison[]
   totalDepenses?: number | null
+  ajustementDepenses?: number
+  coutSousTraitance?: number
+  onEditFinances?: () => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -25,8 +31,13 @@ export function ChantierIndicators({
   besoinsEnAttente,
   livraisonsPrevues,
   totalDepenses,
+  ajustementDepenses = 0,
+  coutSousTraitance = 0,
+  onEditFinances,
 }: ChantierIndicatorsProps) {
-  const showDepenses = totalDepenses != null && totalDepenses > 0
+  const totalAvecAjustement = (totalDepenses ?? 0) + ajustementDepenses
+  const showDepenses = totalAvecAjustement > 0 || ajustementDepenses !== 0
+  const showSousTraitance = coutSousTraitance > 0
   const showLots = lotsPretsACarreler && lotsPretsACarreler.length > 0
   const showMetrage =
     metrageVsInventaire &&
@@ -36,18 +47,48 @@ export function ChantierIndicators({
   const showBesoins = besoinsEnAttente > 0
   const showLivraisons = livraisonsPrevues.length > 0
 
-  if (!showDepenses && !showLots && !showMetrage && !showBesoins && !showLivraisons) {
+  const showFinanceEditButton = onEditFinances != null
+
+  if (!showDepenses && !showSousTraitance && !showLots && !showMetrage && !showBesoins && !showLivraisons && !showFinanceEditButton) {
     return null
   }
 
   return (
     <div className="rounded-lg border border-border p-3 space-y-3 mb-4" data-testid="chantier-indicators">
-      {showDepenses && (
+      {(showDepenses || showSousTraitance || showFinanceEditButton) && (
         <div>
-          <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-            <Banknote className="size-4" />
-            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalDepenses!)} dépensés
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              {showDepenses && (
+                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <Banknote className="size-4" />
+                  {formatEUR.format(totalAvecAjustement)} dépensés
+                  {ajustementDepenses !== 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      (ajust. {ajustementDepenses > 0 ? '+' : ''}{formatEUR.format(ajustementDepenses)})
+                    </span>
+                  )}
+                </p>
+              )}
+              {showSousTraitance && (
+                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <HardHat className="size-4" />
+                  {formatEUR.format(coutSousTraitance)} sous-traitance
+                </p>
+              )}
+            </div>
+            {showFinanceEditButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={onEditFinances}
+                aria-label="Modifier les finances"
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
