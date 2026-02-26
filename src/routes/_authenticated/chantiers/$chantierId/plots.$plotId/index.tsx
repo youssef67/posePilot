@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Plus, Trash2, X, CheckSquare } from 'lucide-react'
+import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Pencil, Plus, Trash2, X, CheckSquare } from 'lucide-react'
 import { SortableTaskList } from '@/components/SortableTaskList'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -35,6 +42,8 @@ import { findLotsPretsACarreler } from '@/lib/utils/computeChantierIndicators'
 import { useUpdatePlotTasks } from '@/lib/mutations/useUpdatePlotTasks'
 import { useDeletePlot } from '@/lib/mutations/useDeletePlot'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
+import { useUpdateEtage } from '@/lib/mutations/useUpdateEtage'
+import { useDeleteEtage } from '@/lib/mutations/useDeleteEtage'
 import { useDuplicatePlot } from '@/lib/mutations/useDuplicatePlot'
 import { useVariantes } from '@/lib/queries/useVariantes'
 import { useCreateVariante } from '@/lib/mutations/useCreateVariante'
@@ -86,6 +95,8 @@ function PlotIndexPage() {
   const createLot = useCreateLot()
   const createBatchLots = useCreateBatchLots()
   const deleteLots = useDeleteLots()
+  const updateEtage = useUpdateEtage()
+  const deleteEtage = useDeleteEtage()
 
   const duplicatePlot = useDuplicatePlot()
   const [showDuplicateSheet, setShowDuplicateSheet] = useState(false)
@@ -115,6 +126,11 @@ function PlotIndexPage() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedLotIds, setSelectedLotIds] = useState<Set<string>>(new Set())
   const [showDeleteLotsDialog, setShowDeleteLotsDialog] = useState(false)
+
+  const [renameEtageId, setRenameEtageId] = useState<string | null>(null)
+  const [renameEtageNom, setRenameEtageNom] = useState('')
+  const [renameEtageError, setRenameEtageError] = useState('')
+  const [deleteEtageTarget, setDeleteEtageTarget] = useState<{ id: string; nom: string; lotCount: number } | null>(null)
 
   const plot = plots?.find((p) => p.id === plotId)
 
@@ -395,6 +411,60 @@ function PlotIndexPage() {
     )
   }
 
+  function handleOpenRenameEtage(etageId: string, currentNom: string) {
+    setRenameEtageId(etageId)
+    setRenameEtageNom(currentNom)
+    setRenameEtageError('')
+  }
+
+  function handleRenameEtage() {
+    if (!renameEtageId) return
+    const trimmed = renameEtageNom.trim()
+    if (!trimmed) {
+      setRenameEtageError("Le nom de l'étage est requis")
+      return
+    }
+    if (etages?.some((e) => e.id !== renameEtageId && e.nom.toLowerCase() === trimmed.toLowerCase())) {
+      setRenameEtageError('Un étage avec ce nom existe déjà')
+      return
+    }
+    setRenameEtageError('')
+    updateEtage.mutate(
+      { etageId: renameEtageId, plotId, nom: trimmed },
+      {
+        onSuccess: () => {
+          toast('Étage renommé')
+          setRenameEtageId(null)
+        },
+        onError: (err) => {
+          if (err.message?.includes('idx_etages_unique_nom') || err.message?.includes('duplicate') || err.message?.includes('unique')) {
+            setRenameEtageError('Un étage avec ce nom existe déjà')
+          } else {
+            toast.error("Erreur lors du renommage de l'étage")
+            setRenameEtageId(null)
+          }
+        },
+      },
+    )
+  }
+
+  function handleDeleteEtage() {
+    if (!deleteEtageTarget) return
+    deleteEtage.mutate(
+      { etageId: deleteEtageTarget.id, plotId },
+      {
+        onSuccess: () => {
+          toast('Étage supprimé')
+          setDeleteEtageTarget(null)
+        },
+        onError: () => {
+          toast.error("Erreur lors de la suppression de l'étage")
+          setDeleteEtageTarget(null)
+        },
+      },
+    )
+  }
+
   const lotsGroupedByEtage = lots
     ? lots.reduce(
         (acc, lot) => {
@@ -567,21 +637,58 @@ function PlotIndexPage() {
                   ? Math.round((etage.progress_done / etage.progress_total) * 100)
                   : 0
                 return (
-                  <StatusCard
-                    key={etage.id}
-                    title={etage.nom}
-                    subtitle={`${etage.lotCount} lot${etage.lotCount !== 1 ? 's' : ''}`}
-                    statusColor={STATUS_COLORS[computeStatus(etage.progress_done, etage.progress_total)]}
-                    indicator={etage.progress_total > 0 ? `${pct} %` : undefined}
-                    isBlocked={etage.has_blocking_note}
-                    hasOpenReservation={etage.has_open_reservation}
-                    onClick={() =>
-                      navigate({
-                        to: '/chantiers/$chantierId/plots/$plotId/$etageId',
-                        params: { chantierId, plotId, etageId: etage.id },
-                      })
-                    }
-                  />
+                  <div key={etage.id} className="relative">
+                    <StatusCard
+                      title={etage.nom}
+                      subtitle={`${etage.lotCount} lot${etage.lotCount !== 1 ? 's' : ''}`}
+                      statusColor={STATUS_COLORS[computeStatus(etage.progress_done, etage.progress_total)]}
+                      indicator={etage.progress_total > 0 ? `${pct} %` : undefined}
+                      isBlocked={etage.has_blocking_note}
+                      hasOpenReservation={etage.has_open_reservation}
+                      onClick={() =>
+                        navigate({
+                          to: '/chantiers/$chantierId/plots/$plotId/$etageId',
+                          params: { chantierId, plotId, etageId: etage.id },
+                        })
+                      }
+                    />
+                    <div className="absolute top-1 right-1">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7"
+                            aria-label={`Options de l'étage ${etage.nom}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <EllipsisVertical className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleOpenRenameEtage(etage.id, etage.nom)
+                            }}
+                          >
+                            <Pencil className="mr-2 size-4" />
+                            Renommer
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              setDeleteEtageTarget({ id: etage.id, nom: etage.nom, lotCount: etage.lotCount })
+                            }}
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -1119,6 +1226,64 @@ function PlotIndexPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={renameEtageId !== null} onOpenChange={(open) => { if (!open) setRenameEtageId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renommer l'étage</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Input
+                placeholder="Nom de l'étage"
+                value={renameEtageNom}
+                onChange={(e) => {
+                  setRenameEtageNom(e.target.value)
+                  if (renameEtageError) setRenameEtageError('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameEtage()
+                }}
+                aria-label="Nom de l'étage"
+                autoFocus
+              />
+              {renameEtageError && (
+                <p className="text-sm text-destructive mt-1">{renameEtageError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleRenameEtage}
+              disabled={updateEtage.isPending}
+            >
+              Renommer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteEtageTarget !== null} onOpenChange={(open) => { if (!open) setDeleteEtageTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'étage {deleteEtageTarget?.nom} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteEtageTarget && deleteEtageTarget.lotCount > 0
+                ? `Cet étage contient ${deleteEtageTarget.lotCount} lot${deleteEtageTarget.lotCount > 1 ? 's' : ''}. Tous les lots, pièces et tâches associés seront supprimés définitivement.`
+                : 'Cet étage sera supprimé définitivement. Cette action est irréversible.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteEtage}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Sheet open={showDuplicateSheet} onOpenChange={setShowDuplicateSheet}>
         <SheetContent side="bottom">
