@@ -60,6 +60,7 @@ describe('useCreateLivraison', () => {
     expect(mockInsert).toHaveBeenCalledWith({
       chantier_id: 'ch1',
       description: 'Colle faïence',
+      destination: 'chantier',
       fournisseur: null,
       montant_ttc: null,
       status: 'commande',
@@ -114,6 +115,98 @@ describe('useCreateLivraison', () => {
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({ fournisseur: 'Leroy Merlin' }),
     )
+  })
+
+  it('inserts depot livraison with destination depot and chantier_id null', async () => {
+    const created = {
+      id: 'liv-depot',
+      chantier_id: null,
+      description: 'Stock dépôt',
+      destination: 'depot',
+      status: 'commande',
+      date_prevue: null,
+      bc_file_url: null,
+      bc_file_name: null,
+      bl_file_url: null,
+      bl_file_name: null,
+      created_at: '2026-02-25T10:00:00Z',
+      created_by: 'user-1',
+    }
+    const mockSingle = vi.fn().mockResolvedValue({ data: created, error: null })
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as never)
+
+    const { result } = renderHook(() => useCreateLivraison(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({
+        chantierId: '',
+        description: 'Stock dépôt',
+        destination: 'depot',
+        lines: [
+          { description: 'Colle', quantite: 10, montant_unitaire: 5, chantier_id: '' },
+        ],
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chantier_id: null,
+        destination: 'depot',
+      }),
+    )
+  })
+
+  it('sets is_depot on besoins for depot lines in mixed livraison', async () => {
+    const created = {
+      id: 'liv-mix',
+      chantier_id: null,
+      description: 'Mixte',
+      destination: 'chantier',
+      status: 'commande',
+      date_prevue: null,
+      bc_file_url: null,
+      bc_file_name: null,
+      bl_file_url: null,
+      bl_file_name: null,
+      created_at: '2026-02-25T10:00:00Z',
+      created_by: 'user-1',
+    }
+    const mockBesoinInsert = vi.fn().mockResolvedValue({ error: null })
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'livraisons') {
+        const mockSingle = vi.fn().mockResolvedValue({ data: created, error: null })
+        const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+        const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+        return { insert: mockInsert } as never
+      }
+      if (table === 'besoins') {
+        return { insert: mockBesoinInsert } as never
+      }
+      return {} as never
+    })
+
+    const { result } = renderHook(() => useCreateLivraison(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({
+        chantierId: '',
+        description: 'Mixte',
+        destination: 'chantier',
+        lines: [
+          { description: 'Colle', quantite: 10, montant_unitaire: 5, chantier_id: 'ch1', isDepot: false },
+          { description: 'Vis', quantite: 100, montant_unitaire: 0.1, chantier_id: '', isDepot: true },
+        ],
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockBesoinInsert).toHaveBeenCalledWith([
+      expect.objectContaining({ description: 'Colle', is_depot: false, chantier_id: 'ch1' }),
+      expect.objectContaining({ description: 'Vis', is_depot: true, chantier_id: null }),
+    ])
   })
 
   it('applies optimistic update on mutate', async () => {

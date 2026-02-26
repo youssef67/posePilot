@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { Euro, FileText, Plus, Trash2, X } from 'lucide-react'
+import { Euro, FileText, Plus, Trash2, Warehouse, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -77,6 +78,12 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
                   <SelectValue placeholder="Choisir un chantier" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__depot__">
+                    <span className="flex items-center gap-2">
+                      <Warehouse className="h-4 w-4" />
+                      Dépôt entreprise
+                    </span>
+                  </SelectItem>
                   {chantiers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.nom}
@@ -89,7 +96,9 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
             <div className="flex flex-col gap-2">
               {actions.livraisonLines.map((line, i) => {
                 const pu = parseFloat(line.montantUnitaire)
-                const lineTotal = !isNaN(pu) ? line.quantite * pu : 0
+                const qty = parseFloat(line.quantite)
+                const rem = parseFloat(line.remise) || 0
+                const lineTotal = !isNaN(pu) && !isNaN(qty) ? qty * pu * (1 - rem / 100) : 0
                 return (
                   <div key={i} className="rounded-lg border border-border p-3 space-y-2">
                     <div className="flex items-center gap-2">
@@ -108,17 +117,16 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
                       />
                       <Input
                         type="number"
-                        inputMode="numeric"
+                        inputMode="decimal"
                         min={1}
                         value={line.quantite}
                         onChange={(e) => {
-                          const q = parseInt(e.target.value, 10)
                           actions.setLivraisonLines((prev) =>
-                            prev.map((l, idx) => idx === i ? { ...l, quantite: isNaN(q) || q < 1 ? 1 : q } : l),
+                            prev.map((l, idx) => idx === i ? { ...l, quantite: e.target.value } : l),
                           )
                         }}
                         aria-label={`Quantité item ${i + 1}`}
-                        className="w-16"
+                        className="w-20"
                       />
                       {actions.livraisonLines.length > 1 && (
                         <Button
@@ -151,14 +159,32 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
                         />
                         <Euro className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                       </div>
+                      <div className="relative w-16">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          max="100"
+                          placeholder="0"
+                          value={line.remise}
+                          onChange={(e) =>
+                            actions.setLivraisonLines((prev) =>
+                              prev.map((l, idx) => idx === i ? { ...l, remise: e.target.value } : l),
+                            )
+                          }
+                          aria-label={`Remise item ${i + 1}`}
+                          className="pr-6"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                      </div>
                       <span className="text-sm font-medium w-24 text-right">
                         {lineTotal > 0
                           ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(lineTotal)
                           : '—'}
                       </span>
                     </div>
-                    {!actions.livraisonChantierUnique && (
-                      <div className="pl-7">
+                    {!actions.livraisonChantierUnique ? (
+                      <div className="pl-7 flex items-center gap-2">
                         <Select
                           value={line.chantierId}
                           onValueChange={(v) =>
@@ -171,6 +197,12 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
                             <SelectValue placeholder="Choisir un chantier" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="__depot__">
+                              <span className="flex items-center gap-2">
+                                <Warehouse className="h-4 w-4" />
+                                Dépôt entreprise
+                              </span>
+                            </SelectItem>
                             {chantiers.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
                                 {c.nom}
@@ -178,8 +210,21 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
                             ))}
                           </SelectContent>
                         </Select>
+                        {line.chantierId === '__depot__' && (
+                          <Badge variant="secondary" className="shrink-0 gap-1">
+                            <Warehouse className="h-3 w-3" />
+                            Dépôt
+                          </Badge>
+                        )}
                       </div>
-                    )}
+                    ) : actions.livraisonGlobalChantierId === '__depot__' ? (
+                      <div className="pl-7">
+                        <Badge variant="secondary" className="gap-1">
+                          <Warehouse className="h-3 w-3" />
+                          Dépôt
+                        </Badge>
+                      </div>
+                    ) : null}
                   </div>
                 )
               })}
@@ -190,8 +235,9 @@ export function LivraisonSheets({ actions, chantiers }: LivraisonSheetsProps) {
               size="sm"
               onClick={() => actions.setLivraisonLines((prev) => [...prev, {
                 description: '',
-                quantite: 1,
+                quantite: '1',
                 montantUnitaire: '',
+                remise: '',
                 chantierId: actions.livraisonChantierUnique ? actions.livraisonGlobalChantierId : '',
               }])}
               className="w-full"

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Home, ClipboardList, Truck, Bell, LogOut } from 'lucide-react'
+import { Home, ClipboardList, Truck, Bell, Warehouse, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useUnreadActivityCount } from '@/lib/queries/useUnreadActivityCount'
 import { useAllPendingBesoinsCount } from '@/lib/queries/useAllPendingBesoinsCount'
@@ -10,6 +10,7 @@ const tabs = [
   { to: '/', label: 'Chantiers', icon: Home },
   { to: '/besoins', label: 'Besoins', icon: ClipboardList },
   { to: '/livraisons', label: 'Livraisons', icon: Truck },
+  { to: '/depot', label: 'Dépôt', icon: Warehouse },
   { to: '/activite', label: 'Activité', icon: Bell },
 ] as const
 

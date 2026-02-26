@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Fab } from '@/components/Fab'
 import { BesoinLineForm, type BesoinLineValue } from '@/components/BesoinLineForm'
 import { BesoinsList } from '@/components/BesoinsList'
+import { DepotFournirSheet } from '@/components/DepotFournirSheet'
 import { useRealtimeBesoins } from '@/lib/subscriptions/useRealtimeBesoins'
 import { useCreateBesoins } from '@/lib/mutations/useCreateBesoins'
 import { useUpdateBesoin } from '@/lib/mutations/useUpdateBesoin'
@@ -33,8 +34,10 @@ import { useDeleteBesoin } from '@/lib/mutations/useDeleteBesoin'
 import { useTransformBesoinToLivraison } from '@/lib/mutations/useTransformBesoinToLivraison'
 import { useCreateGroupedLivraison } from '@/lib/mutations/useCreateGroupedLivraison'
 import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
+import { useFournirBesoinDepuisDepot } from '@/lib/mutations/useFournirBesoinDepuisDepot'
 import { useBesoins } from '@/lib/queries/useBesoins'
 import { useChantier } from '@/lib/queries/useChantier'
+import { useDepotArticles } from '@/lib/queries/useDepotArticles'
 import type { Besoin } from '@/types/database'
 
 export const Route = createFileRoute(
@@ -47,6 +50,7 @@ function BesoinsPage() {
   const { chantierId } = Route.useParams()
   const { data: chantier } = useChantier(chantierId)
   const { data: besoins, isLoading } = useBesoins(chantierId)
+  const { data: depotArticles } = useDepotArticles()
   useRealtimeBesoins(chantierId)
   const createBesoins = useCreateBesoins()
   const updateBesoin = useUpdateBesoin()
@@ -54,12 +58,15 @@ function BesoinsPage() {
   const transformBesoin = useTransformBesoinToLivraison()
   const createGroupedLivraison = useCreateGroupedLivraison()
   const uploadDocument = useUploadLivraisonDocument()
+  const fournirDepot = useFournirBesoinDepuisDepot()
+
+  const hasDepotStock = (depotArticles ?? []).some((a) => a.quantite > 0)
 
   const commanderBcFileRef = useRef<HTMLInputElement>(null)
   const groupeBcFileRef = useRef<HTMLInputElement>(null)
 
   const [showSheet, setShowSheet] = useState(false)
-  const emptyLine = (): BesoinLineValue => ({ description: '', quantite: 1, chantierId: chantierId })
+  const emptyLine = (): BesoinLineValue => ({ description: '', quantite: '1', chantierId: chantierId })
   const [lines, setLines] = useState<BesoinLineValue[]>([emptyLine()])
   const [createError, setCreateError] = useState('')
   const [showCommanderSheet, setShowCommanderSheet] = useState(false)
@@ -71,7 +78,7 @@ function BesoinsPage() {
   const [besoinToEdit, setBesoinToEdit] = useState<Besoin | null>(null)
   const [showEditSheet, setShowEditSheet] = useState(false)
   const [editDescription, setEditDescription] = useState('')
-  const [editQuantite, setEditQuantite] = useState(1)
+  const [editQuantite, setEditQuantite] = useState('1')
   const [editDescError, setEditDescError] = useState('')
 
   const [besoinToDelete, setBesoinToDelete] = useState<Besoin | null>(null)
@@ -86,6 +93,24 @@ function BesoinsPage() {
   const [groupeMontants, setGroupeMontants] = useState<Record<string, string>>({})
   const [groupeBcFile, setGroupeBcFile] = useState<File | null>(null)
   const [groupeError, setGroupeError] = useState('')
+
+  // Depot fournir sheet
+  const [besoinToFournir, setBesoinToFournir] = useState<Besoin | null>(null)
+  const [showFournirSheet, setShowFournirSheet] = useState(false)
+
+  function handleFournirDepot(besoin: Besoin) {
+    setBesoinToFournir(besoin)
+    setShowFournirSheet(true)
+  }
+
+  function handleConfirmFournir(params: { besoinId: string; articleId: string; quantite: number }) {
+    fournirDepot.mutate(params, {
+      onSuccess: () => {
+        setShowFournirSheet(false)
+        setBesoinToFournir(null)
+      },
+    })
+  }
 
   function handleOpenSheet() {
     setLines([emptyLine()])
@@ -116,11 +141,14 @@ function BesoinsPage() {
       return
     }
 
-    const batch = filled.map((l) => ({
-      chantier_id: chantierId,
-      description: l.description.trim(),
-      quantite: l.quantite,
-    }))
+    const batch = filled.map((l) => {
+      const qty = parseFloat(l.quantite)
+      return {
+        chantier_id: chantierId,
+        description: l.description.trim(),
+        quantite: isNaN(qty) || qty < 1 ? 1 : qty,
+      }
+    })
 
     createBesoins.mutate(batch, {
       onSuccess: () => {
@@ -134,7 +162,7 @@ function BesoinsPage() {
   function handleEdit(besoin: Besoin) {
     setBesoinToEdit(besoin)
     setEditDescription(besoin.description)
-    setEditQuantite(besoin.quantite ?? 1)
+    setEditQuantite(String(besoin.quantite ?? 1))
     setEditDescError('')
     setShowEditSheet(true)
   }
@@ -145,13 +173,14 @@ function BesoinsPage() {
       setEditDescError('La description est requise')
       return
     }
-    if (editQuantite < 1) {
+    const qty = parseFloat(editQuantite)
+    if (isNaN(qty) || qty < 1) {
       setEditDescError('La quantité doit être au moins 1')
       return
     }
     if (!besoinToEdit) return
     updateBesoin.mutate(
-      { id: besoinToEdit.id, chantierId, description: trimmed, quantite: editQuantite },
+      { id: besoinToEdit.id, chantierId, description: trimmed, quantite: qty },
       {
         onSuccess: () => {
           setShowEditSheet(false)
@@ -370,6 +399,8 @@ function BesoinsPage() {
           isLoading={isLoading}
           onOpenSheet={handleOpenSheet}
           onCommander={handleCommander}
+          onFournirDepot={handleFournirDepot}
+          hasDepotStock={hasDepotStock}
           onEdit={handleEdit}
           onDelete={handleDelete}
           selectionMode={selectionMode}
@@ -468,11 +499,11 @@ function BesoinsPage() {
               <Input
                 id="edit-quantite"
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 min={1}
                 value={editQuantite}
                 onChange={(e) => {
-                  setEditQuantite(Math.max(1, parseInt(e.target.value) || 1))
+                  setEditQuantite(e.target.value)
                   if (editDescError) setEditDescError('')
                 }}
                 aria-label="Quantité"
@@ -731,6 +762,16 @@ function BesoinsPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <DepotFournirSheet
+        besoin={besoinToFournir}
+        chantierNom={chantier?.nom}
+        open={showFournirSheet}
+        onOpenChange={setShowFournirSheet}
+        onConfirm={handleConfirmFournir}
+        articles={depotArticles ?? []}
+        isPending={fournirDepot.isPending}
+      />
     </div>
   )
 }

@@ -16,7 +16,7 @@ export function useCreateBesoins() {
       const rows = lines.map((line) => ({
         chantier_id: line.chantier_id,
         description: line.description,
-        quantite: line.quantite,
+        quantite: Math.max(1, Math.round(line.quantite)),
         created_by: user?.id ?? null,
       }))
       const { data, error } = await supabase

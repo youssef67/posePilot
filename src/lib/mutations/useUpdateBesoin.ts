@@ -15,7 +15,7 @@ export function useUpdateBesoin() {
   return useMutation({
     mutationFn: async ({ id, description, quantite }: UpdateBesoinInput) => {
       const updates: Record<string, unknown> = { description }
-      if (quantite !== undefined) updates.quantite = quantite
+      if (quantite !== undefined) updates.quantite = Math.max(1, Math.round(quantite))
       const { data, error } = await supabase
         .from('besoins')
         .update(updates)

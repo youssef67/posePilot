@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react'
-import { MoreVertical, Package, Pencil, Trash2 } from 'lucide-react'
+import { MoreVertical, Package, Pencil, Trash2, Warehouse } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -17,6 +17,8 @@ interface BesoinsListProps {
   isLoading: boolean
   onOpenSheet: () => void
   onCommander: (besoin: Besoin) => void
+  onFournirDepot?: (besoin: Besoin) => void
+  hasDepotStock?: boolean
   onEdit?: (besoin: Besoin) => void
   onDelete?: (besoin: Besoin) => void
   selectionMode?: boolean
@@ -42,6 +44,8 @@ export function BesoinsList({
   isLoading,
   onOpenSheet,
   onCommander,
+  onFournirDepot,
+  hasDepotStock = false,
   onEdit,
   onDelete,
   selectionMode = false,
@@ -166,13 +170,25 @@ export function BesoinsList({
                   {formatRelativeTime(besoin.created_at)}
                 </span>
                 {!selectionMode && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onCommander(besoin)}
-                  >
-                    Commander
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {hasDepotStock && onFournirDepot && !besoin.livraison_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onFournirDepot(besoin)}
+                      >
+                        <Warehouse className="mr-1 h-3.5 w-3.5" />
+                        Dépôt
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onCommander(besoin)}
+                    >
+                      Commander
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

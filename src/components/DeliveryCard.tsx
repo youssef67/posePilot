@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Calendar, ChevronDown, ListChecks, MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { Calendar, ChevronDown, ListChecks, MoreVertical, Pencil, Trash2, Undo2, Warehouse } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import type { Livraison } from '@/types/database'
+import type { LivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
 import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
@@ -50,8 +51,9 @@ interface DeliveryCardProps {
   livraison: Livraison
   chantierId: string | null
   onMarquerPrevu: (id: string) => void
-  onConfirmerLivraison: (id: string) => void
-  onMarquerRecupere?: (id: string) => void
+  onConfirmerLivraison: (id: string, previousStatus?: LivraisonStatus) => void
+  onMarquerRecupere?: (id: string, previousStatus?: LivraisonStatus) => void
+  onRevenirStatut?: (id: string, currentStatus: LivraisonStatus, targetStatus: LivraisonStatus) => void
   onEdit?: (livraison: Livraison) => void
   onDelete?: (livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) => void
   chantierNom?: string
@@ -59,7 +61,7 @@ interface DeliveryCardProps {
   linkedBesoins?: LinkedBesoinWithChantier[]
 }
 
-export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onMarquerRecupere, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
+export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirmerLivraison, onMarquerRecupere, onRevenirStatut, onEdit, onDelete, chantierNom, highlighted, linkedBesoins }: DeliveryCardProps) {
   const { user } = useAuth()
   const config = STATUS_CONFIG[livraison.status] ?? FALLBACK_CONFIG
   const [expanded, setExpanded] = useState(false)
@@ -81,7 +83,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             >
               {config.label}
             </span>
-            {(onEdit || onDelete) && !['livre', 'receptionne', 'recupere'].includes(livraison.status) && (
+            {(onEdit || onDelete || onRevenirStatut) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions livraison">
@@ -89,14 +91,49 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {onEdit && (
+                  {onRevenirStatut && livraison.status === 'recupere' && (
+                    <>
+                      <DropdownMenuItem onClick={() => onRevenirStatut(livraison.id, 'recupere', 'a_recuperer')}>
+                        <Undo2 className="size-4 mr-2" />
+                        Revenir à « À récupérer »
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onConfirmerLivraison(livraison.id, 'recupere')}>
+                        Marquer livré
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {onRevenirStatut && livraison.status === 'livre' && (
+                    <>
+                      <DropdownMenuItem onClick={() => onRevenirStatut(livraison.id, 'livre', livraison.date_prevue ? 'prevu' : 'commande')}>
+                        <Undo2 className="size-4 mr-2" />
+                        Revenir à « {livraison.date_prevue ? 'Prévu' : 'Commandé'} »
+                      </DropdownMenuItem>
+                      {onMarquerRecupere && (
+                        <DropdownMenuItem onClick={() => onMarquerRecupere(livraison.id, 'livre')}>
+                          Marquer récupéré
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {onRevenirStatut && livraison.status === 'receptionne' && (
+                    <>
+                      <DropdownMenuItem onClick={() => onRevenirStatut(livraison.id, 'receptionne', livraison.date_prevue ? 'prevu' : 'commande')}>
+                        <Undo2 className="size-4 mr-2" />
+                        Revenir à « {livraison.date_prevue ? 'Prévu' : 'Commandé'} »
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {onEdit && !['livre', 'receptionne', 'recupere'].includes(livraison.status) && (
                     <DropdownMenuItem onClick={() => onEdit(livraison)}>
                       <Pencil className="size-4 mr-2" />
                       Modifier
                     </DropdownMenuItem>
                   )}
-                  {onEdit && onDelete && <DropdownMenuSeparator />}
-                  {onDelete && (
+                  {onEdit && onDelete && !['livre', 'receptionne', 'recupere'].includes(livraison.status) && <DropdownMenuSeparator />}
+                  {onDelete && !['livre', 'receptionne', 'recupere'].includes(livraison.status) && (
                     <DropdownMenuItem
                       onClick={() => onDelete(livraison, linkedBesoins ?? [])}
                       className="text-destructive focus:text-destructive"
@@ -117,9 +154,14 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
             {livraison.montant_ttc != null && montantFormatter.format(livraison.montant_ttc)}
           </span>
         )}
-        {chantierNom && (
+        {livraison.destination === 'depot' ? (
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Warehouse className="h-3 w-3" />
+            Dépôt entreprise
+          </span>
+        ) : chantierNom ? (
           <span className="text-xs text-muted-foreground">{chantierNom}</span>
-        )}
+        ) : null}
         {linkedBesoins && linkedBesoins.length > 0 && (
           <>
             <button
@@ -134,7 +176,7 @@ export function DeliveryCard({ livraison, chantierId, onMarquerPrevu, onConfirme
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')} />
             </button>
             {expanded && (
-              <BesoinsList besoins={linkedBesoins} isMultiChantier={!livraison.chantier_id} />
+              <BesoinsList besoins={linkedBesoins} isMultiChantier={!livraison.chantier_id && livraison.destination !== 'depot'} />
             )}
           </>
         )}
@@ -222,9 +264,14 @@ function BesoinLine({ b, showChantier }: {
         {(b.quantite ?? 1) > 1 && (
           <span className="text-muted-foreground text-xs ml-1">×{b.quantite}</span>
         )}
-        {showChantier && (
+        {b.is_depot ? (
+          <Badge variant="secondary" className="ml-1 text-[10px] gap-0.5 align-middle">
+            <Warehouse className="h-3 w-3" />
+            Dépôt
+          </Badge>
+        ) : showChantier && b.chantiers?.nom ? (
           <span className="text-muted-foreground text-xs ml-1">— {b.chantiers.nom}</span>
-        )}
+        ) : null}
       </div>
       {b.montant_unitaire != null && (
         <div className="shrink-0 text-xs text-muted-foreground text-right">
@@ -244,30 +291,39 @@ function BesoinsList({ besoins, isMultiChantier }: {
   besoins: LinkedBesoinWithChantier[]
   isMultiChantier: boolean
 }) {
-  if (!isMultiChantier) {
+  // Check if livraison has mixed destinations (depot + chantier lines)
+  const hasMixedDestinations = besoins.some((b) => b.is_depot) && besoins.some((b) => !b.is_depot)
+
+  if (!isMultiChantier && !hasMixedDestinations) {
     return (
       <div className="space-y-1 pl-4 border-l-2 border-muted">
         {besoins.map((b) => (
-          <BesoinLine key={b.id} b={b} showChantier={false}  />
+          <BesoinLine key={b.id} b={b} showChantier={false} />
         ))}
       </div>
     )
   }
 
-  // Group by chantier for multi-chantier livraisons
-  const groups = new Map<string, { nom: string; besoins: LinkedBesoinWithChantier[] }>()
+  // Group by chantier (or depot) for multi-chantier / mixed livraisons
+  const DEPOT_KEY = '__depot__'
+  const groups = new Map<string, { nom: string; isDepot: boolean; besoins: LinkedBesoinWithChantier[] }>()
   for (const b of besoins) {
-    const existing = groups.get(b.chantier_id)
+    const key = b.is_depot ? DEPOT_KEY : (b.chantier_id ?? DEPOT_KEY)
+    const existing = groups.get(key)
     if (existing) {
       existing.besoins.push(b)
     } else {
-      groups.set(b.chantier_id, { nom: b.chantiers.nom, besoins: [b] })
+      groups.set(key, {
+        nom: b.is_depot ? 'Dépôt' : (b.chantiers?.nom ?? '—'),
+        isDepot: b.is_depot,
+        besoins: [b],
+      })
     }
   }
 
   return (
     <div className="space-y-2 pl-4 border-l-2 border-muted">
-      {Array.from(groups.entries()).map(([chantierId, group]) => {
+      {Array.from(groups.entries()).map(([groupKey, group]) => {
         const groupTotal = group.besoins.reduce((sum, b) => {
           if (b.montant_unitaire == null) return sum
           return sum + (b.quantite ?? 1) * b.montant_unitaire
@@ -275,9 +331,12 @@ function BesoinsList({ besoins, isMultiChantier }: {
         const hasTotal = group.besoins.some((b) => b.montant_unitaire != null)
 
         return (
-          <div key={chantierId}>
+          <div key={groupKey}>
             <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-xs font-semibold text-muted-foreground">{group.nom}</span>
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                {group.isDepot && <Warehouse className="h-3 w-3" />}
+                {group.nom}
+              </span>
               {hasTotal && (
                 <span className="text-xs font-semibold text-foreground">
                   {montantFormatter.format(groupTotal)}
@@ -286,7 +345,7 @@ function BesoinsList({ besoins, isMultiChantier }: {
             </div>
             <div className="space-y-0.5">
               {group.besoins.map((b) => (
-                <BesoinLine key={b.id} b={b} showChantier={false}  />
+                <BesoinLine key={b.id} b={b} showChantier={false} />
               ))}
             </div>
           </div>

@@ -11,6 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
   useRouterState: () => ({
     location: { pathname: '/' },
   }),
+  useNavigate: () => vi.fn(),
 }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -71,14 +72,14 @@ describe('BottomNavigation', () => {
     localStorage.clear()
   })
 
-  it('renders 4 navigation tabs', () => {
+  it('renders 5 navigation tabs', () => {
     setupCountMock(0)
     render(<BottomNavigation />, { wrapper: createWrapper() })
 
     expect(screen.getByText('Chantiers')).toBeInTheDocument()
     expect(screen.getByText('Livraisons')).toBeInTheDocument()
+    expect(screen.getByText('Dépôt')).toBeInTheDocument()
     expect(screen.getByText('Activité')).toBeInTheDocument()
-    expect(screen.getByText('Réglages')).toBeInTheDocument()
   })
 
   it('has role="navigation" with accessible label', () => {
@@ -98,8 +99,8 @@ describe('BottomNavigation', () => {
 
     expect(hrefs).toContain('/')
     expect(hrefs).toContain('/livraisons')
+    expect(hrefs).toContain('/depot')
     expect(hrefs).toContain('/activite')
-    expect(hrefs).toContain('/settings')
   })
 
   it('marks active tab with aria-current="page"', () => {
@@ -149,12 +150,12 @@ describe('BottomNavigation', () => {
   })
 
   // Besoins badge on Livraisons tab
-  it('shows besoins badge on Livraisons tab when pending besoins > 0', async () => {
+  it('shows besoins badge on Besoins tab when pending besoins > 0', async () => {
     setupCountMock(0, 3)
     render(<BottomNavigation />, { wrapper: createWrapper() })
 
-    const livraisonsLink = await screen.findByLabelText('Livraisons, 3 besoins en attente')
-    expect(within(livraisonsLink).getByText('3')).toBeInTheDocument()
+    const besoinsLink = await screen.findByLabelText('Besoins, 3 besoins en attente')
+    expect(within(besoinsLink).getByText('3')).toBeInTheDocument()
   })
 
   it('does not show besoins badge when pending count is 0', () => {
@@ -165,11 +166,11 @@ describe('BottomNavigation', () => {
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
-  it('adds aria-label with besoins count to Livraisons link', async () => {
+  it('adds aria-label with besoins count to Besoins link', async () => {
     setupCountMock(0, 5)
     render(<BottomNavigation />, { wrapper: createWrapper() })
 
-    const link = await screen.findByLabelText('Livraisons, 5 besoins en attente')
+    const link = await screen.findByLabelText('Besoins, 5 besoins en attente')
     expect(link).toBeInTheDocument()
   })
 })

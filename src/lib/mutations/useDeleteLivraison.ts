@@ -16,22 +16,27 @@ export function useDeleteLivraison() {
 
   return useMutation({
     mutationFn: async ({ livraisonId, mode, bcFileUrl, blFileUrl }: DeleteLivraisonInput) => {
-      // Étape 1 : Supprimer les besoins rattachés si mode "delete-all"
-      // Filtre par livraison_id côté serveur — indépendant des données client
+      // Étape 1 : Traiter les besoins rattachés
       if (mode === 'delete-all') {
         const { error: besoinsError } = await supabase
           .from('besoins')
           .delete()
           .eq('livraison_id', livraisonId)
         if (besoinsError) throw besoinsError
+      } else {
+        // release-besoins : détacher les besoins de la livraison
+        const { error: detachError } = await supabase
+          .from('besoins')
+          .update({ livraison_id: null })
+          .eq('livraison_id', livraisonId)
+        if (detachError) throw detachError
       }
 
-      // Étape 2 : Supprimer la livraison (garde serveur : status commande/prevu)
+      // Étape 2 : Supprimer la livraison
       const { error: livraisonError } = await supabase
         .from('livraisons')
         .delete()
         .eq('id', livraisonId)
-        .in('status', ['commande', 'prevu'])
       if (livraisonError) throw livraisonError
 
       // Étape 3 : Nettoyage fichiers storage (non-bloquant)
@@ -41,19 +46,28 @@ export function useDeleteLivraison() {
       }
     },
     onMutate: async ({ livraisonId, chantierId }) => {
+      await queryClient.cancelQueries({ queryKey: ['all-livraisons'] })
+      const previousAllLivraisons = queryClient.getQueryData(['all-livraisons'])
+      queryClient.setQueryData(
+        ['all-livraisons'],
+        (old: Livraison[] | undefined) =>
+          (old ?? []).filter((l) => l.id !== livraisonId),
+      )
+
+      let previousLivraisons: unknown
       if (chantierId) {
         await queryClient.cancelQueries({ queryKey: ['livraisons', chantierId] })
-        const previousLivraisons = queryClient.getQueryData(['livraisons', chantierId])
+        previousLivraisons = queryClient.getQueryData(['livraisons', chantierId])
         queryClient.setQueryData(
           ['livraisons', chantierId],
           (old: Livraison[] | undefined) =>
             (old ?? []).filter((l) => l.id !== livraisonId),
         )
-        return { previousLivraisons }
       }
-      return { previousLivraisons: undefined }
+      return { previousLivraisons, previousAllLivraisons }
     },
     onError: (_err, { chantierId }, context) => {
+      queryClient.setQueryData(['all-livraisons'], context?.previousAllLivraisons)
       if (chantierId) {
         queryClient.setQueryData(['livraisons', chantierId], context?.previousLivraisons)
       }
@@ -66,6 +80,7 @@ export function useDeleteLivraison() {
         queryClient.invalidateQueries({ queryKey: ['all-besoins', chantierId] })
       }
       queryClient.invalidateQueries({ queryKey: ['all-livraisons'] })
+      queryClient.invalidateQueries({ queryKey: ['all-pending-besoins'] })
       queryClient.invalidateQueries({ queryKey: ['all-pending-besoins-count'] })
       queryClient.invalidateQueries({ queryKey: ['all-linked-besoins'] })
     },

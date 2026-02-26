@@ -9,6 +9,10 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
+vi.mock('./useDepotReceptionLivraison', () => ({
+  receptionnerLivraisonDepot: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { supabase } from '@/lib/supabase'
 import { useUpdateLivraisonStatus } from './useUpdateLivraisonStatus'
 

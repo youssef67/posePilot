@@ -2,6 +2,7 @@ import { Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DeliveryCard, DeliveryCardSkeleton } from '@/components/DeliveryCard'
 import type { Livraison } from '@/types/database'
+import type { LivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
 import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 interface LivraisonsListProps {
@@ -10,8 +11,9 @@ interface LivraisonsListProps {
   chantierId: string
   onOpenSheet: () => void
   onMarquerPrevu: (id: string) => void
-  onConfirmerLivraison: (id: string) => void
-  onMarquerRecupere?: (id: string) => void
+  onConfirmerLivraison: (id: string, previousStatus?: LivraisonStatus) => void
+  onMarquerRecupere?: (id: string, previousStatus?: LivraisonStatus) => void
+  onRevenirStatut?: (id: string, currentStatus: LivraisonStatus, targetStatus: LivraisonStatus) => void
   onEdit?: (livraison: Livraison, linkedBesoins?: LinkedBesoinWithChantier[]) => void
   onDelete?: (livraison: Livraison, linkedBesoins: LinkedBesoinWithChantier[]) => void
   besoinsMap?: Map<string, LinkedBesoinWithChantier[]>
@@ -25,6 +27,7 @@ export function LivraisonsList({
   onMarquerPrevu,
   onConfirmerLivraison,
   onMarquerRecupere,
+  onRevenirStatut,
   onEdit,
   onDelete,
   besoinsMap,
@@ -50,6 +53,7 @@ export function LivraisonsList({
             onMarquerPrevu={onMarquerPrevu}
             onConfirmerLivraison={onConfirmerLivraison}
             onMarquerRecupere={onMarquerRecupere}
+            onRevenirStatut={onRevenirStatut}
             onEdit={onEdit ? (liv) => onEdit(liv, besoinsMap?.get(liv.id)) : undefined}
             onDelete={onDelete}
             linkedBesoins={besoinsMap?.get(livraison.id)}

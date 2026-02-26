@@ -6,6 +6,7 @@ import { useUpdateLivraison, type BesoinMontantUpdate } from '@/lib/mutations/us
 import { useDeleteLivraison } from '@/lib/mutations/useDeleteLivraison'
 import { useUploadLivraisonDocument } from '@/lib/mutations/useUploadLivraisonDocument'
 import type { Livraison } from '@/types/database'
+import type { LivraisonStatus } from '@/lib/mutations/useUpdateLivraisonStatus'
 import type { LinkedBesoinWithChantier } from '@/lib/queries/useAllLinkedBesoins'
 
 export function useLivraisonActions(chantierId = '') {
@@ -26,14 +27,16 @@ export function useLivraisonActions(chantierId = '') {
   // Multi-line livraison creation
   interface LivraisonLineState {
     description: string
-    quantite: number
+    quantite: string
     montantUnitaire: string
+    remise: string
     chantierId: string
   }
   const emptyLivraisonLine = (): LivraisonLineState => ({
     description: '',
-    quantite: 1,
+    quantite: '1',
     montantUnitaire: '',
+    remise: '',
     chantierId: chantierId,
   })
   const [livraisonLines, setLivraisonLines] = useState<LivraisonLineState[]>([emptyLivraisonLine()])
@@ -43,8 +46,10 @@ export function useLivraisonActions(chantierId = '') {
   const livraisonTotal = useMemo(() => {
     return livraisonLines.reduce((sum, l) => {
       const pu = parseFloat(l.montantUnitaire)
-      if (isNaN(pu)) return sum
-      return sum + l.quantite * pu
+      const qty = parseFloat(l.quantite)
+      if (isNaN(pu) || isNaN(qty)) return sum
+      const rem = parseFloat(l.remise) || 0
+      return sum + qty * pu * (1 - rem / 100)
     }, 0)
   }, [livraisonLines])
 
@@ -102,28 +107,44 @@ export function useLivraisonActions(chantierId = '') {
       return
     }
 
-    // Validate chantier
+    // Validate chantier — skip for lines destined to depot
     const missingChantier = filledLines.some((l) => {
       const cid = livraisonChantierUnique ? livraisonGlobalChantierId : l.chantierId
+      if (cid === '__depot__') return false
       return !cid
     })
     if (missingChantier) {
-      setLivraisonError('Sélectionnez un chantier pour chaque ligne')
+      setLivraisonError('Sélectionnez un chantier ou "Dépôt entreprise" pour chaque ligne')
       return
     }
 
-    const lines: LivraisonLine[] = filledLines.map((l) => ({
-      description: l.description.trim(),
-      quantite: l.quantite,
-      montant_unitaire: parseFloat(l.montantUnitaire),
-      chantier_id: livraisonChantierUnique ? livraisonGlobalChantierId : l.chantierId,
-    }))
+    // Determine if destination is depot (global or all lines are depot)
+    const effectiveGlobalChantierId = livraisonChantierUnique ? livraisonGlobalChantierId : ''
+    const isDepot = effectiveGlobalChantierId === '__depot__' ||
+      (!livraisonChantierUnique && filledLines.every((l) => l.chantierId === '__depot__'))
+    const destination = isDepot ? 'depot' as const : 'chantier' as const
+
+    const lines: LivraisonLine[] = filledLines.map((l) => {
+      const rawChantierId = livraisonChantierUnique ? livraisonGlobalChantierId : l.chantierId
+      const lineIsDepot = rawChantierId === '__depot__'
+      const qty = parseFloat(l.quantite)
+      const pu = parseFloat(l.montantUnitaire)
+      const rem = parseFloat(l.remise) || 0
+      const puRemise = pu * (1 - rem / 100)
+      return {
+        description: l.description.trim(),
+        quantite: isNaN(qty) || qty < 1 ? 1 : qty,
+        montant_unitaire: puRemise,
+        chantier_id: lineIsDepot ? '' : rawChantierId,
+        isDepot: lineIsDepot,
+      }
+    })
 
     const desc = livraisonDescription.trim() || lines.map((l) => l.description).join(', ')
 
     const pendingBcFile = livraisonBcFile
     createLivraison.mutate(
-      { chantierId, description: desc, fournisseur: livraisonFournisseur.trim() || undefined, lines },
+      { chantierId, description: desc, fournisseur: livraisonFournisseur.trim() || undefined, lines, destination },
       {
         onSuccess: (data) => {
           setShowLivraisonSheet(false)
@@ -170,9 +191,9 @@ export function useLivraisonActions(chantierId = '') {
     )
   }
 
-  function handleConfirmerLivraison(id: string) {
+  function handleConfirmerLivraison(id: string, previousStatus?: LivraisonStatus) {
     updateLivraisonStatus.mutate(
-      { livraisonId: id, chantierId, newStatus: 'livre' },
+      { livraisonId: id, chantierId, newStatus: 'livre', previousStatus },
       {
         onSuccess: () => toast('Livraison confirmée'),
         onError: () => toast.error('Erreur lors de la confirmation'),
@@ -180,11 +201,28 @@ export function useLivraisonActions(chantierId = '') {
     )
   }
 
-  function handleMarquerRecupere(id: string) {
+  function handleMarquerRecupere(id: string, previousStatus?: LivraisonStatus) {
     updateLivraisonStatus.mutate(
-      { livraisonId: id, chantierId, newStatus: 'recupere' },
+      { livraisonId: id, chantierId, newStatus: 'recupere', previousStatus },
       {
         onSuccess: () => toast('Livraison marquée récupérée'),
+        onError: () => toast.error('Erreur lors de la mise à jour'),
+      },
+    )
+  }
+
+  function handleRevenirStatut(id: string, currentStatus: LivraisonStatus, targetStatus: LivraisonStatus) {
+    const labels: Record<string, string> = {
+      a_recuperer: 'à récupérer',
+      prevu: 'prévu',
+      commande: 'commandé',
+      livre: 'livré',
+      recupere: 'récupéré',
+    }
+    updateLivraisonStatus.mutate(
+      { livraisonId: id, chantierId, newStatus: targetStatus, previousStatus: currentStatus },
+      {
+        onSuccess: () => toast(`Livraison repassée en ${labels[targetStatus] ?? targetStatus}`),
         onError: () => toast.error('Erreur lors de la mise à jour'),
       },
     )
@@ -316,6 +354,7 @@ export function useLivraisonActions(chantierId = '') {
     // Confirmer livraison
     handleConfirmerLivraison,
     handleMarquerRecupere,
+    handleRevenirStatut,
     // Édition
     livraisonToEdit,
     showEditSheet,

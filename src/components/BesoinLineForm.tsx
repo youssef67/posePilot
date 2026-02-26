@@ -12,7 +12,7 @@ import { Trash2 } from 'lucide-react'
 
 export interface BesoinLineValue {
   description: string
-  quantite: number
+  quantite: string
   chantierId: string
 }
 
@@ -66,13 +66,10 @@ export function BesoinLineForm({
         <div className="w-20">
           <Input
             type="number"
-            inputMode="numeric"
+            inputMode="decimal"
             min={1}
             value={value.quantite}
-            onChange={(e) => {
-              const q = parseInt(e.target.value, 10)
-              onChange({ ...value, quantite: isNaN(q) || q < 1 ? 1 : q })
-            }}
+            onChange={(e) => onChange({ ...value, quantite: e.target.value })}
             aria-label={`Quantité ligne ${index + 1}`}
           />
         </div>

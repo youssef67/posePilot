@@ -40,6 +40,7 @@ const baseLivraison = {
   chantier_id: 'ch1',
   description: 'Colle pour faïence 20kg',
   status: 'commande' as const,
+  destination: 'chantier' as const,
   fournisseur: null as string | null,
   date_prevue: null,
   bc_file_url: null,
@@ -409,7 +410,8 @@ describe('DeliveryCard', () => {
     expect(screen.getByLabelText('Actions livraison')).toBeInTheDocument()
   })
 
-  it('does not show DropdownMenu when status is livre', () => {
+  it('does not show "Modifier" in DropdownMenu when status is livre', async () => {
+    const user = userEvent.setup()
     render(
       <DeliveryCard
         livraison={{ ...baseLivraison, status: 'livre', date_prevue: '2026-02-12' }}
@@ -417,10 +419,13 @@ describe('DeliveryCard', () => {
         onMarquerPrevu={vi.fn()}
         onConfirmerLivraison={vi.fn()}
         onEdit={vi.fn()}
+        onRevenirStatut={vi.fn()}
       />,
       { wrapper: createWrapper() },
     )
-    expect(screen.queryByLabelText('Actions livraison')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText('Actions livraison'))
+    expect(screen.queryByText('Modifier')).not.toBeInTheDocument()
+    expect(screen.getByText(/Revenir à/)).toBeInTheDocument()
   })
 
   it('calls onEdit with livraison when "Modifier" is clicked', async () => {
@@ -443,9 +448,9 @@ describe('DeliveryCard', () => {
 
   // Linked besoins indicator + accordion
   const mockLinkedBesoins = [
-    { id: 'b1', chantier_id: 'ch1', description: 'Colle faience', livraison_id: 'liv1', created_at: '2026-02-10T10:00:00Z', created_by: 'user-1' },
-    { id: 'b2', chantier_id: 'ch1', description: 'Joint gris 5kg', livraison_id: 'liv1', created_at: '2026-02-10T11:00:00Z', created_by: 'user-1' },
-    { id: 'b3', chantier_id: 'ch1', description: 'Carrelage 60x60', livraison_id: 'liv1', created_at: '2026-02-10T12:00:00Z', created_by: 'user-1' },
+    { id: 'b1', chantier_id: 'ch1', description: 'Colle faience', is_depot: false, quantite: 1, montant_unitaire: null, livraison_id: 'liv1', created_at: '2026-02-10T10:00:00Z', created_by: 'user-1', chantiers: { nom: 'Chantier A' } },
+    { id: 'b2', chantier_id: 'ch1', description: 'Joint gris 5kg', is_depot: false, quantite: 1, montant_unitaire: null, livraison_id: 'liv1', created_at: '2026-02-10T11:00:00Z', created_by: 'user-1', chantiers: { nom: 'Chantier A' } },
+    { id: 'b3', chantier_id: 'ch1', description: 'Carrelage 60x60', is_depot: false, quantite: 1, montant_unitaire: null, livraison_id: 'liv1', created_at: '2026-02-10T12:00:00Z', created_by: 'user-1', chantiers: { nom: 'Chantier A' } },
   ]
 
   it('shows "N besoins" indicator when linkedBesoins is non-empty', () => {
@@ -530,7 +535,8 @@ describe('DeliveryCard', () => {
     expect(screen.getByText('Supprimer')).toBeInTheDocument()
   })
 
-  it('does not show "Supprimer" when status is livre', () => {
+  it('does not show "Supprimer" in DropdownMenu when status is livre', async () => {
+    const user = userEvent.setup()
     render(
       <DeliveryCard
         livraison={{ ...baseLivraison, status: 'livre', date_prevue: '2026-02-12' }}
@@ -538,10 +544,12 @@ describe('DeliveryCard', () => {
         onMarquerPrevu={vi.fn()}
         onConfirmerLivraison={vi.fn()}
         onDelete={vi.fn()}
+        onRevenirStatut={vi.fn()}
       />,
       { wrapper: createWrapper() },
     )
-    expect(screen.queryByLabelText('Actions livraison')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText('Actions livraison'))
+    expect(screen.queryByText('Supprimer')).not.toBeInTheDocument()
   })
 
   it('calls onDelete with livraison and linkedBesoins when "Supprimer" clicked', async () => {
@@ -581,6 +589,58 @@ describe('DeliveryCard', () => {
     expect(screen.getByText('Supprimer')).toBeInTheDocument()
     // DropdownMenuSeparator renders in a portal — query from document
     expect(screen.getByRole('separator')).toBeInTheDocument()
+  })
+
+  // Destination depot tests (Story 10.4)
+  it('renders "Dépôt entreprise" when destination is depot', () => {
+    render(
+      <DeliveryCard
+        livraison={{ ...baseLivraison, destination: 'depot', chantier_id: null }}
+        chantierId={null}
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByText('Dépôt entreprise')).toBeInTheDocument()
+  })
+
+  it('renders chantierNom when destination is chantier, not Dépôt entreprise', () => {
+    render(
+      <DeliveryCard
+        livraison={baseLivraison}
+        chantierId="ch1"
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        chantierNom="Résidence Bleue"
+      />,
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByText('Résidence Bleue')).toBeInTheDocument()
+    expect(screen.queryByText('Dépôt entreprise')).not.toBeInTheDocument()
+  })
+
+  // Mixed destination tests (Story 10.5)
+  it('shows "Dépôt" badge on depot besoin lines in expanded accordion', async () => {
+    const user = userEvent.setup()
+    const mixedBesoins = [
+      { id: 'b1', chantier_id: 'ch1', description: 'Colle chantier', is_depot: false, quantite: 5, montant_unitaire: 10, livraison_id: 'liv1', created_at: '2026-02-10T10:00:00Z', created_by: 'user-1', chantiers: { nom: 'Chantier A' } },
+      { id: 'b2', chantier_id: null, description: 'Vis stock', is_depot: true, quantite: 100, montant_unitaire: 0.1, livraison_id: 'liv1', created_at: '2026-02-10T11:00:00Z', created_by: 'user-1', chantiers: { nom: '' } },
+    ]
+    render(
+      <DeliveryCard
+        livraison={{ ...baseLivraison, chantier_id: null }}
+        chantierId={null}
+        onMarquerPrevu={vi.fn()}
+        onConfirmerLivraison={vi.fn()}
+        linkedBesoins={mixedBesoins}
+      />,
+      { wrapper: createWrapper() },
+    )
+    await user.click(screen.getByText('2 besoins'))
+    expect(screen.getByText('Vis stock')).toBeInTheDocument()
+    // "Dépôt" appears as group header and/or badge on depot lines
+    expect(screen.getAllByText('Dépôt').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows singular "1 besoin" when only one linked besoin', () => {
