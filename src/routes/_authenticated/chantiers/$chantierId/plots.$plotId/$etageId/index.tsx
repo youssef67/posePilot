@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CheckSquare, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, CheckSquare, Layers, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -15,16 +16,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { StatusCard, STATUS_COLORS, StatusCardSkeleton } from '@/components/StatusCard'
 import { computeStatus } from '@/lib/utils/computeStatus'
 import { useEtages } from '@/lib/queries/useEtages'
 import { useLots } from '@/lib/queries/useLots'
+import { useVariantes } from '@/lib/queries/useVariantes'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
+import { useCreateLot } from '@/lib/mutations/useCreateLot'
+import { useCreateBatchLots } from '@/lib/mutations/useCreateBatchLots'
 import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import { PlinthStatus } from '@/types/enums'
+import { Fab } from '@/components/Fab'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/',
@@ -39,10 +57,23 @@ function EtageIndexPage() {
   const { data: lots, isLoading: lotsLoading } = useLots(plotId)
   useRealtimeLots(plotId)
   const deleteLots = useDeleteLots()
+  const { data: variantes } = useVariantes(plotId)
+  const createLot = useCreateLot()
+  const createBatchLots = useCreateBatchLots()
 
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedLotIds, setSelectedLotIds] = useState<Set<string>>(new Set())
   const [showDeleteLotsDialog, setShowDeleteLotsDialog] = useState(false)
+  const [showCreateLotSheet, setShowCreateLotSheet] = useState(false)
+  const [lotCode, setLotCode] = useState('')
+  const [lotVarianteId, setLotVarianteId] = useState('')
+  const [lotCodeError, setLotCodeError] = useState('')
+  const [lotVarianteError, setLotVarianteError] = useState('')
+  const [showBatchSheet, setShowBatchSheet] = useState(false)
+  const [batchCodesInput, setBatchCodesInput] = useState('')
+  const [batchVarianteId, setBatchVarianteId] = useState('')
+  const [batchCodeError, setBatchCodeError] = useState('')
+  const [batchVarianteError, setBatchVarianteError] = useState('')
 
   const etage = etages?.find((e) => e.id === etageId)
   const etageLots = useMemo(
@@ -95,6 +126,127 @@ function EtageIndexPage() {
         onError: () => {
           toast.error('Erreur lors de la suppression des lots')
           setShowDeleteLotsDialog(false)
+        },
+      },
+    )
+  }
+
+  const MAX_BATCH_LOTS = 8
+
+  function parseCodes(input: string): string[] {
+    return input
+      .split(/[\s,]+/)
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0)
+  }
+
+  const batchCodes = parseCodes(batchCodesInput)
+
+  function handleCreateLot() {
+    let hasError = false
+    const trimmedCode = lotCode.trim()
+
+    if (!trimmedCode) {
+      setLotCodeError('Le code du lot est requis')
+      hasError = true
+    } else if (lots?.some((l) => l.code.toLowerCase() === trimmedCode.toLowerCase())) {
+      setLotCodeError('Un lot avec ce code existe déjà')
+      hasError = true
+    } else {
+      setLotCodeError('')
+    }
+
+    if (!lotVarianteId) {
+      setLotVarianteError('La variante est requise')
+      hasError = true
+    } else {
+      setLotVarianteError('')
+    }
+
+    if (hasError || !etage) return
+
+    createLot.mutate(
+      {
+        code: trimmedCode,
+        varianteId: lotVarianteId,
+        etageNom: etage.nom,
+        plotId,
+      },
+      {
+        onSuccess: (lotId) => {
+          toast('Lot créé')
+          setShowCreateLotSheet(false)
+          setLotCode('')
+          setLotVarianteId('')
+          navigate({
+            to: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId',
+            params: { chantierId, plotId, etageId, lotId },
+          })
+        },
+        onError: () => {
+          toast.error('Erreur lors de la création du lot')
+        },
+      },
+    )
+  }
+
+  function validateBatchCodes(codes: string[]): string | null {
+    if (codes.length === 0) return 'Saisissez au moins un code de lot'
+    if (codes.length > MAX_BATCH_LOTS) return `Maximum ${MAX_BATCH_LOTS} lots par batch`
+    const seen = new Set<string>()
+    for (const code of codes) {
+      const lower = code.toLowerCase()
+      if (seen.has(lower)) return `Code « ${code} » en doublon dans le batch`
+      seen.add(lower)
+    }
+    if (lots) {
+      const existingCodes = new Set(lots.map((l) => l.code.toLowerCase()))
+      for (const code of codes) {
+        if (existingCodes.has(code.toLowerCase())) return `Le code « ${code} » existe déjà`
+      }
+    }
+    return null
+  }
+
+  function handleCreateBatchLots() {
+    const codes = batchCodes
+    let hasError = false
+
+    const codesError = validateBatchCodes(codes)
+    if (codesError) {
+      setBatchCodeError(codesError)
+      hasError = true
+    } else {
+      setBatchCodeError('')
+    }
+
+    if (!batchVarianteId) {
+      setBatchVarianteError('La variante est requise')
+      hasError = true
+    } else {
+      setBatchVarianteError('')
+    }
+
+    if (hasError || !etage) return
+
+    createBatchLots.mutate(
+      {
+        codes,
+        varianteId: batchVarianteId,
+        etageNom: etage.nom,
+        plotId,
+      },
+      {
+        onSuccess: (lotIds) => {
+          toast(`${lotIds.length} lot${lotIds.length > 1 ? 's' : ''} créé${lotIds.length > 1 ? 's' : ''}`)
+          setShowBatchSheet(false)
+          setBatchCodesInput('')
+          setBatchVarianteId('')
+          setBatchCodeError('')
+          setBatchVarianteError('')
+        },
+        onError: () => {
+          toast.error('Erreur lors de la création des lots — aucun lot créé')
         },
       },
     )
@@ -293,21 +445,9 @@ function EtageIndexPage() {
             )}
           </>
         ) : (
-          <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground mb-3">
-              Aucun lot sur cet étage
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate({
-                to: '/chantiers/$chantierId/plots/$plotId',
-                params: { chantierId, plotId },
-              })}
-            >
-              <Plus className="mr-1 size-4" />
-              Créer un lot
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            Aucun lot sur cet étage
+          </p>
         )}
       </div>
 
@@ -334,6 +474,154 @@ function EtageIndexPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Sheet open={showCreateLotSheet} onOpenChange={(open) => {
+        setShowCreateLotSheet(open)
+        if (!open) {
+          setLotCode('')
+          setLotVarianteId('')
+          setLotCodeError('')
+          setLotVarianteError('')
+        }
+      }}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Nouveau lot — {etage.nom}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div>
+              <Input
+                placeholder="Code du lot"
+                value={lotCode}
+                onChange={(e) => {
+                  setLotCode(e.target.value)
+                  if (lotCodeError) setLotCodeError('')
+                }}
+                aria-label="Code du lot"
+              />
+              {lotCodeError && (
+                <p className="text-sm text-destructive mt-1">{lotCodeError}</p>
+              )}
+            </div>
+            <div>
+              <Select
+                value={lotVarianteId}
+                onValueChange={(val) => {
+                  setLotVarianteId(val)
+                  if (lotVarianteError) setLotVarianteError('')
+                }}
+              >
+                <SelectTrigger className="w-full" aria-label="Variante">
+                  <SelectValue placeholder="Sélectionner une variante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {variantes?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {lotVarianteError && (
+                <p className="text-sm text-destructive mt-1">{lotVarianteError}</p>
+              )}
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleCreateLot}
+              disabled={createLot.isPending}
+            >
+              Créer le lot
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={showBatchSheet} onOpenChange={(open) => {
+        setShowBatchSheet(open)
+        if (!open) {
+          setBatchCodesInput('')
+          setBatchVarianteId('')
+          setBatchCodeError('')
+          setBatchVarianteError('')
+        }
+      }}>
+        <SheetContent side="bottom">
+          <SheetHeader>
+            <SheetTitle>Lots en batch — {etage.nom}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <div>
+              <textarea
+                className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] h-auto w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                rows={3}
+                placeholder="101, 102, 103..."
+                value={batchCodesInput}
+                onChange={(e) => {
+                  setBatchCodesInput(e.target.value)
+                  if (batchCodeError) setBatchCodeError('')
+                }}
+                aria-label="Codes des lots"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {batchCodes.length} code{batchCodes.length !== 1 ? 's' : ''} détecté{batchCodes.length !== 1 ? 's' : ''} (max {MAX_BATCH_LOTS})
+              </p>
+              {batchCodeError && (
+                <p className="text-sm text-destructive mt-1">{batchCodeError}</p>
+              )}
+            </div>
+            <div>
+              <Select
+                value={batchVarianteId}
+                onValueChange={(val) => {
+                  setBatchVarianteId(val)
+                  if (batchVarianteError) setBatchVarianteError('')
+                }}
+              >
+                <SelectTrigger className="w-full" aria-label="Variante batch">
+                  <SelectValue placeholder="Sélectionner une variante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {variantes?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {batchVarianteError && (
+                <p className="text-sm text-destructive mt-1">{batchVarianteError}</p>
+              )}
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleCreateBatchLots}
+              disabled={createBatchLots.isPending || batchCodes.length === 0}
+            >
+              {batchCodes.length > 0
+                ? `Créer ${batchCodes.length} lot${batchCodes.length > 1 ? 's' : ''}`
+                : 'Créer les lots'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {variantes && variantes.length > 0 && (
+        <Fab
+          menuItems={[
+            {
+              icon: Layers,
+              label: 'Ajouter en batch',
+              onClick: () => setShowBatchSheet(true),
+            },
+            {
+              icon: Plus,
+              label: 'Ajouter un lot',
+              onClick: () => setShowCreateLotSheet(true),
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }

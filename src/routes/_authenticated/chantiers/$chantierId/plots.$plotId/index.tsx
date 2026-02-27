@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Pencil, Plus, Trash2, X, CheckSquare } from 'lucide-react'
+import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Layers, Pencil, Plus, Shapes, Trash2, X, CheckSquare } from 'lucide-react'
 import { SortableTaskList } from '@/components/SortableTaskList'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -66,6 +66,8 @@ import { computeStatus } from '@/lib/utils/computeStatus'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { useRealtimeEtages } from '@/lib/subscriptions/useRealtimeEtages'
 import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
+import { supabase } from '@/lib/supabase'
+import { Fab } from '@/components/Fab'
 
 const MAX_BATCH_LOTS = 8
 
@@ -268,13 +270,24 @@ function PlotIndexPage() {
         plotId,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (lotId) => {
           toast('Lot créé')
           setShowCreateLotSheet(false)
           setLotCode('')
           setLotVarianteId('')
           setLotEtageNom('')
           setLotEtageCustom(false)
+          const { data: newLot } = await supabase
+            .from('lots')
+            .select('etage_id')
+            .eq('id', lotId)
+            .single()
+          if (newLot?.etage_id) {
+            navigate({
+              to: '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId',
+              params: { chantierId, plotId, etageId: newLot.etage_id, lotId },
+            })
+          }
         },
         onError: () => {
           toast.error('Erreur lors de la création du lot')
@@ -790,29 +803,9 @@ function PlotIndexPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-6 mb-4">
-            <p className="text-sm text-muted-foreground mb-3">
-              Aucune variante configurée
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setShowCreateVarianteSheet(true)}
-            >
-              <Plus className="mr-1 size-4" />
-              Ajouter votre première variante
-            </Button>
-          </div>
-        )}
-
-        {variantes && variantes.length > 0 && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setShowCreateVarianteSheet(true)}
-          >
-            <Plus className="mr-1 size-4" />
-            Ajouter une variante
-          </Button>
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            Aucune variante configurée
+          </p>
         )}
       </div>
 
@@ -902,28 +895,6 @@ function PlotIndexPage() {
           </p>
         )}
 
-        {!selectionMode && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowCreateLotSheet(true)}
-              disabled={!variantes || variantes.length === 0}
-            >
-              <Plus className="mr-1 size-4" />
-              Ajouter un lot
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setShowBatchSheet(true)}
-              disabled={!variantes || variantes.length === 0}
-            >
-              <Plus className="mr-1 size-4" />
-              Ajouter en batch
-            </Button>
-          </div>
-        )}
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -1322,6 +1293,36 @@ function PlotIndexPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <Fab
+        menuItems={[
+          ...(variantes && variantes.length > 0
+            ? [
+                {
+                  icon: Shapes,
+                  label: 'Ajouter une variante',
+                  onClick: () => setShowCreateVarianteSheet(true),
+                },
+                {
+                  icon: Layers,
+                  label: 'Ajouter en batch',
+                  onClick: () => setShowBatchSheet(true),
+                },
+                {
+                  icon: Plus,
+                  label: 'Ajouter un lot',
+                  onClick: () => setShowCreateLotSheet(true),
+                },
+              ]
+            : [
+                {
+                  icon: Shapes,
+                  label: 'Ajouter une variante',
+                  onClick: () => setShowCreateVarianteSheet(true),
+                },
+              ]),
+        ]}
+      />
     </div>
   )
 }
