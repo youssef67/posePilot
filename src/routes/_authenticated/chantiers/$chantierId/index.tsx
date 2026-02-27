@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Boxes, CheckCircle2, EllipsisVertical, ListChecks, Package, Plus, Trash2, Truck } from 'lucide-react'
+import { ArrowLeft, Boxes, CheckCircle2, ClipboardList, EllipsisVertical, ListChecks, Package, Plus, Trash2, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -520,7 +520,18 @@ function ChantierIndexPage() {
         {chantier.type === 'leger' ? (
           <>
             <div className="flex items-center justify-between mb-4">
-              <Badge variant="secondary">Léger</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">Léger</Badge>
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    to="/chantiers/$chantierId/caracteristiques"
+                    params={{ chantierId }}
+                  >
+                    <ClipboardList className="mr-2 size-4" />
+                    Caractéristiques
+                  </Link>
+                </Button>
+              </div>
               <span className="text-sm font-medium text-muted-foreground">
                 {progressPercent}
               </span>
@@ -597,6 +608,15 @@ function ChantierIndexPage() {
                   >
                     <Boxes className="mr-2 size-4" />
                     Inventaire
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    to="/chantiers/$chantierId/caracteristiques"
+                    params={{ chantierId }}
+                  >
+                    <ClipboardList className="mr-2 size-4" />
+                    Caractéristiques
                   </Link>
                 </Button>
               </div>

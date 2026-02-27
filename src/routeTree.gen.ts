@@ -22,6 +22,7 @@ import { Route as AuthenticatedChantiersChantierIdRouteImport } from './routes/_
 import { Route as AuthenticatedChantiersChantierIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/index'
 import { Route as AuthenticatedChantiersChantierIdLivraisonsRouteImport } from './routes/_authenticated/chantiers/$chantierId/livraisons'
 import { Route as AuthenticatedChantiersChantierIdInventaireRouteImport } from './routes/_authenticated/chantiers/$chantierId/inventaire'
+import { Route as AuthenticatedChantiersChantierIdCaracteristiquesRouteImport } from './routes/_authenticated/chantiers/$chantierId/caracteristiques'
 import { Route as AuthenticatedChantiersChantierIdBesoinsRouteImport } from './routes/_authenticated/chantiers/$chantierId/besoins'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/index'
@@ -101,6 +102,12 @@ const AuthenticatedChantiersChantierIdInventaireRoute =
     path: '/inventaire',
     getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
   } as any)
+const AuthenticatedChantiersChantierIdCaracteristiquesRoute =
+  AuthenticatedChantiersChantierIdCaracteristiquesRouteImport.update({
+    id: '/caracteristiques',
+    path: '/caracteristiques',
+    getParentRoute: () => AuthenticatedChantiersChantierIdRoute,
+  } as any)
 const AuthenticatedChantiersChantierIdBesoinsRoute =
   AuthenticatedChantiersChantierIdBesoinsRouteImport.update({
     id: '/besoins',
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdRouteWithChildren
   '/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
   '/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/chantiers/$chantierId/caracteristiques': typeof AuthenticatedChantiersChantierIdCaracteristiquesRoute
   '/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
   '/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
   '/chantiers/$chantierId/': typeof AuthenticatedChantiersChantierIdIndexRoute
@@ -199,6 +207,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
   '/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/chantiers/$chantierId/caracteristiques': typeof AuthenticatedChantiersChantierIdCaracteristiquesRoute
   '/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
   '/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
   '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdIndexRoute
@@ -221,6 +230,7 @@ export interface FileRoutesById {
   '/_authenticated/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdRouteWithChildren
   '/_authenticated/chantiers/nouveau': typeof AuthenticatedChantiersNouveauRoute
   '/_authenticated/chantiers/$chantierId/besoins': typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  '/_authenticated/chantiers/$chantierId/caracteristiques': typeof AuthenticatedChantiersChantierIdCaracteristiquesRoute
   '/_authenticated/chantiers/$chantierId/inventaire': typeof AuthenticatedChantiersChantierIdInventaireRoute
   '/_authenticated/chantiers/$chantierId/livraisons': typeof AuthenticatedChantiersChantierIdLivraisonsRoute
   '/_authenticated/chantiers/$chantierId/': typeof AuthenticatedChantiersChantierIdIndexRoute
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/chantiers/$chantierId'
     | '/chantiers/nouveau'
     | '/chantiers/$chantierId/besoins'
+    | '/chantiers/$chantierId/caracteristiques'
     | '/chantiers/$chantierId/inventaire'
     | '/chantiers/$chantierId/livraisons'
     | '/chantiers/$chantierId/'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/'
     | '/chantiers/nouveau'
     | '/chantiers/$chantierId/besoins'
+    | '/chantiers/$chantierId/caracteristiques'
     | '/chantiers/$chantierId/inventaire'
     | '/chantiers/$chantierId/livraisons'
     | '/chantiers/$chantierId'
@@ -289,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chantiers/$chantierId'
     | '/_authenticated/chantiers/nouveau'
     | '/_authenticated/chantiers/$chantierId/besoins'
+    | '/_authenticated/chantiers/$chantierId/caracteristiques'
     | '/_authenticated/chantiers/$chantierId/inventaire'
     | '/_authenticated/chantiers/$chantierId/livraisons'
     | '/_authenticated/chantiers/$chantierId/'
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/inventaire'
       fullPath: '/chantiers/$chantierId/inventaire'
       preLoaderRoute: typeof AuthenticatedChantiersChantierIdInventaireRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdRoute
+    }
+    '/_authenticated/chantiers/$chantierId/caracteristiques': {
+      id: '/_authenticated/chantiers/$chantierId/caracteristiques'
+      path: '/caracteristiques'
+      fullPath: '/chantiers/$chantierId/caracteristiques'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdCaracteristiquesRouteImport
       parentRoute: typeof AuthenticatedChantiersChantierIdRoute
     }
     '/_authenticated/chantiers/$chantierId/besoins': {
@@ -525,6 +545,7 @@ const AuthenticatedChantiersChantierIdPlotsPlotIdRouteWithChildren =
 
 interface AuthenticatedChantiersChantierIdRouteChildren {
   AuthenticatedChantiersChantierIdBesoinsRoute: typeof AuthenticatedChantiersChantierIdBesoinsRoute
+  AuthenticatedChantiersChantierIdCaracteristiquesRoute: typeof AuthenticatedChantiersChantierIdCaracteristiquesRoute
   AuthenticatedChantiersChantierIdInventaireRoute: typeof AuthenticatedChantiersChantierIdInventaireRoute
   AuthenticatedChantiersChantierIdLivraisonsRoute: typeof AuthenticatedChantiersChantierIdLivraisonsRoute
   AuthenticatedChantiersChantierIdIndexRoute: typeof AuthenticatedChantiersChantierIdIndexRoute
@@ -535,6 +556,8 @@ const AuthenticatedChantiersChantierIdRouteChildren: AuthenticatedChantiersChant
   {
     AuthenticatedChantiersChantierIdBesoinsRoute:
       AuthenticatedChantiersChantierIdBesoinsRoute,
+    AuthenticatedChantiersChantierIdCaracteristiquesRoute:
+      AuthenticatedChantiersChantierIdCaracteristiquesRoute,
     AuthenticatedChantiersChantierIdInventaireRoute:
       AuthenticatedChantiersChantierIdInventaireRoute,
     AuthenticatedChantiersChantierIdLivraisonsRoute:
