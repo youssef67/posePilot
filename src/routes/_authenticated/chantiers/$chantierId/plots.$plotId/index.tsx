@@ -401,7 +401,7 @@ function PlotIndexPage() {
     createBatchLots.mutate(
       {
         codes,
-        varianteId: batchVarianteId,
+        varianteIds: [batchVarianteId],
         etageNom: batchEtageNom.trim(),
         plotId,
       },

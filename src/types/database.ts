@@ -664,6 +664,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chantier_caracteristiques: {
+        Row: {
+          id: string
+          chantier_id: string
+          label: string
+          valeur: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          label: string
+          valeur?: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          label?: string
+          valeur?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       reservations: {
         Row: {
           id: string
@@ -718,7 +745,7 @@ export type Database = {
       create_batch_lots_with_inheritance: {
         Args: {
           p_codes: string[]
-          p_variante_id: string
+          p_variante_ids: string[]
           p_etage_nom: string
           p_plot_id: string
         }
@@ -894,6 +921,16 @@ export interface Besoin {
   livraison_id: string | null
   created_at: string
   created_by: string | null
+}
+
+// Type miroir de la table chantier_caracteristiques (044_chantier_caracteristiques.sql)
+export interface Caracteristique {
+  id: string
+  chantier_id: string
+  label: string
+  valeur: string
+  position: number
+  created_at: string
 }
 
 // Status history entry for livraison timeline
