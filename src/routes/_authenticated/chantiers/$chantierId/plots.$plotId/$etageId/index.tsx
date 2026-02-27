@@ -507,7 +507,7 @@ function EtageIndexPage() {
           <SheetHeader>
             <SheetTitle>Nouveau lot — {etage.nom}</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-4 pb-6">
             <div>
               <Input
                 placeholder="Code du lot"
@@ -569,7 +569,7 @@ function EtageIndexPage() {
           <SheetHeader>
             <SheetTitle>Lots en batch — {etage.nom}</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-4 pb-6">
             <div>
               <textarea
                 className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] h-auto w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
