@@ -7,12 +7,12 @@ export function useCreateBatchLots() {
   return useMutation({
     mutationFn: async ({
       codes,
-      varianteId,
+      varianteIds,
       etageNom,
       plotId,
     }: {
       codes: string[]
-      varianteId: string
+      varianteIds: string[]
       etageNom: string
       plotId: string
     }) => {
@@ -20,7 +20,7 @@ export function useCreateBatchLots() {
         'create_batch_lots_with_inheritance',
         {
           p_codes: codes,
-          p_variante_id: varianteId,
+          p_variante_ids: varianteIds,
           p_etage_nom: etageNom,
           p_plot_id: plotId,
         },

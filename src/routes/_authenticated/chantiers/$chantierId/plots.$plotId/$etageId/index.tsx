@@ -71,7 +71,7 @@ function EtageIndexPage() {
   const [lotVarianteError, setLotVarianteError] = useState('')
   const [showBatchSheet, setShowBatchSheet] = useState(false)
   const [batchCodesInput, setBatchCodesInput] = useState('')
-  const [batchVarianteId, setBatchVarianteId] = useState('')
+  const [batchVarianteMap, setBatchVarianteMap] = useState<Record<string, string>>({})
   const [batchCodeError, setBatchCodeError] = useState('')
   const [batchVarianteError, setBatchVarianteError] = useState('')
 
@@ -208,6 +208,20 @@ function EtageIndexPage() {
     return null
   }
 
+  function handleApplyVarianteToAll(varianteId: string) {
+    const map: Record<string, string> = {}
+    for (const code of batchCodes) {
+      map[code] = varianteId
+    }
+    setBatchVarianteMap(map)
+    if (batchVarianteError) setBatchVarianteError('')
+  }
+
+  function handleSetLotVariante(code: string, varianteId: string) {
+    setBatchVarianteMap((prev) => ({ ...prev, [code]: varianteId }))
+    if (batchVarianteError) setBatchVarianteError('')
+  }
+
   function handleCreateBatchLots() {
     const codes = batchCodes
     let hasError = false
@@ -220,8 +234,9 @@ function EtageIndexPage() {
       setBatchCodeError('')
     }
 
-    if (!batchVarianteId) {
-      setBatchVarianteError('La variante est requise')
+    const missingVariante = codes.some((code) => !batchVarianteMap[code])
+    if (missingVariante) {
+      setBatchVarianteError('Chaque lot doit avoir une variante')
       hasError = true
     } else {
       setBatchVarianteError('')
@@ -229,10 +244,12 @@ function EtageIndexPage() {
 
     if (hasError || !etage) return
 
+    const varianteIds = codes.map((code) => batchVarianteMap[code])
+
     createBatchLots.mutate(
       {
         codes,
-        varianteId: batchVarianteId,
+        varianteIds,
         etageNom: etage.nom,
         plotId,
       },
@@ -241,7 +258,7 @@ function EtageIndexPage() {
           toast(`${lotIds.length} lot${lotIds.length > 1 ? 's' : ''} créé${lotIds.length > 1 ? 's' : ''}`)
           setShowBatchSheet(false)
           setBatchCodesInput('')
-          setBatchVarianteId('')
+          setBatchVarianteMap({})
           setBatchCodeError('')
           setBatchVarianteError('')
         },
@@ -541,7 +558,7 @@ function EtageIndexPage() {
         setShowBatchSheet(open)
         if (!open) {
           setBatchCodesInput('')
-          setBatchVarianteId('')
+          setBatchVarianteMap({})
           setBatchCodeError('')
           setBatchVarianteError('')
         }
@@ -554,7 +571,7 @@ function EtageIndexPage() {
             <div>
               <textarea
                 className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] h-auto w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                rows={3}
+                rows={2}
                 placeholder="101, 102, 103..."
                 value={batchCodesInput}
                 onChange={(e) => {
@@ -570,29 +587,54 @@ function EtageIndexPage() {
                 <p className="text-sm text-destructive mt-1">{batchCodeError}</p>
               )}
             </div>
-            <div>
-              <Select
-                value={batchVarianteId}
-                onValueChange={(val) => {
-                  setBatchVarianteId(val)
-                  if (batchVarianteError) setBatchVarianteError('')
-                }}
-              >
-                <SelectTrigger className="w-full" aria-label="Variante batch">
-                  <SelectValue placeholder="Sélectionner une variante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {variantes?.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.nom}
-                    </SelectItem>
+
+            {batchCodes.length > 0 && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Appliquer à tous</label>
+                  <Select onValueChange={handleApplyVarianteToAll}>
+                    <SelectTrigger className="w-full mt-1" aria-label="Variante pour tous">
+                      <SelectValue placeholder="Choisir une variante pour tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {variantes?.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {batchCodes.map((code) => (
+                    <div key={code} className="flex items-center gap-2">
+                      <span className="text-sm font-medium w-16 shrink-0 truncate">{code}</span>
+                      <Select
+                        value={batchVarianteMap[code] ?? ''}
+                        onValueChange={(val) => handleSetLotVariante(code, val)}
+                      >
+                        <SelectTrigger className="flex-1" aria-label={`Variante lot ${code}`}>
+                          <SelectValue placeholder="Variante" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {variantes?.map((v) => (
+                            <SelectItem key={v.id} value={v.id}>
+                              {v.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-              {batchVarianteError && (
-                <p className="text-sm text-destructive mt-1">{batchVarianteError}</p>
-              )}
-            </div>
+                </div>
+
+                {batchVarianteError && (
+                  <p className="text-sm text-destructive">{batchVarianteError}</p>
+                )}
+              </div>
+            )}
+
             <Button
               className="w-full"
               onClick={handleCreateBatchLots}
