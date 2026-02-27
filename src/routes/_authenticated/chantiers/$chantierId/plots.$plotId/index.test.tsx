@@ -17,7 +17,7 @@ const mockCreateBatchLotsMutate = vi.fn()
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -103,11 +103,12 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   }),
 }))
 
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({ data: [] }),
+}))
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
+  getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
@@ -190,7 +191,7 @@ const mockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '001',
-    is_tma: false,
+    lot_badge_assignments: [],
     progress_done: 2,
     progress_total: 4,
     created_at: '2026-01-01T00:00:00Z',
@@ -204,7 +205,7 @@ const mockLots = [
     variante_id: 'var-2',
     plot_id: 'plot-1',
     code: '002',
-    is_tma: false,
+    lot_badge_assignments: [],
     progress_done: 3,
     progress_total: 3,
     created_at: '2026-01-02T00:00:00Z',
@@ -218,7 +219,7 @@ const mockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '101',
-    is_tma: false,
+    lot_badge_assignments: [],
     progress_done: 0,
     progress_total: 4,
     created_at: '2026-01-03T00:00:00Z',
@@ -981,7 +982,7 @@ describe('PlotIndexPage — lot progress indicators', () => {
   })
 })
 
-describe('PlotIndexPage — TMA badge in lot grid', () => {
+describe('PlotIndexPage — badge in lot grid', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(supabase.channel).mockReturnValue({
@@ -991,20 +992,20 @@ describe('PlotIndexPage — TMA badge in lot grid', () => {
     } as never)
   })
 
-  it('shows TMA badge on lot card when is_tma is true', async () => {
-    const tmaLots = [
-      { ...mockLots[0], is_tma: true },
+  it('shows badge on lot card when lot has badge assignments', async () => {
+    const badgeLots = [
+      { ...mockLots[0], lot_badge_assignments: [{ badge_id: 'b1', lot_badges: { id: 'b1', chantier_id: 'ch-1', nom: 'TMA', couleur: 'amber', created_at: '2026-01-01T00:00:00Z' } }] },
       mockLots[1],
       mockLots[2],
     ]
-    setupMockSupabase(mockVariantes, tmaLots)
+    setupMockSupabase(mockVariantes, badgeLots)
     renderPlotRoute()
 
     await screen.findByText('Lot 001')
     expect(screen.getByText('TMA')).toBeInTheDocument()
   })
 
-  it('does NOT show TMA badge when is_tma is false', async () => {
+  it('does NOT show badge when lot has no badge assignments', async () => {
     setupMockSupabase(mockVariantes, mockLots)
     renderPlotRoute()
 

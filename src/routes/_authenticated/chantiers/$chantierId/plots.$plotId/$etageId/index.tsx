@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { getBadgeColorClasses } from '@/components/BadgeSelector'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   AlertDialog,
@@ -418,14 +419,15 @@ function EtageIndexPage() {
                           hasOpenReservation={lot.has_open_reservation}
                           badge={
                             <>
-                              {lot.is_tma && (
+                              {lot.lot_badge_assignments?.map((a) => (
                                 <Badge
+                                  key={a.badge_id}
                                   variant="outline"
-                                  className="border-amber-500 text-amber-500 text-[10px]"
+                                  className={`${getBadgeColorClasses(a.lot_badges.couleur)} text-[10px]`}
                                 >
-                                  TMA
+                                  {a.lot_badges.nom}
                                 </Badge>
-                              )}
+                              ))}
                               {lot.metrage_ml_total > 0 && (
                                 <Badge
                                   variant="outline"

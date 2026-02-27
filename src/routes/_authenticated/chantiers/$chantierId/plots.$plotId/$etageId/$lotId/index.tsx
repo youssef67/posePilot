@@ -3,9 +3,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -19,7 +17,8 @@ import { useLots } from '@/lib/queries/useLots'
 import { usePieces } from '@/lib/queries/usePieces'
 import { useLotDocuments } from '@/lib/queries/useLotDocuments'
 import { useLotPhotos } from '@/lib/queries/useLotPhotos'
-import { useToggleLotTma } from '@/lib/mutations/useToggleLotTma'
+import { useLotBadgeAssignments } from '@/lib/queries/useLotBadgeAssignments'
+import { BadgeSelector } from '@/components/BadgeSelector'
 import { useUpdatePlinthStatus } from '@/lib/mutations/useUpdatePlinthStatus'
 import { PlinthStatus } from '@/types/enums'
 import { useAddLotPiece } from '@/lib/mutations/useAddLotPiece'
@@ -81,7 +80,7 @@ function LotIndexPage() {
   useRealtimeLotPhotos(lotId)
   useRealtimeReservations(lotId)
   const { data: reservations } = useReservations(lotId)
-  const toggleTma = useToggleLotTma()
+  const { data: badgeAssignments = [] } = useLotBadgeAssignments(lotId)
   const updatePlinthStatus = useUpdatePlinthStatus()
   const addPiece = useAddLotPiece()
   const addTask = useAddLotTask()
@@ -398,18 +397,10 @@ function LotIndexPage() {
             <ArrowLeft className="size-5" />
           </Link>
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-lg font-semibold text-foreground truncate">
             Lot {lot.code}
           </h1>
-          {lot.is_tma && (
-            <Badge
-              variant="outline"
-              className="border-amber-500 text-amber-500 text-[10px]"
-            >
-              TMA
-            </Badge>
-          )}
         </div>
         {!editMode ? (
           <DropdownMenu>
@@ -495,19 +486,12 @@ function LotIndexPage() {
             <p className="text-sm text-muted-foreground">
               {lot.variantes?.nom ?? 'Variante'} · {lot.etages?.nom ?? 'Étage'}
             </p>
-            <div className="flex items-center gap-2 mt-2">
-              <label
-                htmlFor="tma-switch"
-                className="text-sm font-medium text-foreground"
-              >
-                TMA
-              </label>
-              <Switch
-                id="tma-switch"
-                checked={lot.is_tma}
-                onCheckedChange={(checked) =>
-                  toggleTma.mutate({ lotId, isTma: checked, plotId })
-                }
+            <div className="mt-2">
+              <BadgeSelector
+                lotId={lotId}
+                chantierId={chantierId}
+                plotId={plotId}
+                assignedBadges={badgeAssignments}
               />
             </div>
             {lot.metrage_ml_total > 0 && (

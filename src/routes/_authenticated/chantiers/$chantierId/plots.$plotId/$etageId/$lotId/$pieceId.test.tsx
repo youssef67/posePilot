@@ -6,7 +6,7 @@ import { setupChannelMock, renderRoute } from '@/test/route-test-utils'
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -119,11 +119,11 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   }),
 }))
 
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({ data: [] }),
+}))
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
 }))
 
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
@@ -195,7 +195,7 @@ const mockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '203',
-    is_tma: true,
+    lot_badge_assignments: [],
     created_at: '2026-01-01T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type A' },

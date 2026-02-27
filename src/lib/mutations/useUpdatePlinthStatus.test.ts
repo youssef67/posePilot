@@ -39,7 +39,7 @@ const mockLot = {
   variante_id: 'var-1',
   plot_id: 'plot-1',
   code: '203',
-  is_tma: false,
+  lot_badge_assignments: [],
   plinth_status: 'commandees',
   created_at: '2026-01-01T00:00:00Z',
 }
@@ -68,8 +68,8 @@ describe('useUpdatePlinthStatus', () => {
   it('optimistically updates cache', async () => {
     const queryClient = createQueryClient()
     const previousLots = [
-      { id: 'lot-1', plot_id: 'plot-1', code: '203', is_tma: false, plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-01T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 2 }] },
-      { id: 'lot-2', plot_id: 'plot-1', code: '204', is_tma: false, plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-02T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 1 }] },
+      { id: 'lot-1', plot_id: 'plot-1', code: '203', lot_badge_assignments: [],plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-01T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 2 }] },
+      { id: 'lot-2', plot_id: 'plot-1', code: '204', lot_badge_assignments: [],plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-02T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 1 }] },
     ]
     queryClient.setQueryData(['lots', 'plot-1'], previousLots)
 
@@ -94,7 +94,7 @@ describe('useUpdatePlinthStatus', () => {
   it('rolls back cache on error', async () => {
     const queryClient = createQueryClient()
     const previousLots = [
-      { id: 'lot-1', plot_id: 'plot-1', code: '203', is_tma: false, plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-01T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 2 }] },
+      { id: 'lot-1', plot_id: 'plot-1', code: '203', lot_badge_assignments: [],plinth_status: 'non_commandees', etage_id: 'e1', variante_id: 'v1', created_at: '2026-01-01T00:00:00Z', etages: { nom: 'RDC' }, variantes: { nom: 'A' }, pieces: [{ count: 2 }] },
     ]
     queryClient.setQueryData(['lots', 'plot-1'], previousLots)
 

@@ -19,7 +19,7 @@ const mockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '001',
-    is_tma: false,
+    lot_badge_assignments: [],
     created_at: '2026-01-01T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type A' },
@@ -31,7 +31,7 @@ const mockLots = [
     variante_id: 'var-2',
     plot_id: 'plot-1',
     code: '101',
-    is_tma: false,
+    lot_badge_assignments: [],
     created_at: '2026-01-02T00:00:00Z',
     etages: { nom: '1' },
     variantes: { nom: 'Type B' },
@@ -60,13 +60,12 @@ describe('useLots', () => {
 
     const { result } = renderHook(() => useLots('plot-1'), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockLots))
 
     expect(supabase.from).toHaveBeenCalledWith('lots')
-    expect(mockSelect).toHaveBeenCalledWith('*, etages(nom), variantes(nom), pieces(count)')
+    expect(mockSelect).toHaveBeenCalledWith('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*))')
     expect(mockEq).toHaveBeenCalledWith('plot_id', 'plot-1')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: true })
-    expect(result.current.data).toEqual(mockLots)
   })
 
   it('uses query key ["lots", plotId]', async () => {

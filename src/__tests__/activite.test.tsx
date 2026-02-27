@@ -5,7 +5,7 @@ import { renderRoute, createMockAuth, setupChannelMock } from '@/test/route-test
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -52,8 +52,12 @@ vi.mock('@/lib/mutations/useCreateLot', () => ({
 vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   useCreateBatchLots: () => ({ mutate: vi.fn(), isPending: false }),
 }))
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({ mutate: vi.fn(), isPending: false }),
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({ data: [] }),
+}))
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
+  getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
   useAddLotPiece: () => ({ mutate: vi.fn(), isPending: false }),

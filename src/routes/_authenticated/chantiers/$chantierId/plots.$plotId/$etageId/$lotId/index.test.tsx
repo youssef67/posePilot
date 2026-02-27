@@ -18,9 +18,10 @@ if (!Element.prototype.scrollIntoView) {
 }
 
 vi.mock('sonner', () => {
-  const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
+  const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn>; success: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  toast.success = vi.fn()
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -133,11 +134,14 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   }),
 }))
 
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({
-    mutate: vi.fn(),
-    isPending: false,
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({
+    data: [],
   }),
+}))
+
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
 }))
 
 const mockUpdatePlinthStatus = vi.fn()
@@ -202,7 +206,7 @@ const mockLot = {
   variante_id: 'var-1',
   plot_id: 'plot-1',
   code: '203',
-  is_tma: true,
+  lot_badge_assignments: [],
   has_blocking_note: false,
   has_missing_docs: false,
   progress_done: 1,
@@ -358,12 +362,11 @@ describe('LotIndexPage (etage route)', () => {
     expect(await screen.findByRole('heading', { name: 'Lot 203' })).toBeInTheDocument()
   })
 
-  it('shows TMA badge', async () => {
+  it('renders lot heading without errors', async () => {
     setupMockSupabase()
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
 
-    await screen.findByRole('heading', { name: 'Lot 203' })
-    expect(screen.getByText('TMA', { selector: '.border-amber-500' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Lot 203' })).toBeInTheDocument()
   })
 
   it('shows pieces with task progress', async () => {

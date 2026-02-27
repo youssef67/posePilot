@@ -97,6 +97,7 @@ development_status:
   6-7-fournisseur-et-edition-des-livraisons: done
   6-8-commande-groupee-de-besoins: done
   6-9-suppression-de-livraisons: review
+  6-13-refonte-creation-besoins-livraisons-multi-lignes: review
   epic-6-retrospective: optional
 
   # Epic 7: Metres, Plinthes & Indicateurs intelligents
@@ -111,7 +112,18 @@ development_status:
   8-1-duplication-de-plot: review
   8-2-ordonnancement-des-taches: ready-for-dev
   8-3-stockage-general-inventaire: ready-for-dev
+  8-4-badges-personnalises-sur-les-lots: review
 
   # Epic 9: Réserves & SAV
   epic-9: in-progress
   9-1-reserves-sav-creation-gestion-et-suivi: done
+
+  # Epic 10: Dépôt Entreprise
+  epic-10: in-progress
+  10-1-depot-tables-et-types: done
+  10-2-mutations-entree-stock: done
+  10-3-page-depot-liste-articles: done
+  10-4-livraison-vers-depot: done
+  10-5-livraison-mixte: done
+  10-6-transfert-depot-vers-chantier: done
+  10-7-satisfaire-besoin-depuis-depot: done

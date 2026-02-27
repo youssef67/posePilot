@@ -60,6 +60,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import { getBadgeColorClasses } from '@/components/BadgeSelector'
 import { Checkbox } from '@/components/ui/checkbox'
 import { StatusCard, STATUS_COLORS } from '@/components/StatusCard'
 import { computeStatus } from '@/lib/utils/computeStatus'
@@ -889,7 +890,7 @@ function PlotIndexPage() {
                             indicator={`${lot.progress_done}/${lot.progress_total}`}
                             isBlocked={lot.has_blocking_note}
                             hasOpenReservation={lot.has_open_reservation}
-                            badge={lot.is_tma ? <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px]">TMA</Badge> : undefined}
+                            badge={lot.lot_badge_assignments?.length > 0 ? <>{lot.lot_badge_assignments.map((a) => (<Badge key={a.badge_id} variant="outline" className={`${getBadgeColorClasses(a.lot_badges.couleur)} text-[10px]`}>{a.lot_badges.nom}</Badge>))}</> : undefined}
                             onClick={selectionMode
                               ? () => toggleLotSelection(lot.id)
                               : () => navigate({

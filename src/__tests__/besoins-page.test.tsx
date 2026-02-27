@@ -58,8 +58,12 @@ vi.mock('@/lib/mutations/useCreateLot', () => ({
 vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   useCreateBatchLots: () => ({ mutate: vi.fn(), isPending: false }),
 }))
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({ mutate: vi.fn(), isPending: false }),
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({ data: [] }),
+}))
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
+  getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
   useAddLotPiece: () => ({ mutate: vi.fn(), isPending: false }),

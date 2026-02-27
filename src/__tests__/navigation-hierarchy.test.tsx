@@ -6,7 +6,7 @@ import { setupChannelMock, renderRoute } from '@/test/route-test-utils'
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -52,8 +52,12 @@ vi.mock('@/lib/mutations/useCreateLot', () => ({
 vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   useCreateBatchLots: () => ({ mutate: vi.fn(), isPending: false }),
 }))
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({ mutate: vi.fn(), isPending: false }),
+vi.mock('@/lib/queries/useLotBadgeAssignments', () => ({
+  useLotBadgeAssignments: () => ({ data: [] }),
+}))
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
+  getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
   useAddLotPiece: () => ({ mutate: vi.fn(), isPending: false }),
@@ -112,7 +116,7 @@ const mockLots = [
     variante_id: 'v1',
     plot_id: 'p1',
     code: '101',
-    is_tma: false,
+    lot_badge_assignments: [],
     progress_done: 1,
     progress_total: 3,
     created_at: '2026-01-01T00:00:00Z',
@@ -126,7 +130,7 @@ const mockLots = [
     variante_id: 'v1',
     plot_id: 'p1',
     code: '201',
-    is_tma: true,
+    lot_badge_assignments: [],
     progress_done: 0,
     progress_total: 0,
     created_at: '2026-01-02T00:00:00Z',

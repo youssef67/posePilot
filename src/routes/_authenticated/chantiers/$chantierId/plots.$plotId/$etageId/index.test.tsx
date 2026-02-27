@@ -6,7 +6,7 @@ import { setupChannelMock, renderRoute } from '@/test/route-test-utils'
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
-  return { toast }
+  return { toast, Toaster: () => null }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -113,11 +113,9 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   }),
 }))
 
-vi.mock('@/lib/mutations/useToggleLotTma', () => ({
-  useToggleLotTma: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
+vi.mock('@/components/BadgeSelector', () => ({
+  BadgeSelector: () => null,
+  getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
@@ -173,7 +171,7 @@ const mockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '001',
-    is_tma: false,
+    lot_badge_assignments: [],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 3,
@@ -192,7 +190,7 @@ const mockLots = [
     variante_id: 'var-2',
     plot_id: 'plot-1',
     code: '002',
-    is_tma: true,
+    lot_badge_assignments: [{ badge_id: 'b1', lot_badges: { id: 'b1', chantier_id: 'ch-1', nom: 'TMA', couleur: 'amber', created_at: '2026-01-01T00:00:00Z' } }],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 5,
@@ -365,7 +363,7 @@ const filterMockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '101',
-    is_tma: false,
+    lot_badge_assignments: [],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 0,
@@ -384,7 +382,7 @@ const filterMockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '102',
-    is_tma: false,
+    lot_badge_assignments: [],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 2,
@@ -403,7 +401,7 @@ const filterMockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '103',
-    is_tma: false,
+    lot_badge_assignments: [],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 5,
@@ -422,7 +420,7 @@ const filterMockLots = [
     variante_id: 'var-1',
     plot_id: 'plot-1',
     code: '104',
-    is_tma: false,
+    lot_badge_assignments: [],
     has_blocking_note: false,
     has_missing_docs: false,
     progress_done: 3,
@@ -544,7 +542,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
       variante_id: 'var-1',
       plot_id: 'plot-1',
       code: '201',
-      is_tma: false,
+      lot_badge_assignments: [],
       has_blocking_note: false,
       has_missing_docs: true,
       progress_done: 1,
@@ -563,7 +561,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
       variante_id: 'var-1',
       plot_id: 'plot-1',
       code: '202',
-      is_tma: false,
+      lot_badge_assignments: [],
       has_blocking_note: false,
       has_missing_docs: false,
       progress_done: 2,
@@ -582,7 +580,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
       variante_id: 'var-1',
       plot_id: 'plot-1',
       code: '203',
-      is_tma: false,
+      lot_badge_assignments: [],
       has_blocking_note: true,
       has_missing_docs: false,
       progress_done: 0,
@@ -634,7 +632,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
         variante_id: 'var-1',
         plot_id: 'plot-1',
         code: '301',
-        is_tma: false,
+        lot_badge_assignments: [],
         has_blocking_note: false,
         has_missing_docs: false,
         progress_done: 3,

@@ -206,7 +206,6 @@ export type Database = {
           variante_id: string
           plot_id: string
           code: string
-          is_tma: boolean
           created_at: string
           progress_done: number
           progress_total: number
@@ -223,7 +222,6 @@ export type Database = {
           variante_id: string
           plot_id: string
           code: string
-          is_tma?: boolean
           created_at?: string
           progress_done?: number
           progress_total?: number
@@ -240,7 +238,6 @@ export type Database = {
           variante_id?: string
           plot_id?: string
           code?: string
-          is_tma?: boolean
           created_at?: string
           progress_done?: number
           progress_total?: number
@@ -250,6 +247,48 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           plinth_status?: string
+        }
+        Relationships: []
+      }
+      lot_badges: {
+        Row: {
+          id: string
+          chantier_id: string
+          nom: string
+          couleur: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          nom: string
+          couleur?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          nom?: string
+          couleur?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      lot_badge_assignments: {
+        Row: {
+          lot_id: string
+          badge_id: string
+          created_at: string
+        }
+        Insert: {
+          lot_id: string
+          badge_id: string
+          created_at?: string
+        }
+        Update: {
+          lot_id?: string
+          badge_id?: string
+          created_at?: string
         }
         Relationships: []
       }
@@ -922,6 +961,9 @@ export interface Besoin {
   created_at: string
   created_by: string | null
 }
+
+// Type miroir de la table lot_badges (046_lot_badges.sql)
+export type LotBadge = Database['public']['Tables']['lot_badges']['Row']
 
 // Type miroir de la table chantier_caracteristiques (044_chantier_caracteristiques.sql)
 export interface Caracteristique {
