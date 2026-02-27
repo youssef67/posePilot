@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Boxes, Minus, Plus } from 'lucide-react'
+import { Boxes, Minus, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ interface InventaireListProps {
   isLoading: boolean
   aggregated?: boolean
   onOpenSheet: () => void
+  onEdit: (item: InventaireWithLocation) => void
   onIncrement: (item: InventaireWithLocation) => void
   onDecrement: (item: InventaireWithLocation) => void
   onDelete: (item: InventaireWithLocation) => void
@@ -61,6 +62,7 @@ export function InventaireList({
   isLoading,
   aggregated = false,
   onOpenSheet,
+  onEdit,
   onIncrement,
   onDecrement,
   onDelete,
@@ -127,6 +129,15 @@ export function InventaireList({
   function renderItemControls(item: InventaireWithLocation) {
     return (
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-12 w-12 min-w-[48px]"
+          onClick={() => onEdit(item)}
+          aria-label={`Modifier ${item.designation}`}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
         <Button
           variant="outline"
           size="icon"

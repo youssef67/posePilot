@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -22,6 +22,9 @@ interface MemoFormSheetProps {
 
 export function MemoFormSheet({ open, onOpenChange, chantierId, editMemo }: MemoFormSheetProps) {
   const [content, setContent] = useState(editMemo?.content ?? '')
+  useEffect(() => {
+    setContent(editMemo?.content ?? '')
+  }, [editMemo])
   const createMemo = useCreateMemo()
   const updateMemo = useUpdateMemo()
   const { user } = useAuth()

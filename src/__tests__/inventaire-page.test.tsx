@@ -237,6 +237,28 @@ describe('InventairePage — Sheet creation', () => {
   })
 })
 
+describe('InventairePage — Edit mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
+  })
+
+  it('opens edit sheet with pre-filled data when edit button is clicked', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaire)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.click(screen.getByRole('button', { name: /Modifier Colle faïence/ }))
+
+    expect(await screen.findByText('Modifier le matériel')).toBeInTheDocument()
+    expect(screen.getByLabelText('Désignation')).toHaveValue('Colle faïence 20kg')
+    expect(screen.getByLabelText('Quantité')).toHaveValue('12')
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeInTheDocument()
+  })
+})
+
 describe('InventairePage — Lot selector (AC3, AC5)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

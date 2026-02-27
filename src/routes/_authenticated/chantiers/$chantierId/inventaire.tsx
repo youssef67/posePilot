@@ -54,6 +54,7 @@ function InventairePage() {
   const deleteInventaire = useDeleteInventaire()
 
   const [showSheet, setShowSheet] = useState(false)
+  const [editingItem, setEditingItem] = useState<InventaireWithLocation | null>(null)
   const [designation, setDesignation] = useState('')
   const [quantite, setQuantite] = useState('1')
   const [selectedPlotId, setSelectedPlotId] = useState(defaultPlotId ?? '')
@@ -70,12 +71,26 @@ function InventairePage() {
     : []
 
   function handleOpenSheet() {
+    setEditingItem(null)
     setDesignation('')
     setQuantite('1')
     setSelectedPlotId(defaultPlotId ?? '')
     setSelectedEtageId(defaultEtageId ?? '')
     setSelectedLotId('')
     setIsStockageGeneral(false)
+    setErrors({})
+    setShowSheet(true)
+  }
+
+  function handleEdit(item: InventaireWithLocation) {
+    setEditingItem(item)
+    setDesignation(item.designation)
+    setQuantite(String(item.quantite))
+    const isGeneral = !item.plot_id
+    setIsStockageGeneral(isGeneral)
+    setSelectedPlotId(item.plot_id ?? '')
+    setSelectedEtageId(item.etage_id ?? '')
+    setSelectedLotId(item.lot_id ?? '')
     setErrors({})
     setShowSheet(true)
   }
@@ -91,7 +106,7 @@ function InventairePage() {
     setSelectedLotId('')
   }
 
-  function handleCreate() {
+  function handleSubmit() {
     const trimmedDesignation = designation.trim()
     const qty = parseInt(quantite, 10)
     const newErrors: { designation?: string; quantite?: string; plot?: string; etage?: string } = {}
@@ -116,23 +131,48 @@ function InventairePage() {
       return
     }
 
-    createInventaire.mutate(
-      {
-        chantierId,
-        plotId: isStockageGeneral ? null : selectedPlotId,
-        etageId: isStockageGeneral ? null : selectedEtageId,
-        lotId: isStockageGeneral ? null : (selectedLotId || null),
-        designation: trimmedDesignation,
-        quantite: qty,
-      },
-      {
-        onSuccess: () => {
-          setShowSheet(false)
-          toast('Matériel ajouté')
+    const plotId = isStockageGeneral ? null : selectedPlotId
+    const etageId = isStockageGeneral ? null : selectedEtageId
+    const lotId = isStockageGeneral ? null : (selectedLotId || null)
+
+    if (editingItem) {
+      updateInventaire.mutate(
+        {
+          id: editingItem.id,
+          chantierId,
+          designation: trimmedDesignation,
+          quantite: qty,
+          plotId,
+          etageId,
+          lotId,
         },
-        onError: () => toast.error("Erreur lors de l'ajout du matériel"),
-      },
-    )
+        {
+          onSuccess: () => {
+            setShowSheet(false)
+            toast('Matériel modifié')
+          },
+          onError: () => toast.error('Erreur lors de la modification'),
+        },
+      )
+    } else {
+      createInventaire.mutate(
+        {
+          chantierId,
+          plotId,
+          etageId,
+          lotId,
+          designation: trimmedDesignation,
+          quantite: qty,
+        },
+        {
+          onSuccess: () => {
+            setShowSheet(false)
+            toast('Matériel ajouté')
+          },
+          onError: () => toast.error("Erreur lors de l'ajout du matériel"),
+        },
+      )
+    }
   }
 
   function handleIncrement(item: InventaireWithLocation) {
@@ -194,6 +234,7 @@ function InventairePage() {
           isLoading={isLoading}
           aggregated={true}
           onOpenSheet={handleOpenSheet}
+          onEdit={handleEdit}
           onIncrement={handleIncrement}
           onDecrement={handleDecrement}
           onDelete={handleDelete}
@@ -205,9 +246,11 @@ function InventairePage() {
       <Sheet open={showSheet} onOpenChange={setShowSheet}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>Nouveau matériel</SheetTitle>
+            <SheetTitle>{editingItem ? 'Modifier le matériel' : 'Nouveau matériel'}</SheetTitle>
             <SheetDescription>
-              Ajoutez du matériel à l&apos;inventaire du chantier.
+              {editingItem
+                ? 'Modifiez les informations du matériel.'
+                : 'Ajoutez du matériel à l\u0027inventaire du chantier.'}
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 space-y-4">
@@ -335,11 +378,11 @@ function InventairePage() {
           </div>
           <SheetFooter>
             <Button
-              onClick={handleCreate}
-              disabled={createInventaire.isPending}
+              onClick={handleSubmit}
+              disabled={createInventaire.isPending || updateInventaire.isPending}
               className="w-full"
             >
-              Ajouter le matériel
+              {editingItem ? 'Enregistrer' : 'Ajouter le matériel'}
             </Button>
           </SheetFooter>
         </SheetContent>

@@ -47,6 +47,7 @@ const defaultProps = {
   items: mockItems,
   isLoading: false,
   onOpenSheet: vi.fn(),
+  onEdit: vi.fn(),
   onIncrement: vi.fn(),
   onDecrement: vi.fn(),
   onDelete: vi.fn(),
@@ -151,5 +152,15 @@ describe('InventaireList', () => {
     expect(incrementButtons).toHaveLength(3)
     await userEvent.click(incrementButtons[0])
     expect(onIncrement).toHaveBeenCalled()
+  })
+
+  it('calls onEdit when edit button is clicked', async () => {
+    const onEdit = vi.fn()
+    render(<InventaireList {...defaultProps} onEdit={onEdit} />)
+
+    const editButtons = screen.getAllByRole('button', { name: /Modifier/ })
+    expect(editButtons).toHaveLength(3)
+    await userEvent.click(editButtons[0])
+    expect(onEdit).toHaveBeenCalledWith(mockItems[0])
   })
 })

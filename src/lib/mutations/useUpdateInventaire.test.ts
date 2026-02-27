@@ -73,6 +73,48 @@ describe('useUpdateInventaire', () => {
     expect(result.current.error?.message).toBe('Update failed')
   })
 
+  it('updates inventaire designation and location', async () => {
+    const updated = {
+      id: 'inv1',
+      chantier_id: 'ch1',
+      plot_id: 'p2',
+      etage_id: 'e2',
+      lot_id: 'l1',
+      designation: 'Croisillons',
+      quantite: 10,
+      created_at: '2026-02-10T10:00:00Z',
+      created_by: 'user-1',
+    }
+    const mockSingle = vi.fn().mockResolvedValue({ data: updated, error: null })
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+    const mockEq = vi.fn().mockReturnValue({ select: mockSelect })
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
+    vi.mocked(supabase.from).mockReturnValue({ update: mockUpdate } as never)
+
+    const { result } = renderHook(() => useUpdateInventaire(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({
+        id: 'inv1',
+        chantierId: 'ch1',
+        designation: 'Croisillons',
+        plotId: 'p2',
+        etageId: 'e2',
+        lotId: 'l1',
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      designation: 'Croisillons',
+      plot_id: 'p2',
+      etage_id: 'e2',
+      lot_id: 'l1',
+    })
+    expect(result.current.data).toEqual(updated)
+  })
+
   it('applies optimistic update on mutate', async () => {
     const mockSingle = vi.fn().mockResolvedValue({
       data: { id: 'inv1', quantite: 10 },
