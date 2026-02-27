@@ -40,7 +40,7 @@ describe('useCreateBatchLots', () => {
     await act(async () => {
       result.current.mutate({
         codes: ['101', '102', '103'],
-        varianteId: 'var-1',
+        varianteIds: ['var-1', 'var-2', 'var-1'],
         etageNom: 'RDC',
         plotId: 'plot-1',
       })
@@ -50,7 +50,7 @@ describe('useCreateBatchLots', () => {
 
     expect(supabase.rpc).toHaveBeenCalledWith('create_batch_lots_with_inheritance', {
       p_codes: ['101', '102', '103'],
-      p_variante_id: 'var-1',
+      p_variante_ids: ['var-1', 'var-2', 'var-1'],
       p_etage_nom: 'RDC',
       p_plot_id: 'plot-1',
     })
@@ -73,7 +73,7 @@ describe('useCreateBatchLots', () => {
     await act(async () => {
       result.current.mutate({
         codes: ['101'],
-        varianteId: 'var-1',
+        varianteIds: ['var-1'],
         etageNom: 'RDC',
         plotId: 'plot-1',
       })
@@ -97,7 +97,7 @@ describe('useCreateBatchLots', () => {
     await act(async () => {
       result.current.mutate({
         codes: ['101', '102'],
-        varianteId: 'var-1',
+        varianteIds: ['var-1', 'var-1'],
         etageNom: 'RDC',
         plotId: 'plot-1',
       })
@@ -118,7 +118,7 @@ describe('useCreateBatchLots', () => {
     await act(async () => {
       result.current.mutate({
         codes: ['101'],
-        varianteId: 'var-1',
+        varianteIds: ['var-1'],
         etageNom: 'RDC',
         plotId: 'plot-1',
       })
