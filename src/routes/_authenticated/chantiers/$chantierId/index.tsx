@@ -537,19 +537,19 @@ function ChantierIndexPage() {
               </span>
             </div>
 
-            {chantier.memo_count > 0 && (
-              <Link
-                to="/chantiers/$chantierId/memos"
-                params={{ chantierId }}
-                className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 mb-4 text-[#3B82F6]"
-              >
-                <StickyNote className="size-4 shrink-0" />
-                <span className="text-sm font-medium flex-1">
-                  {chantier.memo_count} mémo{chantier.memo_count > 1 ? 's' : ''}
-                </span>
-                <ChevronRight className="size-4 shrink-0" />
-              </Link>
-            )}
+            <Link
+              to="/chantiers/$chantierId/memos"
+              params={{ chantierId }}
+              className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 mb-4 text-[#3B82F6]"
+            >
+              <StickyNote className="size-4 shrink-0" />
+              <span className="text-sm font-medium flex-1">
+                {chantier.memo_count > 0
+                  ? `${chantier.memo_count} mémo${chantier.memo_count > 1 ? 's' : ''}`
+                  : 'Mémos'}
+              </span>
+              <ChevronRight className="size-4 shrink-0" />
+            </Link>
 
             <ChantierIndicators
               chantierId={chantierId}
@@ -639,19 +639,19 @@ function ChantierIndexPage() {
               </span>
             </div>
 
-            {chantier.memo_count > 0 && (
-              <Link
-                to="/chantiers/$chantierId/memos"
-                params={{ chantierId }}
-                className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 mb-4 text-[#3B82F6]"
-              >
-                <StickyNote className="size-4 shrink-0" />
-                <span className="text-sm font-medium flex-1">
-                  {chantier.memo_count} mémo{chantier.memo_count > 1 ? 's' : ''}
-                </span>
-                <ChevronRight className="size-4 shrink-0" />
-              </Link>
-            )}
+            <Link
+              to="/chantiers/$chantierId/memos"
+              params={{ chantierId }}
+              className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 mb-4 text-[#3B82F6]"
+            >
+              <StickyNote className="size-4 shrink-0" />
+              <span className="text-sm font-medium flex-1">
+                {chantier.memo_count > 0
+                  ? `${chantier.memo_count} mémo${chantier.memo_count > 1 ? 's' : ''}`
+                  : 'Mémos'}
+              </span>
+              <ChevronRight className="size-4 shrink-0" />
+            </Link>
 
             <ChantierIndicators
               chantierId={chantierId}

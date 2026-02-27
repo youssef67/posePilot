@@ -560,7 +560,7 @@ describe('ChantierPage', () => {
     expect(memoLink).toHaveAttribute('href', '/chantiers/abc-123/memos')
   })
 
-  it('does not show memo banner when memo_count is 0', async () => {
+  it('shows memo banner with "Mémos" text when memo_count is 0', async () => {
     const chantierNoMemos = { ...mockChantier, memo_count: 0 }
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
@@ -585,7 +585,8 @@ describe('ChantierPage', () => {
     renderRoute('abc-123')
 
     await screen.findByRole('heading', { name: 'Résidence Alpha' })
-    expect(screen.queryByText(/mémo/)).not.toBeInTheDocument()
+    const memoLink = screen.getByRole('link', { name: /mémos/i })
+    expect(memoLink).toHaveAttribute('href', '/chantiers/abc-123/memos')
   })
 
   it('shows memo banner for leger chantier with memos', async () => {
