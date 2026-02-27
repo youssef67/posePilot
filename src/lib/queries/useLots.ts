@@ -26,7 +26,7 @@ export function useLots(plotId: string) {
         .from('lots')
         .select('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*))')
         .eq('plot_id', plotId)
-        .order('created_at', { ascending: true })
+        .order('position', { ascending: true })
       if (error) throw error
       return data as unknown as LotWithRelations[]
     },

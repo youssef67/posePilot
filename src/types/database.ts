@@ -206,6 +206,7 @@ export type Database = {
           variante_id: string
           plot_id: string
           code: string
+          position: number
           created_at: string
           progress_done: number
           progress_total: number
@@ -222,6 +223,7 @@ export type Database = {
           variante_id: string
           plot_id: string
           code: string
+          position?: number
           created_at?: string
           progress_done?: number
           progress_total?: number
@@ -238,6 +240,7 @@ export type Database = {
           variante_id?: string
           plot_id?: string
           code?: string
+          position?: number
           created_at?: string
           progress_done?: number
           progress_total?: number
