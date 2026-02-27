@@ -15,6 +15,7 @@ export type LotWithRelations = LotRow & {
   pieces: { count: number }[]
   has_blocking_note: boolean
   has_missing_docs: boolean
+  has_inventaire: boolean
   lot_badge_assignments: LotBadgeAssignment[]
 }
 

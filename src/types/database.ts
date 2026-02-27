@@ -219,6 +219,7 @@ export type Database = {
           metrage_m2_total: number
           metrage_ml_total: number
           plinth_status: string
+          has_inventaire: boolean
         }
         Insert: {
           id?: string
@@ -236,6 +237,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           plinth_status?: string
+          has_inventaire?: boolean
         }
         Update: {
           id?: string
@@ -253,6 +255,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           plinth_status?: string
+          has_inventaire?: boolean
         }
         Relationships: []
       }
@@ -586,6 +589,7 @@ export type Database = {
           chantier_id: string
           plot_id: string | null
           etage_id: string | null
+          lot_id: string | null
           designation: string
           quantite: number
           created_at: string
@@ -596,6 +600,7 @@ export type Database = {
           chantier_id: string
           plot_id?: string | null
           etage_id?: string | null
+          lot_id?: string | null
           designation: string
           quantite?: number
           created_at?: string
@@ -606,6 +611,7 @@ export type Database = {
           chantier_id?: string
           plot_id?: string | null
           etage_id?: string | null
+          lot_id?: string | null
           designation?: string
           quantite?: number
           created_at?: string
@@ -929,12 +935,13 @@ export interface LotPhoto {
   created_at: string
 }
 
-// Type miroir de la table inventaire (018_inventaire.sql + 026_stockage_general)
+// Type miroir de la table inventaire (018_inventaire.sql + 026_stockage_general + 050_inventaire_lot)
 export interface Inventaire {
   id: string
   chantier_id: string
   plot_id: string | null
   etage_id: string | null
+  lot_id: string | null
   designation: string
   quantite: number
   created_at: string

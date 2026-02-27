@@ -10,12 +10,14 @@ export function useCreateInventaire() {
       chantierId,
       plotId,
       etageId,
+      lotId,
       designation,
       quantite,
     }: {
       chantierId: string
       plotId: string | null
       etageId: string | null
+      lotId: string | null
       designation: string
       quantite: number
     }) => {
@@ -26,16 +28,17 @@ export function useCreateInventaire() {
           chantier_id: chantierId,
           plot_id: plotId,
           etage_id: etageId,
+          lot_id: lotId,
           designation: designation.trim(),
           quantite,
           created_by: user?.id ?? null,
         })
-        .select('*, plots(nom), etages(nom)')
+        .select('*, plots(nom), etages(nom), lots(code)')
         .single()
       if (error) throw error
       return data as unknown as InventaireWithLocation
     },
-    onMutate: async ({ chantierId, plotId, etageId, designation, quantite }) => {
+    onMutate: async ({ chantierId, plotId, etageId, lotId, designation, quantite }) => {
       await queryClient.cancelQueries({ queryKey: ['inventaire', chantierId] })
       const previous = queryClient.getQueryData(['inventaire', chantierId])
       queryClient.setQueryData(
@@ -47,12 +50,14 @@ export function useCreateInventaire() {
             chantier_id: chantierId,
             plot_id: plotId,
             etage_id: etageId,
+            lot_id: lotId,
             designation: designation.trim(),
             quantite,
             created_at: new Date().toISOString(),
             created_by: null,
             plots: plotId ? { nom: '' } : null,
             etages: etageId ? { nom: '' } : null,
+            lots: lotId ? { code: '' } : null,
           },
         ],
       )
@@ -61,8 +66,11 @@ export function useCreateInventaire() {
     onError: (_err, { chantierId }, context) => {
       queryClient.setQueryData(['inventaire', chantierId], context?.previous)
     },
-    onSettled: (_data, _error, { chantierId }) => {
+    onSettled: (_data, _error, { chantierId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })
+      if (plotId) {
+        queryClient.invalidateQueries({ queryKey: ['lots', plotId] })
+      }
     },
   })
 }

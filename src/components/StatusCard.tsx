@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, FileWarning, StickyNote, Wrench } from 'lucide-react'
+import { AlertTriangle, Boxes, FileWarning, StickyNote, Wrench } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +21,7 @@ interface StatusCardProps {
   hasMissingDocs?: boolean
   hasOpenReservation?: boolean
   hasMemos?: boolean
+  hasInventaire?: boolean
   onClick?: () => void
   className?: string
   role?: string
@@ -38,6 +39,7 @@ export function StatusCard({
   hasMissingDocs,
   hasOpenReservation,
   hasMemos,
+  hasInventaire,
   onClick,
   className,
   role,
@@ -76,6 +78,9 @@ export function StatusCard({
             )}
             {hasMemos && (
               <StickyNote className="size-4 shrink-0 text-[#3B82F6]" aria-label="Mémos" />
+            )}
+            {hasInventaire && (
+              <Boxes className="size-4 shrink-0 text-orange-400" aria-label="Inventaire affecté" />
             )}
           </div>
           {subtitle && (

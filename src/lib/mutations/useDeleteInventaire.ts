@@ -6,7 +6,7 @@ export function useDeleteInventaire() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id }: { id: string; chantierId: string }) => {
+    mutationFn: async ({ id }: { id: string; chantierId: string; plotId?: string | null }) => {
       const { error } = await supabase
         .from('inventaire')
         .delete()
@@ -26,8 +26,11 @@ export function useDeleteInventaire() {
     onError: (_err, { chantierId }, context) => {
       queryClient.setQueryData(['inventaire', chantierId], context?.previous)
     },
-    onSettled: (_data, _error, { chantierId }) => {
+    onSettled: (_data, _error, { chantierId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })
+      if (plotId) {
+        queryClient.invalidateQueries({ queryKey: ['lots', plotId] })
+      }
     },
   })
 }

@@ -54,6 +54,7 @@ describe('useCreateInventaire', () => {
         chantierId: 'ch1',
         plotId: 'p1',
         etageId: 'e1',
+        lotId: null,
         designation: 'Colle faïence 20kg',
         quantite: 5,
       })
@@ -66,11 +67,59 @@ describe('useCreateInventaire', () => {
       chantier_id: 'ch1',
       plot_id: 'p1',
       etage_id: 'e1',
+      lot_id: null,
       designation: 'Colle faïence 20kg',
       quantite: 5,
       created_by: 'user-1',
     })
-    expect(mockSelect).toHaveBeenCalledWith('*, plots(nom), etages(nom)')
+    expect(mockSelect).toHaveBeenCalledWith('*, plots(nom), etages(nom), lots(code)')
+    expect(result.current.data).toEqual(created)
+  })
+
+  it('inserts inventaire item with lotId and returns data', async () => {
+    const created = {
+      id: 'inv-lot',
+      chantier_id: 'ch1',
+      plot_id: 'p1',
+      etage_id: 'e1',
+      lot_id: 'lot1',
+      designation: 'Joint carrelage',
+      quantite: 3,
+      created_at: '2026-02-27T10:00:00Z',
+      created_by: 'user-1',
+      plots: { nom: 'Plot A' },
+      etages: { nom: 'RDC' },
+      lots: { code: '101' },
+    }
+    const mockSingle = vi.fn().mockResolvedValue({ data: created, error: null })
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as never)
+
+    const { result } = renderHook(() => useCreateInventaire(), { wrapper: createWrapper() })
+
+    await act(async () => {
+      result.current.mutate({
+        chantierId: 'ch1',
+        plotId: 'p1',
+        etageId: 'e1',
+        lotId: 'lot1',
+        designation: 'Joint carrelage',
+        quantite: 3,
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(mockInsert).toHaveBeenCalledWith({
+      chantier_id: 'ch1',
+      plot_id: 'p1',
+      etage_id: 'e1',
+      lot_id: 'lot1',
+      designation: 'Joint carrelage',
+      quantite: 3,
+      created_by: 'user-1',
+    })
     expect(result.current.data).toEqual(created)
   })
 
@@ -87,6 +136,7 @@ describe('useCreateInventaire', () => {
         chantierId: 'ch1',
         plotId: 'p1',
         etageId: 'e1',
+        lotId: null,
         designation: 'Test',
         quantite: 1,
       })
@@ -118,6 +168,7 @@ describe('useCreateInventaire', () => {
         chantierId: 'ch1',
         plotId: 'p1',
         etageId: 'e1',
+        lotId: null,
         designation: 'Test',
         quantite: 1,
       })

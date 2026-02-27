@@ -21,7 +21,9 @@ interface AggregatedGroup {
 
 function getLocationLabel(item: InventaireWithLocation): string {
   if (!item.plots) return 'Stockage général'
-  return `${item.plots.nom} — ${item.etages!.nom}`
+  const base = `${item.plots.nom} — ${item.etages?.nom ?? ''}`
+  if (item.lots) return `${base} — Lot ${item.lots.code}`
+  return base
 }
 
 function aggregateByDesignation(items: InventaireWithLocation[]): AggregatedGroup[] {

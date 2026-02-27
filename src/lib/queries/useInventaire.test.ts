@@ -18,24 +18,28 @@ const mockInventaire = [
     chantier_id: 'ch1',
     plot_id: 'p1',
     etage_id: 'e1',
+    lot_id: 'lot1',
     designation: 'Colle faïence 20kg',
     quantite: 12,
     created_at: '2026-02-10T10:00:00Z',
     created_by: 'user-1',
     plots: { nom: 'Plot A' },
     etages: { nom: 'RDC' },
+    lots: { code: '101' },
   },
   {
     id: 'inv2',
     chantier_id: 'ch1',
     plot_id: 'p1',
     etage_id: 'e2',
+    lot_id: null,
     designation: 'Colle faïence 20kg',
     quantite: 8,
     created_at: '2026-02-10T11:00:00Z',
     created_by: 'user-1',
     plots: { nom: 'Plot A' },
     etages: { nom: 'É1' },
+    lots: null,
   },
 ]
 
@@ -61,14 +65,13 @@ describe('useInventaire', () => {
 
     const { result } = renderHook(() => useInventaire('ch1'), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockInventaire))
 
     expect(supabase.from).toHaveBeenCalledWith('inventaire')
-    expect(mockSelect).toHaveBeenCalledWith('*, plots(nom), etages(nom)')
+    expect(mockSelect).toHaveBeenCalledWith('*, plots(nom), etages(nom), lots(code)')
     expect(mockEq).toHaveBeenCalledWith('chantier_id', 'ch1')
     expect(mockOrder1).toHaveBeenCalledWith('designation', { ascending: true })
     expect(mockOrder2).toHaveBeenCalledWith('created_at', { ascending: false })
-    expect(result.current.data).toEqual(mockInventaire)
   })
 
   it('is disabled when chantierId is empty', () => {

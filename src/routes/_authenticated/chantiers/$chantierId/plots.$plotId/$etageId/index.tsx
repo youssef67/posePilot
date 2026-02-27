@@ -417,6 +417,7 @@ function EtageIndexPage() {
                           isBlocked={lot.has_blocking_note}
                           hasMissingDocs={lot.has_missing_docs}
                           hasOpenReservation={lot.has_open_reservation}
+                          hasInventaire={lot.has_inventaire}
                           badge={
                             <>
                               {lot.lot_badge_assignments?.map((a) => (

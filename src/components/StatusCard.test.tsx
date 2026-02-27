@@ -221,6 +221,38 @@ describe('StatusCard — secondaryInfo', () => {
   })
 })
 
+describe('StatusCard — hasInventaire', () => {
+  it('shows Boxes icon when hasInventaire is true', () => {
+    render(<StatusCard title="Lot 101" statusColor={STATUS_COLORS.NOT_STARTED} hasInventaire />)
+    expect(screen.getByLabelText('Inventaire affecté')).toBeInTheDocument()
+  })
+
+  it('does not show Boxes icon when hasInventaire is false', () => {
+    render(<StatusCard title="Lot 101" statusColor={STATUS_COLORS.NOT_STARTED} hasInventaire={false} />)
+    expect(screen.queryByLabelText('Inventaire affecté')).not.toBeInTheDocument()
+  })
+
+  it('does not show Boxes icon when hasInventaire is not set', () => {
+    render(<StatusCard title="Lot 101" statusColor={STATUS_COLORS.NOT_STARTED} />)
+    expect(screen.queryByLabelText('Inventaire affecté')).not.toBeInTheDocument()
+  })
+
+  it('shows Boxes alongside other indicator icons', () => {
+    render(
+      <StatusCard
+        title="Lot 101"
+        statusColor={STATUS_COLORS.DONE}
+        isBlocked
+        hasMissingDocs
+        hasInventaire
+      />,
+    )
+    expect(screen.getByLabelText('Bloqué')).toBeInTheDocument()
+    expect(screen.getByLabelText('Documents manquants')).toBeInTheDocument()
+    expect(screen.getByLabelText('Inventaire affecté')).toBeInTheDocument()
+  })
+})
+
 describe('STATUS_COLORS', () => {
   it('exports expected color constants', () => {
     expect(STATUS_COLORS.NOT_STARTED).toBe('#64748B')

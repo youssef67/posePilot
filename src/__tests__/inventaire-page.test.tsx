@@ -36,22 +36,28 @@ const mockEtages = [
   { id: 'e1', plot_id: 'p1', nom: 'RDC', order_index: 0, progress_done: 0, progress_total: 0, created_at: '2026-01-01' },
 ]
 
+const mockLots = [
+  { id: 'lot1', etage_id: 'e1', plot_id: 'p1', code: '101', variante_id: 'v1', position: 1, progress_done: 0, progress_total: 0, has_blocking_note: false, has_open_reservation: false, has_missing_docs: false, has_inventaire: false, metrage_m2_total: 0, metrage_ml_total: 0, plinth_status: 'non_commandees', created_at: '2026-01-01', etages: { nom: 'RDC' }, variantes: { nom: 'T2' }, pieces: [{ count: 0 }], lot_badge_assignments: [] },
+]
+
 const mockInventaire = [
   {
     id: 'inv1',
     chantier_id: 'abc-123',
     plot_id: 'p1',
     etage_id: 'e1',
+    lot_id: null,
     designation: 'Colle faïence 20kg',
     quantite: 12,
     created_at: '2026-02-10T10:00:00Z',
     created_by: 'user-1',
     plots: { nom: 'Plot A' },
     etages: { nom: 'RDC' },
+    lots: null,
   },
 ]
 
-function setupMocks(inventaire: unknown[] = []) {
+function setupMocks(inventaire: unknown[] = [], lots: unknown[] = []) {
   vi.mocked(supabase.from).mockImplementation((table: string) => {
     if (table === 'chantiers') {
       return {
@@ -87,6 +93,15 @@ function setupMocks(inventaire: unknown[] = []) {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             order: vi.fn().mockResolvedValue({ data: mockEtages, error: null }),
+          }),
+        }),
+      } as never
+    }
+    if (table === 'lots') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: lots, error: null }),
           }),
         }),
       } as never
@@ -219,5 +234,58 @@ describe('InventairePage — Sheet creation', () => {
     await user.click(screen.getByRole('button', { name: 'Ajouter le matériel' }))
 
     expect(await screen.findByText("L'étage est requis")).toBeInTheDocument()
+  })
+})
+
+describe('InventairePage — Lot selector (AC3, AC5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
+  })
+
+  it('shows lot selector when plot+étage are pre-selected and lots exist (AC3)', async () => {
+    const user = userEvent.setup()
+    setupMocks([], mockLots)
+    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
+
+    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await screen.findByText('Nouveau matériel')
+
+    expect(screen.getByText('Lot (optionnel)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sélectionner un lot')).toBeInTheDocument()
+  })
+
+  it('hides lot selector when no lots exist for étage', async () => {
+    const user = userEvent.setup()
+    setupMocks([], [])
+    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
+
+    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await screen.findByText('Nouveau matériel')
+
+    expect(screen.queryByText('Lot (optionnel)')).not.toBeInTheDocument()
+  })
+
+  it('hides lot selector in stockage général mode (AC5)', async () => {
+    const user = userEvent.setup()
+    setupMocks([], mockLots)
+    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
+
+    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await screen.findByText('Nouveau matériel')
+
+    // Lot selector should be visible initially
+    expect(screen.getByText('Lot (optionnel)')).toBeInTheDocument()
+
+    // Toggle stockage général
+    await user.click(screen.getByRole('switch'))
+
+    // Lot selector should be hidden
+    expect(screen.queryByText('Lot (optionnel)')).not.toBeInTheDocument()
+    // Plot and étage selectors also hidden
+    expect(screen.queryByLabelText('Sélectionner un plot')).not.toBeInTheDocument()
   })
 })

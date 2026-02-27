@@ -33,7 +33,7 @@ describe('useDeleteInventaire', () => {
     const { result } = renderHook(() => useDeleteInventaire(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ id: 'inv1', chantierId: 'ch1' })
+      result.current.mutate({ id: 'inv1', chantierId: 'ch1', plotId: 'p1' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -50,7 +50,7 @@ describe('useDeleteInventaire', () => {
     const { result } = renderHook(() => useDeleteInventaire(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ id: 'inv1', chantierId: 'ch1' })
+      result.current.mutate({ id: 'inv1', chantierId: 'ch1', plotId: 'p1' })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
@@ -74,7 +74,7 @@ describe('useDeleteInventaire', () => {
     const { result } = renderHook(() => useDeleteInventaire(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ id: 'inv1', chantierId: 'ch1' })
+      result.current.mutate({ id: 'inv1', chantierId: 'ch1', plotId: 'p1' })
     })
 
     const cached = queryClient.getQueryData<Array<{ id: string }>>(['inventaire', 'ch1'])

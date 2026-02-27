@@ -30,6 +30,7 @@ import { useInventaire } from '@/lib/queries/useInventaire'
 import { useChantier } from '@/lib/queries/useChantier'
 import { usePlots } from '@/lib/queries/usePlots'
 import { useEtages } from '@/lib/queries/useEtages'
+import { useLots } from '@/lib/queries/useLots'
 import type { InventaireWithLocation } from '@/lib/queries/useInventaire'
 
 export const Route = createFileRoute(
@@ -57,17 +58,23 @@ function InventairePage() {
   const [quantite, setQuantite] = useState('1')
   const [selectedPlotId, setSelectedPlotId] = useState(defaultPlotId ?? '')
   const [selectedEtageId, setSelectedEtageId] = useState(defaultEtageId ?? '')
+  const [selectedLotId, setSelectedLotId] = useState('')
   const [isStockageGeneral, setIsStockageGeneral] = useState(false)
   const [errors, setErrors] = useState<{ designation?: string; quantite?: string; plot?: string; etage?: string }>({})
 
   const { data: plots } = usePlots(chantierId)
   const { data: etages } = useEtages(selectedPlotId)
+  const { data: allLots } = useLots(selectedPlotId)
+  const etageLots = selectedEtageId
+    ? allLots?.filter((l) => l.etage_id === selectedEtageId) ?? []
+    : []
 
   function handleOpenSheet() {
     setDesignation('')
     setQuantite('1')
     setSelectedPlotId(defaultPlotId ?? '')
     setSelectedEtageId(defaultEtageId ?? '')
+    setSelectedLotId('')
     setIsStockageGeneral(false)
     setErrors({})
     setShowSheet(true)
@@ -76,6 +83,12 @@ function InventairePage() {
   function handlePlotChange(plotId: string) {
     setSelectedPlotId(plotId)
     setSelectedEtageId('')
+    setSelectedLotId('')
+  }
+
+  function handleEtageChange(etageId: string) {
+    setSelectedEtageId(etageId)
+    setSelectedLotId('')
   }
 
   function handleCreate() {
@@ -108,6 +121,7 @@ function InventairePage() {
         chantierId,
         plotId: isStockageGeneral ? null : selectedPlotId,
         etageId: isStockageGeneral ? null : selectedEtageId,
+        lotId: isStockageGeneral ? null : (selectedLotId || null),
         designation: trimmedDesignation,
         quantite: qty,
       },
@@ -139,7 +153,7 @@ function InventairePage() {
 
   function handleDelete(item: InventaireWithLocation) {
     deleteInventaire.mutate(
-      { id: item.id, chantierId },
+      { id: item.id, chantierId, plotId: item.plot_id },
       {
         onSuccess: () => toast('Matériel supprimé'),
         onError: () => toast.error('Erreur lors de la suppression'),
@@ -276,7 +290,7 @@ function InventairePage() {
                   <Select
                     value={selectedEtageId}
                     onValueChange={(v) => {
-                      setSelectedEtageId(v)
+                      handleEtageChange(v)
                       if (errors.etage) setErrors((prev) => ({ ...prev, etage: undefined }))
                     }}
                     disabled={!selectedPlotId}
@@ -296,6 +310,26 @@ function InventairePage() {
                     <p className="text-sm text-destructive mt-1">{errors.etage}</p>
                   )}
                 </div>
+                {selectedEtageId && etageLots.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Lot (optionnel)</label>
+                    <Select
+                      value={selectedLotId}
+                      onValueChange={setSelectedLotId}
+                    >
+                      <SelectTrigger aria-label="Sélectionner un lot">
+                        <SelectValue placeholder="Aucun lot" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {etageLots.map((lot) => (
+                          <SelectItem key={lot.id} value={lot.id}>
+                            Lot {lot.code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </>
             )}
           </div>

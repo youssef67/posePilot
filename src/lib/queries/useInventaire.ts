@@ -5,6 +5,7 @@ import type { Inventaire } from '@/types/database'
 export interface InventaireWithLocation extends Inventaire {
   plots: { nom: string } | null
   etages: { nom: string } | null
+  lots: { code: string } | null
 }
 
 export function useInventaire(chantierId: string) {
@@ -13,7 +14,7 @@ export function useInventaire(chantierId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('inventaire')
-        .select('*, plots(nom), etages(nom)')
+        .select('*, plots(nom), etages(nom), lots(code)')
         .eq('chantier_id', chantierId)
         .order('designation', { ascending: true })
         .order('created_at', { ascending: false })
