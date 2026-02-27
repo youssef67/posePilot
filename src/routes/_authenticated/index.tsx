@@ -121,6 +121,7 @@ function HomePage() {
                 secondaryInfo={depenses ? montantFormatter.format(depenses * 1.2) : undefined}
                 statusColor={STATUS_COLORS[computeStatus(chantier.progress_done, chantier.progress_total)]}
                 isBlocked={chantier.has_blocking_note}
+                hasMemos={(chantier as ChantierRow).memo_count > 0}
                 onClick={() => navigate({ to: '/chantiers/$chantierId', params: { chantierId: chantier.id } })}
               />
             )

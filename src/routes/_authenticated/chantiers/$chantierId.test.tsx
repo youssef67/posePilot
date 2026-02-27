@@ -530,6 +530,105 @@ describe('ChantierPage', () => {
     expect(screen.getByRole('button', { name: 'Ajouter' })).toBeInTheDocument()
   })
 
+  it('shows memo banner for complet chantier with memos', async () => {
+    const chantierWithMemos = { ...mockChantier, memo_count: 3 }
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'chantiers') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: chantierWithMemos, error: null }),
+            }),
+          }),
+        } as never
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      } as never
+    })
+
+    renderRoute('abc-123')
+
+    await screen.findByRole('heading', { name: 'Résidence Alpha' })
+    expect(screen.getByText('3 mémos')).toBeInTheDocument()
+    const memoLink = screen.getByRole('link', { name: /mémos/i })
+    expect(memoLink).toHaveAttribute('href', '/chantiers/abc-123/memos')
+  })
+
+  it('does not show memo banner when memo_count is 0', async () => {
+    const chantierNoMemos = { ...mockChantier, memo_count: 0 }
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'chantiers') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: chantierNoMemos, error: null }),
+            }),
+          }),
+        } as never
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      } as never
+    })
+
+    renderRoute('abc-123')
+
+    await screen.findByRole('heading', { name: 'Résidence Alpha' })
+    expect(screen.queryByText(/mémo/)).not.toBeInTheDocument()
+  })
+
+  it('shows memo banner for leger chantier with memos', async () => {
+    const legerWithMemos = { ...mockChantier, type: 'leger' as const, memo_count: 1 }
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'chantiers') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: legerWithMemos, error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'besoins') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              is: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          }),
+        } as never
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      } as never
+    })
+
+    renderRoute('abc-123')
+
+    await screen.findByRole('heading', { name: 'Résidence Alpha' })
+    expect(screen.getByText('1 mémo')).toBeInTheDocument()
+    const memoLink = screen.getByRole('link', { name: /mémo/i })
+    expect(memoLink).toHaveAttribute('href', '/chantiers/abc-123/memos')
+  })
+
   it('does NOT show SearchBar for leger chantier', async () => {
     const legerChantier = { ...mockChantier, type: 'leger' as const }
 

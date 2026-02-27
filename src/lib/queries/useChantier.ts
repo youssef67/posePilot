@@ -11,6 +11,7 @@ export interface ChantierRow {
   has_blocking_note: boolean
   ajustement_depenses: number
   cout_sous_traitance: number
+  memo_count: number
   created_by: string
   created_at: string
 }

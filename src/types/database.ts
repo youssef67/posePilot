@@ -16,6 +16,7 @@ export type Database = {
           has_open_reservation: boolean
           ajustement_depenses: number
           cout_sous_traitance: number
+          memo_count: number
           created_at: string
           created_by: string | null
         }
@@ -30,6 +31,7 @@ export type Database = {
           has_open_reservation?: boolean
           ajustement_depenses?: number
           cout_sous_traitance?: number
+          memo_count?: number
           created_at?: string
           created_by?: string | null
         }
@@ -44,6 +46,7 @@ export type Database = {
           has_open_reservation?: boolean
           ajustement_depenses?: number
           cout_sous_traitance?: number
+          memo_count?: number
           created_at?: string
           created_by?: string | null
         }
@@ -733,6 +736,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chantier_memos: {
+        Row: {
+          id: string
+          chantier_id: string
+          content: string
+          created_by_email: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          chantier_id: string
+          content: string
+          created_by_email: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          chantier_id?: string
+          content?: string
+          created_by_email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reservations: {
         Row: {
           id: string
@@ -967,6 +997,9 @@ export interface Besoin {
 
 // Type miroir de la table lot_badges (046_lot_badges.sql)
 export type LotBadge = Database['public']['Tables']['lot_badges']['Row']
+
+// Type miroir de la table chantier_memos (048_chantier_memos.sql)
+export type ChantierMemo = Database['public']['Tables']['chantier_memos']['Row']
 
 // Type miroir de la table chantier_caracteristiques (044_chantier_caracteristiques.sql)
 export interface Caracteristique {
