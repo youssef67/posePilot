@@ -40,6 +40,7 @@ export function useUpdateTaskStatus() {
     onSettled: (_data, _err, { lotId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['pieces', lotId] })
       queryClient.invalidateQueries({ queryKey: ['lots', plotId] })
+      queryClient.invalidateQueries({ queryKey: ['etages', plotId] })
     },
   })
 }
