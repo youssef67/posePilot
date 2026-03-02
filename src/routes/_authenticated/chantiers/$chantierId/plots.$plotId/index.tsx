@@ -513,6 +513,18 @@ function PlotIndexPage() {
     return etages.map((etage) => {
       const etageLots = lots.filter((l) => l.etage_id === etage.id)
       const lotCount = etageLots.length
+      // Aggregate badge counts across lots in this étage
+      const badgeCounts = new Map<string, { nom: string; couleur: string; count: number }>()
+      for (const lot of etageLots) {
+        for (const a of lot.lot_badge_assignments ?? []) {
+          const existing = badgeCounts.get(a.badge_id)
+          if (existing) {
+            existing.count++
+          } else {
+            badgeCounts.set(a.badge_id, { nom: a.lot_badges.nom, couleur: a.lot_badges.couleur, count: 1 })
+          }
+        }
+      }
       return {
         id: etage.id,
         nom: etage.nom,
@@ -521,6 +533,7 @@ function PlotIndexPage() {
         progress_total: etage.progress_total,
         has_blocking_note: etage.has_blocking_note,
         has_open_reservation: etage.has_open_reservation,
+        badgeCounts: [...badgeCounts.values()],
       }
     })
   }, [etages, lots])
@@ -676,6 +689,20 @@ function PlotIndexPage() {
                       indicator={etage.progress_total > 0 ? `${pct} %` : undefined}
                       isBlocked={etage.has_blocking_note}
                       hasOpenReservation={etage.has_open_reservation}
+                      badge={etage.badgeCounts.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {etage.badgeCounts.map((b) => (
+                            <Badge
+                              key={b.nom}
+                              variant="outline"
+                              className={`${getBadgeColorClasses(b.couleur)} text-[10px] gap-1`}
+                            >
+                              {b.nom}
+                              <span className="font-semibold">{b.count}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : undefined}
                       onClick={() =>
                         navigate({
                           to: '/chantiers/$chantierId/plots/$plotId/$etageId',
