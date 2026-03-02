@@ -419,7 +419,15 @@ export type Database = {
           file_name?: string
           created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lot_document_files_lot_document_id_fkey"
+            columns: ["lot_document_id"]
+            isOneToOne: false
+            referencedRelation: "lot_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
