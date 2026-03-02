@@ -106,11 +106,11 @@ export function LivraisonDocumentSlot({ type, livraison, chantierId, disabled }:
         data-testid={`file-input-${type}-${livraison.id}`}
       />
 
-      <div className="flex items-center min-h-12 px-3 py-2.5">
+      <div className="flex items-center min-h-12 px-3 py-2.5 rounded-lg transition-colors hover:bg-muted/50 active:bg-muted">
         {isFilled ? (
           <button
             type="button"
-            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+            className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
             onClick={handleOpen}
           >
             <FileCheck2 className="size-5 shrink-0 text-emerald-500" />
@@ -124,7 +124,7 @@ export function LivraisonDocumentSlot({ type, livraison, chantierId, disabled }:
         ) : (
           <button
             type="button"
-            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+            className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
             onClick={triggerUpload}
             disabled={isUploading || disabled}
           >
