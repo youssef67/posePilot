@@ -14,6 +14,7 @@ import { useReplaceLotDocument } from '@/lib/mutations/useReplaceLotDocument'
 import { useToggleLotDocumentRequired } from '@/lib/mutations/useToggleLotDocumentRequired'
 import { useUploadLotDocumentFile } from '@/lib/mutations/useUploadLotDocumentFile'
 import { useDeleteLotDocumentFile } from '@/lib/mutations/useDeleteLotDocumentFile'
+import { useClearLotDocument } from '@/lib/mutations/useClearLotDocument'
 import { getDocumentSignedUrl, downloadDocument } from '@/lib/utils/documentStorage'
 import { shareDocument } from '@/lib/utils/shareDocument'
 import type { LotDocument } from '@/types/database'
@@ -29,6 +30,7 @@ export function DocumentSlot({ document: doc, lotId }: DocumentSlotProps) {
   const toggleRequired = useToggleLotDocumentRequired()
   const uploadFileMutation = useUploadLotDocumentFile()
   const deleteFileMutation = useDeleteLotDocumentFile()
+  const clearMutation = useClearLotDocument()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<'upload' | 'replace'>('upload')
 
@@ -303,6 +305,13 @@ export function DocumentSlot({ document: doc, lotId }: DocumentSlotProps) {
                 <DropdownMenuItem onClick={() => handleShare()}>
                   <Share2 className="size-4" />
                   Partager
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => doc.file_url && clearMutation.mutate({ documentId: doc.id, fileUrl: doc.file_url, lotId })}
+                >
+                  <Trash2 className="size-4" />
+                  Supprimer
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
