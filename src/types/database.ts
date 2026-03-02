@@ -145,6 +145,7 @@ export type Database = {
           variante_id: string
           nom: string
           is_required: boolean
+          allow_multiple: boolean
           created_at: string
         }
         Insert: {
@@ -152,6 +153,7 @@ export type Database = {
           variante_id: string
           nom: string
           is_required?: boolean
+          allow_multiple?: boolean
           created_at?: string
         }
         Update: {
@@ -159,6 +161,7 @@ export type Database = {
           variante_id?: string
           nom?: string
           is_required?: boolean
+          allow_multiple?: boolean
           created_at?: string
         }
         Relationships: []
@@ -367,6 +370,7 @@ export type Database = {
           lot_id: string
           nom: string
           is_required: boolean
+          allow_multiple: boolean
           file_url: string | null
           file_name: string | null
           created_at: string
@@ -376,6 +380,7 @@ export type Database = {
           lot_id: string
           nom: string
           is_required?: boolean
+          allow_multiple?: boolean
           file_url?: string | null
           file_name?: string | null
           created_at?: string
@@ -385,8 +390,33 @@ export type Database = {
           lot_id?: string
           nom?: string
           is_required?: boolean
+          allow_multiple?: boolean
           file_url?: string | null
           file_name?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      lot_document_files: {
+        Row: {
+          id: string
+          lot_document_id: string
+          file_url: string
+          file_name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lot_document_id: string
+          file_url: string
+          file_name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lot_document_id?: string
+          file_url?: string
+          file_name?: string
           created_at?: string
         }
         Relationships: []
@@ -892,15 +922,26 @@ export interface ActivityLog {
   created_at: string
 }
 
-// Type miroir de la table lot_documents (007_lots.sql + 014_lot_documents_file.sql)
+// Type miroir de la table lot_document_files (051_multi_file_documents.sql)
+export interface LotDocumentFile {
+  id: string
+  lot_document_id: string
+  file_url: string
+  file_name: string
+  created_at: string
+}
+
+// Type miroir de la table lot_documents (007_lots.sql + 014_lot_documents_file.sql + 051_multi_file_documents.sql)
 export interface LotDocument {
   id: string
   lot_id: string
   nom: string
   is_required: boolean
+  allow_multiple: boolean
   file_url: string | null
   file_name: string | null
   created_at: string
+  lot_document_files?: LotDocumentFile[]
 }
 
 // Type miroir de la table notes (011_notes.sql)

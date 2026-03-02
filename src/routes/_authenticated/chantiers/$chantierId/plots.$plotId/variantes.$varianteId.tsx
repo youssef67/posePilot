@@ -32,6 +32,7 @@ import { useDeleteVariante } from '@/lib/mutations/useDeleteVariante'
 import { useAddVarianteDocument } from '@/lib/mutations/useAddVarianteDocument'
 import { useDeleteVarianteDocument } from '@/lib/mutations/useDeleteVarianteDocument'
 import { useToggleDocumentRequired } from '@/lib/mutations/useToggleDocumentRequired'
+import { useToggleAllowMultiple } from '@/lib/mutations/useToggleAllowMultiple'
 import { useUpdateVariantePieceTasks } from '@/lib/mutations/useUpdateVariantePieceTasks'
 import { useVariantes } from '@/lib/queries/useVariantes'
 
@@ -54,6 +55,7 @@ function VarianteDetailPage() {
   const addDocument = useAddVarianteDocument()
   const deleteDocument = useDeleteVarianteDocument()
   const toggleRequired = useToggleDocumentRequired()
+  const toggleAllowMultiple = useToggleAllowMultiple()
   const updatePieceTasks = useUpdateVariantePieceTasks()
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -347,6 +349,17 @@ function VarianteDetailPage() {
                   <span className="text-sm font-medium text-foreground">{doc.nom}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <Switch
+                    id={`multi-${doc.id}`}
+                    checked={doc.allow_multiple}
+                    onCheckedChange={(checked) =>
+                      toggleAllowMultiple.mutate({ docId: doc.id, allowMultiple: checked, varianteId })
+                    }
+                    aria-label={`Multi-fichier ${doc.nom}`}
+                  />
+                  <Label htmlFor={`multi-${doc.id}`} className="text-xs whitespace-nowrap">
+                    Multi
+                  </Label>
                   <Switch
                     id={`doc-${doc.id}`}
                     checked={doc.is_required}

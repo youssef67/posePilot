@@ -53,7 +53,7 @@ describe('useLotDocuments', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(supabase.from).toHaveBeenCalledWith('lot_documents')
-    expect(mockSelect).toHaveBeenCalledWith('*')
+    expect(mockSelect).toHaveBeenCalledWith('*, lot_document_files(*)')
     expect(mockEq).toHaveBeenCalledWith('lot_id', 'lot-1')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: true })
     expect(result.current.data).toEqual(mockDocuments)

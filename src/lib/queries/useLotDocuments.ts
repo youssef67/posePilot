@@ -7,7 +7,7 @@ export function useLotDocuments(lotId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lot_documents')
-        .select('*')
+        .select('*, lot_document_files(*)')
         .eq('lot_id', lotId)
         .order('created_at', { ascending: true })
       if (error) throw error

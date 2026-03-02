@@ -236,7 +236,11 @@ function LotIndexPage() {
   }
 
   const missingDocs = useMemo(
-    () => documents?.filter(d => d.is_required && !d.file_url) ?? [],
+    () => documents?.filter(d => {
+      if (!d.is_required) return false
+      if (d.allow_multiple) return (d.lot_document_files ?? []).length === 0
+      return !d.file_url
+    }) ?? [],
     [documents],
   )
 

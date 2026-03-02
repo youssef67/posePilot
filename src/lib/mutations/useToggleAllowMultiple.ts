@@ -4,35 +4,23 @@ import type { Database } from '@/types/database'
 
 type VarianteDocumentRow = Database['public']['Tables']['variante_documents']['Row']
 
-export function useAddVarianteDocument() {
+export function useToggleAllowMultiple() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ varianteId, nom }: { varianteId: string; nom: string }) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ docId, allowMultiple }: { docId: string; allowMultiple: boolean; varianteId: string }) => {
+      const { error } = await supabase
         .from('variante_documents')
-        .insert({ variante_id: varianteId, nom })
-        .select()
-        .single()
+        .update({ allow_multiple: allowMultiple })
+        .eq('id', docId)
       if (error) throw error
-      return data
     },
-    onMutate: async ({ varianteId, nom }) => {
+    onMutate: async ({ docId, allowMultiple, varianteId }) => {
       await queryClient.cancelQueries({ queryKey: ['variante-documents', varianteId] })
       const previous = queryClient.getQueryData<VarianteDocumentRow[]>(['variante-documents', varianteId])
       queryClient.setQueryData<VarianteDocumentRow[]>(
         ['variante-documents', varianteId],
-        (old) => [
-          ...(old ?? []),
-          {
-            id: crypto.randomUUID(),
-            variante_id: varianteId,
-            nom,
-            is_required: false,
-            allow_multiple: false,
-            created_at: new Date().toISOString(),
-          },
-        ],
+        (old) => old?.map((d) => (d.id === docId ? { ...d, allow_multiple: allowMultiple } : d)),
       )
       return { previous }
     },
