@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +28,8 @@ import { useUpdateLot } from '@/lib/mutations/useUpdateLot'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
 import { useDeleteLotPiece } from '@/lib/mutations/useDeleteLotPiece'
 import { useUploadLotPhoto } from '@/lib/mutations/useUploadLotPhoto'
+import { useUpdateLotCoutMateriaux } from '@/lib/mutations/useUpdateLotCoutMateriaux'
+import { formatEUR } from '@/lib/utils/formatEUR'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,7 +95,10 @@ function LotIndexPage() {
   const [photoUploadProgress, setPhotoUploadProgress] = useState<number | undefined>(undefined)
   const deleteLots = useDeleteLots()
   const deletePiece = useDeleteLotPiece()
+  const updateCoutMateriaux = useUpdateLotCoutMateriaux()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [editingCout, setEditingCout] = useState(false)
+  const [editCoutValue, setEditCoutValue] = useState('')
   const [pieceToDelete, setPieceToDelete] = useState<{ id: string; nom: string } | null>(null)
 
   const [editMode, setEditMode] = useState(false)
@@ -490,6 +495,78 @@ function LotIndexPage() {
             <p className="text-sm text-muted-foreground">
               {lot.variantes?.nom ?? 'Variante'} · {lot.etages?.nom ?? 'Étage'}
             </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              {editingCout ? (
+                <>
+                  <Banknote className="size-4 text-muted-foreground shrink-0" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editCoutValue}
+                    onChange={(e) => setEditCoutValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = parseFloat(editCoutValue) || 0
+                        updateCoutMateriaux.mutate(
+                          { lotId, plotId, chantierId, cout_materiaux: val },
+                          {
+                            onSuccess: () => { setEditingCout(false); toast('Coût matériaux mis à jour') },
+                            onError: () => toast.error('Erreur lors de la mise à jour'),
+                          },
+                        )
+                      }
+                      if (e.key === 'Escape') setEditingCout(false)
+                    }}
+                    autoFocus
+                    className="h-8 w-32 text-sm"
+                    aria-label="Coût matériaux"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    aria-label="Valider le coût"
+                    disabled={updateCoutMateriaux.isPending}
+                    onClick={() => {
+                      const val = parseFloat(editCoutValue) || 0
+                      updateCoutMateriaux.mutate(
+                        { lotId, plotId, chantierId, cout_materiaux: val },
+                        {
+                          onSuccess: () => { setEditingCout(false); toast('Coût matériaux mis à jour') },
+                          onError: () => toast.error('Erreur lors de la mise à jour'),
+                        },
+                      )
+                    }}
+                  >
+                    <Check className="size-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    aria-label="Annuler"
+                    onClick={() => setEditingCout(false)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => {
+                    setEditCoutValue(String(lot.cout_materiaux ?? 0))
+                    setEditingCout(true)
+                  }}
+                  aria-label="Modifier le coût matériaux"
+                >
+                  <Banknote className="size-4" />
+                  <span>{formatEUR(lot.cout_materiaux ?? 0)}</span>
+                  <Pencil className="size-3" />
+                </button>
+              )}
+            </div>
             <div className="mt-2">
               <BadgeSelector
                 lotId={lotId}

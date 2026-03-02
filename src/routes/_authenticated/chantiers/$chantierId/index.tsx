@@ -63,6 +63,7 @@ import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllB
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
+import { formatEURCompact } from '@/lib/utils/formatEUR'
 import type { Besoin } from '@/types/database'
 
 export const Route = createFileRoute(
@@ -558,6 +559,7 @@ function ChantierIndexPage() {
               totalDepenses={totalDepenses}
               ajustementDepenses={chantier.ajustement_depenses}
               coutSousTraitance={chantier.cout_sous_traitance}
+              coutMateriaux={chantier.cout_materiaux_total}
               onEditFinances={handleOpenFinancesSheet}
             />
 
@@ -662,6 +664,7 @@ function ChantierIndexPage() {
               totalDepenses={totalDepenses}
               ajustementDepenses={chantier.ajustement_depenses}
               coutSousTraitance={chantier.cout_sous_traitance}
+              coutMateriaux={chantier.cout_materiaux_total}
               onEditFinances={handleOpenFinancesSheet}
             />
 
@@ -693,7 +696,10 @@ function ChantierIndexPage() {
                             key={plot.id}
                             title={plot.nom}
                             subtitle={`${plot.lots_count} lot${plot.lots_count !== 1 ? 's' : ''}`}
-                            secondaryInfo={formatMetrage(plot.metrage_m2_total ?? 0, plot.metrage_ml_total ?? 0)}
+                            secondaryInfo={[
+                              formatMetrage(plot.metrage_m2_total ?? 0, plot.metrage_ml_total ?? 0),
+                              (plot.cout_materiaux_total ?? 0) > 0 ? formatEURCompact(plot.cout_materiaux_total) : undefined,
+                            ].filter(Boolean).join(' · ') || undefined}
                             statusColor={STATUS_COLORS[computeStatus(plot.progress_done, plot.progress_total)]}
                             indicator={plot.progress_total > 0 ? `${pct} %` : undefined}
                             isBlocked={plot.has_blocking_note}

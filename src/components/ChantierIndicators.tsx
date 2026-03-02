@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Banknote, Calendar, Hammer, HardHat, Package, Pencil, Ruler } from 'lucide-react'
+import { Banknote, Boxes, Calendar, Hammer, HardHat, Package, Pencil, Ruler } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import type { LotPretACarreler, MetrageVsInventaire } from '@/lib/utils/computeChantierIndicators'
@@ -16,6 +16,7 @@ interface ChantierIndicatorsProps {
   totalDepenses?: number | null
   ajustementDepenses?: number
   coutSousTraitance?: number
+  coutMateriaux?: number
   onEditFinances?: () => void
 }
 
@@ -33,11 +34,13 @@ export function ChantierIndicators({
   totalDepenses,
   ajustementDepenses = 0,
   coutSousTraitance = 0,
+  coutMateriaux = 0,
   onEditFinances,
 }: ChantierIndicatorsProps) {
   const totalAvecAjustement = (totalDepenses ?? 0) + ajustementDepenses
   const showDepenses = totalAvecAjustement > 0 || ajustementDepenses !== 0
   const showSousTraitance = coutSousTraitance > 0
+  const showMateriaux = coutMateriaux > 0
   const showLots = lotsPretsACarreler && lotsPretsACarreler.length > 0
   const showMetrage =
     metrageVsInventaire &&
@@ -49,13 +52,13 @@ export function ChantierIndicators({
 
   const showFinanceEditButton = onEditFinances != null
 
-  if (!showDepenses && !showSousTraitance && !showLots && !showMetrage && !showBesoins && !showLivraisons && !showFinanceEditButton) {
+  if (!showDepenses && !showSousTraitance && !showMateriaux && !showLots && !showMetrage && !showBesoins && !showLivraisons && !showFinanceEditButton) {
     return null
   }
 
   return (
     <div className="rounded-lg border border-border p-3 space-y-3 mb-4" data-testid="chantier-indicators">
-      {(showDepenses || showSousTraitance || showFinanceEditButton) && (
+      {(showDepenses || showMateriaux || showSousTraitance || showFinanceEditButton) && (
         <div>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -68,6 +71,12 @@ export function ChantierIndicators({
                       (ajust. {ajustementDepenses > 0 ? '+' : ''}{formatEUR.format(ajustementDepenses)})
                     </span>
                   )}
+                </p>
+              )}
+              {showMateriaux && (
+                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                  <Boxes className="size-4" />
+                  {formatEUR.format(coutMateriaux)} matériaux
                 </p>
               )}
               {showSousTraitance && (

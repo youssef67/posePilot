@@ -255,4 +255,29 @@ describe('ChantierIndicators', () => {
     )
     expect(screen.queryByRole('button', { name: /modifier les finances/i })).not.toBeInTheDocument()
   })
+
+  it('shows matériaux line when coutMateriaux > 0', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={0}
+        livraisonsPrevues={[]}
+        coutMateriaux={8750}
+      />,
+    )
+    expect(screen.getByText(/8[\s\u202f]750,00/)).toBeInTheDocument()
+    expect(screen.getByText(/matériaux/)).toBeInTheDocument()
+  })
+
+  it('hides matériaux line when coutMateriaux is 0', () => {
+    render(
+      <ChantierIndicators
+        chantierId="ch-1"
+        besoinsEnAttente={1}
+        livraisonsPrevues={[]}
+        coutMateriaux={0}
+      />,
+    )
+    expect(screen.queryByText(/matériaux/)).not.toBeInTheDocument()
+  })
 })

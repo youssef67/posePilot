@@ -16,6 +16,7 @@ export type Database = {
           has_open_reservation: boolean
           ajustement_depenses: number
           cout_sous_traitance: number
+          cout_materiaux_total: number
           memo_count: number
           created_at: string
           created_by: string | null
@@ -31,6 +32,7 @@ export type Database = {
           has_open_reservation?: boolean
           ajustement_depenses?: number
           cout_sous_traitance?: number
+          cout_materiaux_total?: number
           memo_count?: number
           created_at?: string
           created_by?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           has_open_reservation?: boolean
           ajustement_depenses?: number
           cout_sous_traitance?: number
+          cout_materiaux_total?: number
           memo_count?: number
           created_at?: string
           created_by?: string | null
@@ -65,6 +68,7 @@ export type Database = {
           has_open_reservation: boolean
           metrage_m2_total: number
           metrage_ml_total: number
+          cout_materiaux_total: number
         }
         Insert: {
           id?: string
@@ -78,6 +82,7 @@ export type Database = {
           has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
+          cout_materiaux_total?: number
         }
         Update: {
           id?: string
@@ -91,6 +96,7 @@ export type Database = {
           has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
+          cout_materiaux_total?: number
         }
         Relationships: []
       }
@@ -178,6 +184,7 @@ export type Database = {
           has_open_reservation: boolean
           metrage_m2_total: number
           metrage_ml_total: number
+          cout_materiaux_total: number
         }
         Insert: {
           id?: string
@@ -190,6 +197,7 @@ export type Database = {
           has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
+          cout_materiaux_total?: number
         }
         Update: {
           id?: string
@@ -202,6 +210,7 @@ export type Database = {
           has_open_reservation?: boolean
           metrage_m2_total?: number
           metrage_ml_total?: number
+          cout_materiaux_total?: number
         }
         Relationships: []
       }
@@ -223,6 +232,7 @@ export type Database = {
           metrage_ml_total: number
           plinth_status: string
           has_inventaire: boolean
+          cout_materiaux: number
         }
         Insert: {
           id?: string
@@ -241,6 +251,7 @@ export type Database = {
           metrage_ml_total?: number
           plinth_status?: string
           has_inventaire?: boolean
+          cout_materiaux?: number
         }
         Update: {
           id?: string
@@ -259,6 +270,7 @@ export type Database = {
           metrage_ml_total?: number
           plinth_status?: string
           has_inventaire?: boolean
+          cout_materiaux?: number
         }
         Relationships: []
       }

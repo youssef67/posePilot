@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Hammer } from 'lucide-react'
+import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { usePlots } from '@/lib/queries/usePlots'
 import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
 import { findLotsPretsACarreler } from '@/lib/utils/computeChantierIndicators'
@@ -533,6 +534,7 @@ function PlotIndexPage() {
         progress_total: etage.progress_total,
         has_blocking_note: etage.has_blocking_note,
         has_open_reservation: etage.has_open_reservation,
+        cout_materiaux_total: etage.cout_materiaux_total ?? 0,
         badgeCounts: [...badgeCounts.values()],
       }
     })
@@ -685,6 +687,7 @@ function PlotIndexPage() {
                     <StatusCard
                       title={etage.nom}
                       subtitle={`${etage.lotCount} lot${etage.lotCount !== 1 ? 's' : ''}`}
+                      secondaryInfo={etage.cout_materiaux_total > 0 ? formatEURCompact(etage.cout_materiaux_total) : undefined}
                       statusColor={STATUS_COLORS[computeStatus(etage.progress_done, etage.progress_total)]}
                       indicator={etage.progress_total > 0 ? `${pct} %` : undefined}
                       isBlocked={etage.has_blocking_note}

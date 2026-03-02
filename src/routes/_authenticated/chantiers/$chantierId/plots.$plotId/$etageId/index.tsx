@@ -42,6 +42,7 @@ import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
 import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
+import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { PlinthStatus } from '@/types/enums'
 import { Fab } from '@/components/Fab'
 
@@ -411,7 +412,10 @@ function EtageIndexPage() {
                         <StatusCard
                           title={`Lot ${lot.code}`}
                           subtitle={`${lot.variantes?.nom ?? 'Variante'} · ${pieceCount} pièce${pieceCount !== 1 ? 's' : ''}`}
-                          secondaryInfo={formatMetrage(lot.metrage_m2_total ?? 0, lot.metrage_ml_total ?? 0)}
+                          secondaryInfo={[
+                            formatMetrage(lot.metrage_m2_total ?? 0, lot.metrage_ml_total ?? 0),
+                            (lot.cout_materiaux ?? 0) > 0 ? formatEURCompact(lot.cout_materiaux) : undefined,
+                          ].filter(Boolean).join(' · ') || undefined}
                           statusColor={STATUS_COLORS[computeStatus(lot.progress_done, lot.progress_total)]}
                           indicator={`${lot.progress_done}/${lot.progress_total}`}
                           isBlocked={lot.has_blocking_note}
