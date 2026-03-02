@@ -118,7 +118,12 @@ function HomePage() {
                   </Badge>
                 }
                 indicator={indicator}
-                secondaryInfo={depenses ? montantFormatter.format(depenses * 1.2) : undefined}
+                secondaryInfo={[
+                  depenses ? montantFormatter.format(depenses * 1.2) : undefined,
+                  (chantier as ChantierRow).cout_materiaux_total > 0
+                    ? `Mat. ${montantFormatter.format((chantier as ChantierRow).cout_materiaux_total)}`
+                    : undefined,
+                ].filter(Boolean).join(' · ') || undefined}
                 statusColor={STATUS_COLORS[computeStatus(chantier.progress_done, chantier.progress_total)]}
                 isBlocked={chantier.has_blocking_note}
                 hasMemos={(chantier as ChantierRow).memo_count > 0}
