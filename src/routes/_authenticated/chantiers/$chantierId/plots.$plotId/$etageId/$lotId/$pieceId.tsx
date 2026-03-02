@@ -371,6 +371,7 @@ function PiecePage() {
                         tacheId: tache.id,
                         status: newStatus,
                         lotId,
+                        plotId,
                       })
                     }
                   />

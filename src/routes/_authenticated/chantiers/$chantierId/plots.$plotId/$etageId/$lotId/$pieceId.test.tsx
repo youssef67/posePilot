@@ -434,6 +434,7 @@ describe('PiecePage', () => {
       tacheId: 't3',
       status: 'in_progress',
       lotId: 'lot-1',
+      plotId: 'plot-1',
     })
   })
 

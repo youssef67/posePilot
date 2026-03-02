@@ -8,7 +8,7 @@ export function useUpdateTaskStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ tacheId, status }: { tacheId: string; status: TaskStatus; lotId: string }) => {
+    mutationFn: async ({ tacheId, status }: { tacheId: string; status: TaskStatus; lotId: string; plotId: string }) => {
       const { data, error } = await supabase
         .from('taches')
         .update({ status })
@@ -37,8 +37,9 @@ export function useUpdateTaskStatus() {
       queryClient.setQueryData(['pieces', lotId], context?.previous)
       toast.error('Impossible de mettre à jour le statut')
     },
-    onSettled: (_data, _err, { lotId }) => {
+    onSettled: (_data, _err, { lotId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['pieces', lotId] })
+      queryClient.invalidateQueries({ queryKey: ['lots', plotId] })
     },
   })
 }
