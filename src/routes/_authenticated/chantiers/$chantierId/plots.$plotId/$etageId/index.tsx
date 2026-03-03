@@ -40,6 +40,7 @@ import { useCreateLot } from '@/lib/mutations/useCreateLot'
 import { useCreateBatchLots } from '@/lib/mutations/useCreateBatchLots'
 import { BreadcrumbNav } from '@/components/BreadcrumbNav'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
+import { useInventaire } from '@/lib/queries/useInventaire'
 import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import { formatEURCompact } from '@/lib/utils/formatEUR'
@@ -78,6 +79,9 @@ function EtageIndexPage() {
   const [batchVarianteMap, setBatchVarianteMap] = useState<Record<string, string>>({})
   const [batchCodeError, setBatchCodeError] = useState('')
   const [batchVarianteError, setBatchVarianteError] = useState('')
+
+  const { data: inventaireItems } = useInventaire(chantierId, { type: 'etage', etageId })
+  const hasInventaire = (inventaireItems?.length ?? 0) > 0
 
   const etage = etages?.find((e) => e.id === etageId)
   const etageLots = useMemo(
@@ -354,7 +358,12 @@ function EtageIndexPage() {
             params={{ chantierId, plotId, etageId }}
             aria-label="Inventaire"
           >
-            <Boxes className="size-5" />
+            <span className="relative">
+              <Boxes className="size-5" />
+              {hasInventaire && (
+                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-orange-400" />
+              )}
+            </span>
           </Link>
         </Button>
       </header>
