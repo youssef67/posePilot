@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Hammer } from 'lucide-react'
+import { ChevronDown, ChevronUp, Hammer } from 'lucide-react'
 import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { usePlots } from '@/lib/queries/usePlots'
 import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
@@ -106,6 +106,7 @@ function PlotIndexPage() {
   const [showDuplicateSheet, setShowDuplicateSheet] = useState(false)
   const [duplicatePlotName, setDuplicatePlotName] = useState('')
   const [duplicateNameError, setDuplicateNameError] = useState('')
+  const [showLotsPretsDetail, setShowLotsPretsDetail] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [newTask, setNewTask] = useState('')
   const [showCreateVarianteSheet, setShowCreateVarianteSheet] = useState(false)
@@ -656,10 +657,29 @@ function PlotIndexPage() {
 
       {lotsPretsPlot.length > 0 && (
         <div className="px-4 pt-3">
-          <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5">
+          <button
+            type="button"
+            className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5 w-full"
+            onClick={() => setShowLotsPretsDetail((v) => !v)}
+          >
             <Hammer className="size-4" />
             {lotsPretsPlot.length} lot{lotsPretsPlot.length > 1 ? 's' : ''} prêt{lotsPretsPlot.length > 1 ? 's' : ''} à carreler
-          </p>
+            {showLotsPretsDetail ? <ChevronUp className="size-4 ml-auto" /> : <ChevronDown className="size-4 ml-auto" />}
+          </button>
+          {showLotsPretsDetail && (
+            <div className="mt-2 flex flex-col gap-1 pl-6">
+              {lotsPretsPlot.map((lot) => (
+                <Link
+                  key={lot.id}
+                  to="/chantiers/$chantierId/plots/$plotId/$etageId/$lotId"
+                  params={{ chantierId, plotId, etageId: lot.etageId, lotId: lot.id }}
+                  className="text-sm text-green-600 dark:text-green-400 hover:underline"
+                >
+                  Lot {lot.code}{lot.etageNom ? ` — ${lot.etageNom}` : ''}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
