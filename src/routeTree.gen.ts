@@ -30,6 +30,7 @@ import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdIndexRouteImport } 
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/index'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/variantes.$varianteId'
+import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/inventaire'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdIndexRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId/index'
 import { Route as AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRouteImport } from './routes/_authenticated/chantiers/$chantierId/plots.$plotId/$etageId/$lotId/$pieceId'
@@ -154,6 +155,15 @@ const AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute =
       getParentRoute: () => AuthenticatedChantiersChantierIdPlotsPlotIdRoute,
     } as any,
   )
+const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute =
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRouteImport.update(
+    {
+      id: '/inventaire',
+      path: '/inventaire',
+      getParentRoute: () =>
+        AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute,
+    } as any,
+  )
 const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute =
   AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteImport.update({
     id: '/$lotId',
@@ -200,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren
   '/chantiers/$chantierId/plots/$plotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
   '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  '/chantiers/$chantierId/plots/$plotId/$etageId/inventaire': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute
   '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
   '/chantiers/$chantierId/plots/$plotId/$etageId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
   '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
@@ -221,6 +232,7 @@ export interface FileRoutesByTo {
   '/chantiers/$chantierId/memos': typeof AuthenticatedChantiersChantierIdMemosRoute
   '/chantiers/$chantierId': typeof AuthenticatedChantiersChantierIdIndexRoute
   '/chantiers/$chantierId/plots/$plotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
+  '/chantiers/$chantierId/plots/$plotId/$etageId/inventaire': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute
   '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
   '/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
   '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
@@ -248,6 +260,7 @@ export interface FileRoutesById {
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteWithChildren
   '/_authenticated/chantiers/$chantierId/plots/$plotId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdIndexRoute
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/inventaire': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute
   '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRoute
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId': typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdPieceIdRoute
@@ -275,6 +288,7 @@ export interface FileRouteTypes {
     | '/chantiers/$chantierId/plots/$plotId/$etageId'
     | '/chantiers/$chantierId/plots/$plotId/'
     | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/inventaire'
     | '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
     | '/chantiers/$chantierId/plots/$plotId/$etageId/'
     | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
@@ -296,6 +310,7 @@ export interface FileRouteTypes {
     | '/chantiers/$chantierId/memos'
     | '/chantiers/$chantierId'
     | '/chantiers/$chantierId/plots/$plotId'
+    | '/chantiers/$chantierId/plots/$plotId/$etageId/inventaire'
     | '/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
     | '/chantiers/$chantierId/plots/$plotId/$etageId'
     | '/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
@@ -322,6 +337,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId'
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/'
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
+    | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/inventaire'
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/variantes/$varianteId'
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/'
     | '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/$pieceId'
@@ -482,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdVariantesVarianteIdRouteImport
       parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdRoute
     }
+    '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/inventaire': {
+      id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/inventaire'
+      path: '/inventaire'
+      fullPath: '/chantiers/$chantierId/plots/$plotId/$etageId/inventaire'
+      preLoaderRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRouteImport
+      parentRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRoute
+    }
     '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId': {
       id: '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId'
       path: '/$lotId'
@@ -526,6 +549,7 @@ const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren =
 
 interface AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren {
   AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren
+  AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute
   AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute: typeof AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute
 }
 
@@ -533,6 +557,8 @@ const AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdRouteChildren: Authentic
   {
     AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRoute:
       AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdLotIdRouteWithChildren,
+    AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute:
+      AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdInventaireRoute,
     AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute:
       AuthenticatedChantiersChantierIdPlotsPlotIdEtageIdIndexRoute,
   }

@@ -35,10 +35,11 @@ export function useUpdateInventaire() {
     },
     onMutate: async (params) => {
       await queryClient.cancelQueries({ queryKey: ['inventaire', params.chantierId] })
-      const previous = queryClient.getQueryData(['inventaire', params.chantierId])
-      queryClient.setQueryData(
-        ['inventaire', params.chantierId],
-        (old: InventaireWithLocation[] | undefined) =>
+      const previousEntries = queryClient.getQueriesData<InventaireWithLocation[]>({
+        queryKey: ['inventaire', params.chantierId],
+      })
+      for (const [key] of previousEntries) {
+        queryClient.setQueryData<InventaireWithLocation[]>(key, (old) =>
           (old ?? []).map((item) => {
             if (item.id !== params.id) return item
             const updated = { ...item }
@@ -49,11 +50,14 @@ export function useUpdateInventaire() {
             if (params.lotId !== undefined) updated.lot_id = params.lotId
             return updated
           }),
-      )
-      return { previous }
+        )
+      }
+      return { previousEntries }
     },
-    onError: (_err, { chantierId }, context) => {
-      queryClient.setQueryData(['inventaire', chantierId], context?.previous)
+    onError: (_err, _params, context) => {
+      for (const [key, data] of context?.previousEntries ?? []) {
+        queryClient.setQueryData(key, data)
+      }
     },
     onSettled: (_data, _error, { chantierId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })

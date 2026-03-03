@@ -15,16 +15,20 @@ export function useDeleteInventaire() {
     },
     onMutate: async ({ id, chantierId }) => {
       await queryClient.cancelQueries({ queryKey: ['inventaire', chantierId] })
-      const previous = queryClient.getQueryData(['inventaire', chantierId])
-      queryClient.setQueryData(
-        ['inventaire', chantierId],
-        (old: InventaireWithLocation[] | undefined) =>
+      const previousEntries = queryClient.getQueriesData<InventaireWithLocation[]>({
+        queryKey: ['inventaire', chantierId],
+      })
+      for (const [key] of previousEntries) {
+        queryClient.setQueryData<InventaireWithLocation[]>(key, (old) =>
           (old ?? []).filter((item) => item.id !== id),
-      )
-      return { previous }
+        )
+      }
+      return { previousEntries }
     },
-    onError: (_err, { chantierId }, context) => {
-      queryClient.setQueryData(['inventaire', chantierId], context?.previous)
+    onError: (_err, _params, context) => {
+      for (const [key, data] of context?.previousEntries ?? []) {
+        queryClient.setQueryData(key, data)
+      }
     },
     onSettled: (_data, _error, { chantierId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })

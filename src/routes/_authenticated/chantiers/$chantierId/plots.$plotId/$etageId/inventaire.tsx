@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
@@ -12,6 +12,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Fab } from '@/components/Fab'
 import { InventaireList } from '@/components/InventaireList'
 import { TransferSheet } from '@/components/TransferSheet'
@@ -20,28 +27,37 @@ import { useCreateInventaire } from '@/lib/mutations/useCreateInventaire'
 import { useUpdateInventaire } from '@/lib/mutations/useUpdateInventaire'
 import { useDeleteInventaire } from '@/lib/mutations/useDeleteInventaire'
 import { useInventaire } from '@/lib/queries/useInventaire'
-import { useChantier } from '@/lib/queries/useChantier'
+import { useEtages } from '@/lib/queries/useEtages'
+import { useLots } from '@/lib/queries/useLots'
 import type { InventaireWithLocation } from '@/lib/queries/useInventaire'
 
 export const Route = createFileRoute(
-  '/_authenticated/chantiers/$chantierId/inventaire',
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/inventaire',
 )({
-  component: InventairePage,
+  component: EtageInventairePage,
 })
 
-function InventairePage() {
-  const { chantierId } = Route.useParams()
-  const { data: chantier } = useChantier(chantierId)
-  const { data: items, isLoading } = useInventaire(chantierId, { type: 'general' })
+function EtageInventairePage() {
+  const { chantierId, plotId, etageId } = Route.useParams()
+  const { data: etages } = useEtages(plotId)
+  const etage = etages?.find((e) => e.id === etageId)
+  const { data: items, isLoading } = useInventaire(chantierId, { type: 'etage', etageId })
   useRealtimeInventaire(chantierId)
   const createInventaire = useCreateInventaire()
   const updateInventaire = useUpdateInventaire()
   const deleteInventaire = useDeleteInventaire()
 
+  const { data: allLots } = useLots(plotId)
+  const etageLots = useMemo(
+    () => allLots?.filter((l) => l.etage_id === etageId) ?? [],
+    [allLots, etageId],
+  )
+
   const [showSheet, setShowSheet] = useState(false)
   const [editingItem, setEditingItem] = useState<InventaireWithLocation | null>(null)
   const [designation, setDesignation] = useState('')
   const [quantite, setQuantite] = useState('1')
+  const [selectedLotId, setSelectedLotId] = useState('')
   const [errors, setErrors] = useState<{ designation?: string; quantite?: string }>({})
   const [transferItem, setTransferItem] = useState<InventaireWithLocation | null>(null)
   const [showTransferSheet, setShowTransferSheet] = useState(false)
@@ -50,6 +66,7 @@ function InventairePage() {
     setEditingItem(null)
     setDesignation('')
     setQuantite('1')
+    setSelectedLotId('')
     setErrors({})
     setShowSheet(true)
   }
@@ -58,6 +75,7 @@ function InventairePage() {
     setEditingItem(item)
     setDesignation(item.designation)
     setQuantite(String(item.quantite))
+    setSelectedLotId(item.lot_id ?? '')
     setErrors({})
     setShowSheet(true)
   }
@@ -86,6 +104,7 @@ function InventairePage() {
           chantierId,
           designation: trimmedDesignation,
           quantite: qty,
+          lotId: selectedLotId && selectedLotId !== 'none' ? selectedLotId : null,
         },
         {
           onSuccess: () => {
@@ -99,9 +118,9 @@ function InventairePage() {
       createInventaire.mutate(
         {
           chantierId,
-          plotId: null,
-          etageId: null,
-          lotId: null,
+          plotId,
+          etageId,
+          lotId: selectedLotId && selectedLotId !== 'none' ? selectedLotId : null,
           designation: trimmedDesignation,
           quantite: qty,
         },
@@ -156,15 +175,15 @@ function InventairePage() {
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <Button variant="ghost" size="icon" asChild>
           <Link
-            to="/chantiers/$chantierId"
-            params={{ chantierId }}
+            to="/chantiers/$chantierId/plots/$plotId/$etageId"
+            params={{ chantierId, plotId, etageId }}
             aria-label="Retour"
           >
             <ArrowLeft className="size-5" />
           </Link>
         </Button>
         <h1 className="text-lg font-semibold text-foreground truncate">
-          Stockage général{chantier ? ` — ${chantier.nom}` : ''}
+          Inventaire{etage ? ` — ${etage.nom}` : ''}
         </h1>
       </header>
 
@@ -185,7 +204,7 @@ function InventairePage() {
           onDecrement={handleDecrement}
           onDelete={handleDelete}
           onTransfer={handleTransfer}
-          transferLabel="Transférer"
+          transferLabel="Retourner"
         />
 
         <Fab onClick={handleOpenSheet} />
@@ -198,7 +217,7 @@ function InventairePage() {
             <SheetDescription>
               {editingItem
                 ? 'Modifiez les informations du matériel.'
-                : 'Ajoutez du matériel au stockage général.'}
+                : `Ajoutez du matériel à l'inventaire${etage ? ` de ${etage.nom}` : ''}.`}
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 space-y-4">
@@ -240,6 +259,24 @@ function InventairePage() {
                 <p className="text-sm text-destructive mt-1">{errors.quantite}</p>
               )}
             </div>
+            {etageLots.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-foreground">Lot (optionnel)</label>
+                <Select value={selectedLotId} onValueChange={setSelectedLotId}>
+                  <SelectTrigger aria-label="Sélectionner un lot">
+                    <SelectValue placeholder="Aucun lot" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun lot</SelectItem>
+                    {etageLots.map((lot) => (
+                      <SelectItem key={lot.id} value={lot.id}>
+                        Lot {lot.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <SheetFooter>
             <Button
@@ -257,7 +294,7 @@ function InventairePage() {
         open={showTransferSheet}
         onOpenChange={setShowTransferSheet}
         item={transferItem}
-        direction="to-etage"
+        direction="to-general"
         chantierId={chantierId}
       />
     </div>

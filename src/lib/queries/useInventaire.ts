@@ -8,14 +8,26 @@ export interface InventaireWithLocation extends Inventaire {
   lots: { code: string } | null
 }
 
-export function useInventaire(chantierId: string) {
+export type InventaireScope =
+  | { type: 'general' }
+  | { type: 'etage'; etageId: string }
+
+export function useInventaire(chantierId: string, scope?: InventaireScope) {
   return useQuery({
-    queryKey: ['inventaire', chantierId],
+    queryKey: ['inventaire', chantierId, scope ?? 'all'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('inventaire')
         .select('*, plots(nom), etages(nom), lots(code)')
         .eq('chantier_id', chantierId)
+
+      if (scope?.type === 'general') {
+        query = query.is('plot_id', null).is('etage_id', null)
+      } else if (scope?.type === 'etage') {
+        query = query.eq('etage_id', scope.etageId)
+      }
+
+      const { data, error } = await query
         .order('designation', { ascending: true })
         .order('created_at', { ascending: false })
 

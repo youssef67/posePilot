@@ -902,6 +902,15 @@ export type Database = {
         }
         Returns: string
       }
+      transfer_inventaire: {
+        Args: {
+          p_source_id: string
+          p_quantity: number
+          p_target_plot_id: string | null
+          p_target_etage_id: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       chantier_type: 'complet' | 'leger'

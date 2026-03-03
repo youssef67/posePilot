@@ -36,28 +36,24 @@ const mockEtages = [
   { id: 'e1', plot_id: 'p1', nom: 'RDC', order_index: 0, progress_done: 0, progress_total: 0, created_at: '2026-01-01' },
 ]
 
-const mockLots = [
-  { id: 'lot1', etage_id: 'e1', plot_id: 'p1', code: '101', variante_id: 'v1', position: 1, progress_done: 0, progress_total: 0, has_blocking_note: false, has_open_reservation: false, has_missing_docs: false, has_inventaire: false, metrage_m2_total: 0, metrage_ml_total: 0, plinth_status: 'non_commandees', created_at: '2026-01-01', etages: { nom: 'RDC' }, variantes: { nom: 'T2' }, pieces: [{ count: 0 }], lot_badge_assignments: [] },
-]
-
-const mockInventaire = [
+const mockInventaireGeneral = [
   {
     id: 'inv1',
     chantier_id: 'abc-123',
-    plot_id: 'p1',
-    etage_id: 'e1',
+    plot_id: null,
+    etage_id: null,
     lot_id: null,
     designation: 'Colle faïence 20kg',
     quantite: 12,
     created_at: '2026-02-10T10:00:00Z',
     created_by: 'user-1',
-    plots: { nom: 'Plot A' },
-    etages: { nom: 'RDC' },
+    plots: null,
+    etages: null,
     lots: null,
   },
 ]
 
-function setupMocks(inventaire: unknown[] = [], lots: unknown[] = []) {
+function setupMocks(inventaire: unknown[] = []) {
   vi.mocked(supabase.from).mockImplementation((table: string) => {
     if (table === 'chantiers') {
       return {
@@ -69,12 +65,14 @@ function setupMocks(inventaire: unknown[] = [], lots: unknown[] = []) {
       } as never
     }
     if (table === 'inventaire') {
+      const orderFn2 = vi.fn().mockResolvedValue({ data: inventaire, error: null })
+      const orderFn1 = vi.fn().mockReturnValue({ order: orderFn2 })
+      const isFn = vi.fn().mockReturnValue({ is: vi.fn().mockReturnValue({ order: orderFn1 }) })
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: inventaire, error: null }),
-            }),
+            is: isFn,
+            order: orderFn1,
           }),
         }),
       } as never
@@ -97,15 +95,6 @@ function setupMocks(inventaire: unknown[] = [], lots: unknown[] = []) {
         }),
       } as never
     }
-    if (table === 'lots') {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: lots, error: null }),
-          }),
-        }),
-      } as never
-    }
     return {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -116,7 +105,7 @@ function setupMocks(inventaire: unknown[] = [], lots: unknown[] = []) {
   })
 }
 
-describe('InventairePage', () => {
+describe('InventairePage — Stockage général', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
@@ -126,7 +115,7 @@ describe('InventairePage', () => {
     setupMocks()
     renderRoute('/chantiers/abc-123/inventaire')
 
-    expect(await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Stockage général — Les Oliviers/ })).toBeInTheDocument()
   })
 
   it('shows empty state when no inventaire items', async () => {
@@ -138,7 +127,7 @@ describe('InventairePage', () => {
   })
 
   it('shows inventaire items in aggregated mode', async () => {
-    setupMocks(mockInventaire)
+    setupMocks(mockInventaireGeneral)
     renderRoute('/chantiers/abc-123/inventaire')
 
     expect(await screen.findByText('Colle faïence 20kg')).toBeInTheDocument()
@@ -150,7 +139,7 @@ describe('InventairePage', () => {
     setupMocks()
     renderRoute('/chantiers/abc-123/inventaire')
 
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await screen.findByRole('heading', { name: /Stockage général — Les Oliviers/ })
     expect(screen.getByRole('button', { name: 'Ajouter' })).toBeInTheDocument()
   })
 
@@ -158,7 +147,7 @@ describe('InventairePage', () => {
     setupMocks()
     renderRoute('/chantiers/abc-123/inventaire')
 
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await screen.findByRole('heading', { name: /Stockage général — Les Oliviers/ })
     expect(screen.getByRole('link', { name: 'Retour' })).toHaveAttribute(
       'href',
       '/chantiers/abc-123',
@@ -166,24 +155,28 @@ describe('InventairePage', () => {
   })
 })
 
-describe('InventairePage — Sheet creation', () => {
+describe('InventairePage — Sheet creation (stockage général)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
   })
 
-  it('opens creation sheet when FAB is clicked', async () => {
+  it('opens creation sheet with simplified form (no plot/étage selectors)', async () => {
     const user = userEvent.setup()
     setupMocks()
     renderRoute('/chantiers/abc-123/inventaire')
 
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await screen.findByRole('heading', { name: /Stockage général — Les Oliviers/ })
     await user.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     expect(await screen.findByText('Nouveau matériel')).toBeInTheDocument()
     expect(screen.getByLabelText('Désignation')).toBeInTheDocument()
     expect(screen.getByLabelText('Quantité')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ajouter le matériel' })).toBeInTheDocument()
+    // No plot/étage selectors in stockage général mode
+    expect(screen.queryByLabelText('Sélectionner un plot')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Sélectionner un étage')).not.toBeInTheDocument()
+    expect(screen.queryByText('Stockage général')).not.toBeInTheDocument()
   })
 
   it('shows designation validation error on empty submit', async () => {
@@ -191,49 +184,13 @@ describe('InventairePage — Sheet creation', () => {
     setupMocks()
     renderRoute('/chantiers/abc-123/inventaire')
 
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
+    await screen.findByRole('heading', { name: /Stockage général — Les Oliviers/ })
     await user.click(screen.getByRole('button', { name: 'Ajouter' }))
     await screen.findByText('Nouveau matériel')
 
     await user.click(screen.getByRole('button', { name: 'Ajouter le matériel' }))
 
     expect(await screen.findByText('La désignation est requise')).toBeInTheDocument()
-  })
-
-  it('shows plot validation error when plot not selected', async () => {
-    const user = userEvent.setup()
-    setupMocks()
-    renderRoute('/chantiers/abc-123/inventaire')
-
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
-    await screen.findByText('Nouveau matériel')
-
-    // Fill designation but leave plot/étage empty
-    const designationInput = screen.getByLabelText('Désignation')
-    await user.type(designationInput, 'Colle test')
-
-    await user.click(screen.getByRole('button', { name: 'Ajouter le matériel' }))
-
-    expect(await screen.findByText('Le plot est requis')).toBeInTheDocument()
-  })
-
-  it('shows étage validation error when étage not selected', async () => {
-    const user = userEvent.setup()
-    setupMocks()
-    renderRoute('/chantiers/abc-123/inventaire')
-
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
-    await screen.findByText('Nouveau matériel')
-
-    // Fill designation but leave étage empty
-    const designationInput = screen.getByLabelText('Désignation')
-    await user.type(designationInput, 'Colle test')
-
-    await user.click(screen.getByRole('button', { name: 'Ajouter le matériel' }))
-
-    expect(await screen.findByText("L'étage est requis")).toBeInTheDocument()
   })
 })
 
@@ -245,7 +202,7 @@ describe('InventairePage — Edit mode', () => {
 
   it('opens edit sheet with pre-filled data when edit button is clicked', async () => {
     const user = userEvent.setup()
-    setupMocks(mockInventaire)
+    setupMocks(mockInventaireGeneral)
     renderRoute('/chantiers/abc-123/inventaire')
 
     await screen.findByText('Colle faïence 20kg')
@@ -259,55 +216,17 @@ describe('InventairePage — Edit mode', () => {
   })
 })
 
-describe('InventairePage — Lot selector (AC3, AC5)', () => {
+describe('InventairePage — Transfer button', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
   })
 
-  it('shows lot selector when plot+étage are pre-selected and lots exist (AC3)', async () => {
-    const user = userEvent.setup()
-    setupMocks([], mockLots)
-    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
+  it('shows transfer button on each item', async () => {
+    setupMocks(mockInventaireGeneral)
+    renderRoute('/chantiers/abc-123/inventaire')
 
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
-    await screen.findByText('Nouveau matériel')
-
-    expect(screen.getByText('Lot (optionnel)')).toBeInTheDocument()
-    expect(screen.getByLabelText('Sélectionner un lot')).toBeInTheDocument()
-  })
-
-  it('hides lot selector when no lots exist for étage', async () => {
-    const user = userEvent.setup()
-    setupMocks([], [])
-    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
-
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
-    await screen.findByText('Nouveau matériel')
-
-    expect(screen.queryByText('Lot (optionnel)')).not.toBeInTheDocument()
-  })
-
-  it('hides lot selector in stockage général mode (AC5)', async () => {
-    const user = userEvent.setup()
-    setupMocks([], mockLots)
-    renderRoute('/chantiers/abc-123/inventaire?plotId=p1&etageId=e1')
-
-    await screen.findByRole('heading', { name: /Inventaire — Les Oliviers/ })
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }))
-    await screen.findByText('Nouveau matériel')
-
-    // Lot selector should be visible initially
-    expect(screen.getByText('Lot (optionnel)')).toBeInTheDocument()
-
-    // Toggle stockage général
-    await user.click(screen.getByRole('switch'))
-
-    // Lot selector should be hidden
-    expect(screen.queryByText('Lot (optionnel)')).not.toBeInTheDocument()
-    // Plot and étage selectors also hidden
-    expect(screen.queryByLabelText('Sélectionner un plot')).not.toBeInTheDocument()
+    await screen.findByText('Colle faïence 20kg')
+    expect(screen.getByRole('button', { name: /Transférer Colle faïence/ })).toBeInTheDocument()
   })
 })

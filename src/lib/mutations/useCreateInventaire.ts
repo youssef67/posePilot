@@ -40,31 +40,35 @@ export function useCreateInventaire() {
     },
     onMutate: async ({ chantierId, plotId, etageId, lotId, designation, quantite }) => {
       await queryClient.cancelQueries({ queryKey: ['inventaire', chantierId] })
-      const previous = queryClient.getQueryData(['inventaire', chantierId])
-      queryClient.setQueryData(
-        ['inventaire', chantierId],
-        (old: InventaireWithLocation[] | undefined) => [
+      const previousEntries = queryClient.getQueriesData<InventaireWithLocation[]>({
+        queryKey: ['inventaire', chantierId],
+      })
+      const newItem: InventaireWithLocation = {
+        id: crypto.randomUUID(),
+        chantier_id: chantierId,
+        plot_id: plotId,
+        etage_id: etageId,
+        lot_id: lotId,
+        designation: designation.trim(),
+        quantite,
+        created_at: new Date().toISOString(),
+        created_by: null,
+        plots: plotId ? { nom: '' } : null,
+        etages: etageId ? { nom: '' } : null,
+        lots: lotId ? { code: '' } : null,
+      }
+      for (const [key] of previousEntries) {
+        queryClient.setQueryData<InventaireWithLocation[]>(key, (old) => [
           ...(old ?? []),
-          {
-            id: crypto.randomUUID(),
-            chantier_id: chantierId,
-            plot_id: plotId,
-            etage_id: etageId,
-            lot_id: lotId,
-            designation: designation.trim(),
-            quantite,
-            created_at: new Date().toISOString(),
-            created_by: null,
-            plots: plotId ? { nom: '' } : null,
-            etages: etageId ? { nom: '' } : null,
-            lots: lotId ? { code: '' } : null,
-          },
-        ],
-      )
-      return { previous }
+          newItem,
+        ])
+      }
+      return { previousEntries }
     },
-    onError: (_err, { chantierId }, context) => {
-      queryClient.setQueryData(['inventaire', chantierId], context?.previous)
+    onError: (_err, _params, context) => {
+      for (const [key, data] of context?.previousEntries ?? []) {
+        queryClient.setQueryData(key, data)
+      }
     },
     onSettled: (_data, _error, { chantierId, plotId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })

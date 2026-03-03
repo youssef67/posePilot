@@ -92,4 +92,43 @@ describe('useInventaire', () => {
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(result.current.error?.message).toBe('DB error')
   })
+
+  it('applies general scope filter (plot_id IS NULL, etage_id IS NULL)', async () => {
+    const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null })
+    const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 })
+    const mockIs2 = vi.fn().mockReturnValue({ order: mockOrder1 })
+    const mockIs1 = vi.fn().mockReturnValue({ is: mockIs2 })
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs1 })
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
+    vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
+
+    const { result } = renderHook(
+      () => useInventaire('ch1', { type: 'general' }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(result.current.isFetching).toBe(false))
+
+    expect(mockIs1).toHaveBeenCalledWith('plot_id', null)
+    expect(mockIs2).toHaveBeenCalledWith('etage_id', null)
+  })
+
+  it('applies etage scope filter (eq etage_id)', async () => {
+    const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null })
+    const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 })
+    const mockEqEtage = vi.fn().mockReturnValue({ order: mockOrder1 })
+    const mockEqChantier = vi.fn().mockReturnValue({ eq: mockEqEtage })
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEqChantier })
+    vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
+
+    const { result } = renderHook(
+      () => useInventaire('ch1', { type: 'etage', etageId: 'e1' }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(result.current.isFetching).toBe(false))
+
+    expect(mockEqChantier).toHaveBeenCalledWith('chantier_id', 'ch1')
+    expect(mockEqEtage).toHaveBeenCalledWith('etage_id', 'e1')
+  })
 })

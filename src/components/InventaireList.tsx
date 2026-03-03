@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Boxes, Minus, Pencil, Plus } from 'lucide-react'
+import { ArrowRightLeft, Boxes, Minus, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -55,6 +55,8 @@ interface InventaireListProps {
   onIncrement: (item: InventaireWithLocation) => void
   onDecrement: (item: InventaireWithLocation) => void
   onDelete: (item: InventaireWithLocation) => void
+  onTransfer?: (item: InventaireWithLocation) => void
+  transferLabel?: string
 }
 
 export function InventaireList({
@@ -66,6 +68,8 @@ export function InventaireList({
   onIncrement,
   onDecrement,
   onDelete,
+  onTransfer,
+  transferLabel = 'Transférer',
 }: InventaireListProps) {
   const [deleteTarget, setDeleteTarget] = useState<InventaireWithLocation | null>(null)
 
@@ -129,6 +133,17 @@ export function InventaireList({
   function renderItemControls(item: InventaireWithLocation) {
     return (
       <div className="flex items-center gap-2">
+        {onTransfer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 min-w-[48px]"
+            onClick={() => onTransfer(item)}
+            aria-label={`${transferLabel} ${item.designation}`}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

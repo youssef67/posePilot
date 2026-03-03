@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CheckSquare, Layers, Package, PackageCheck, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Boxes, CheckSquare, Layers, Package, PackageCheck, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -348,7 +348,15 @@ function EtageIndexPage() {
         <h1 className="text-lg font-semibold text-foreground truncate mx-2">
           {etage.nom}
         </h1>
-        <div className="size-9" />
+        <Button variant="ghost" size="icon" asChild>
+          <Link
+            to="/chantiers/$chantierId/plots/$plotId/$etageId/inventaire"
+            params={{ chantierId, plotId, etageId }}
+            aria-label="Inventaire"
+          >
+            <Boxes className="size-5" />
+          </Link>
+        </Button>
       </header>
 
       <BreadcrumbNav />
