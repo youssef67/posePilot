@@ -1033,6 +1033,7 @@ describe('PlotIndexPage — lots prêts à carreler counter', () => {
         etage_id: 'etage-1',
         metrage_m2_total: 12,
         metrage_ml_total: 8,
+        materiaux_recus: true,
         plots: { nom: 'Plot A' },
         etages: { nom: 'RDC' },
         pieces: [
@@ -1040,9 +1041,9 @@ describe('PlotIndexPage — lots prêts à carreler counter', () => {
             id: 'p-1',
             nom: 'Séjour',
             taches: [
-              { id: 't-1', nom: 'Ragréage', status: 'done' },
-              { id: 't-2', nom: 'Phonique', status: 'done' },
-              { id: 't-3', nom: 'Pose', status: 'not_started' },
+              { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+              { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+              { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
             ],
           },
         ],

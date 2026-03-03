@@ -19,30 +19,44 @@ export interface MetrageVsInventaire {
 }
 
 /**
- * Identifie les lots "prêts à carreler" :
- * - TOUTES les tâches "ragréage" → done
- * - TOUTES les tâches "phonique" → done
- * - TOUTES les tâches "pose" → not_started
- * - Le lot doit avoir au moins 1 tâche de chaque type
+ * Identifie les lots "prêts à carreler" en se basant sur la position des tâches.
+ * Les tâches sont triées par position (prérequis → pose → finitions).
+ *
+ * Pour chaque pièce :
+ * - Toutes les tâches AVANT la première "pose" → done
+ * - Toutes les tâches "pose" → not_started
+ * - Tâches APRÈS la dernière "pose" → ignorées
+ *
+ * Le lot est prêt si toutes ses pièces satisfont cette condition,
+ * qu'il a au moins 1 tâche "pose", et que materiaux_recus === true.
  */
 export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[] {
   return lots
     .filter((lot) => {
-      const allTaches = lot.pieces.flatMap((p) => p.taches)
-      if (allTaches.length === 0) return false
+      if (lot.pieces.length === 0) return false
+      if (lot.materiaux_recus !== true) return false
 
-      const ragreage = allTaches.filter((t) => matchTaskName(t.nom, 'ragreage'))
-      const phonique = allTaches.filter((t) => matchTaskName(t.nom, 'phonique'))
-      const pose = allTaches.filter((t) => matchTaskName(t.nom, 'pose'))
+      let hasAtLeastOnePose = false
 
-      if (ragreage.length === 0 || phonique.length === 0 || pose.length === 0) return false
+      for (const piece of lot.pieces) {
+        const taches = piece.taches
+        const firstPoseIdx = taches.findIndex((t) => isPose(t.nom))
+        if (firstPoseIdx === -1) continue
 
-      return (
-        ragreage.every((t) => t.status === 'done') &&
-        phonique.every((t) => t.status === 'done') &&
-        pose.every((t) => t.status === 'not_started') &&
-        lot.materiaux_recus === true
-      )
+        hasAtLeastOnePose = true
+
+        // All tasks before the first pose must be done
+        const prePose = taches.slice(0, firstPoseIdx)
+        if (!prePose.every((t) => t.status === 'done')) return false
+
+        // All pose tasks must be not_started
+        const poseTaches = taches.filter((t) => isPose(t.nom))
+        if (!poseTaches.every((t) => t.status === 'not_started')) return false
+
+        // Tasks after the last pose are ignored
+      }
+
+      return hasAtLeastOnePose
     })
     .map((lot) => ({
       id: lot.id,
@@ -54,26 +68,18 @@ export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[
     }))
 }
 
-/**
- * RegExps pré-compilées pour le matching des noms de tâches.
- * Word boundaries (\b) évitent les faux positifs (ex: "Repose" ne matche pas "pose").
- */
-const TASK_PATTERNS = {
-  ragreage: /\bragreage\b/,
-  phonique: /\bphonique\b/,
-  pose: /\bpose\b/,
-} as const
+/** Word boundary regex pour "pose" — évite les faux positifs (ex: "Repose"). */
+const POSE_PATTERN = /\bpose\b/
 
 /**
- * Matching insensible à la casse et aux accents.
- * Normalise en supprimant les diacritiques (NFD + remplacement).
+ * Vérifie si un nom de tâche correspond à "pose" (insensible à la casse et aux accents).
  */
-function matchTaskName(nom: string, keyword: keyof typeof TASK_PATTERNS): boolean {
+function isPose(nom: string): boolean {
   const normalized = nom
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-  return TASK_PATTERNS[keyword].test(normalized)
+  return POSE_PATTERN.test(normalized)
 }
 
 /**

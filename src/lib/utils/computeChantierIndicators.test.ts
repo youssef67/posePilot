@@ -20,9 +20,9 @@ function makeLot(overrides: Partial<LotWithTaches> = {}): LotWithTaches {
         id: 'piece-1',
         nom: 'Séjour',
         taches: [
-          { id: 't-1', nom: 'Ragréage', status: 'done' },
-          { id: 't-2', nom: 'Phonique', status: 'done' },
-          { id: 't-3', nom: 'Pose', status: 'not_started' },
+          { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+          { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+          { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
         ],
       },
     ],
@@ -31,7 +31,7 @@ function makeLot(overrides: Partial<LotWithTaches> = {}): LotWithTaches {
 }
 
 describe('findLotsPretsACarreler', () => {
-  it('identifies lot with all ragréage+phonique done and pose not_started', () => {
+  it('identifies lot with all pre-pose tasks done and pose not_started', () => {
     const result = findLotsPretsACarreler([makeLot()])
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
@@ -44,6 +44,38 @@ describe('findLotsPretsACarreler', () => {
     })
   })
 
+  it('identifies lot with no pre-pose tasks (pose directe)', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'Séjour',
+          taches: [
+            { id: 't-1', nom: 'Pose carrelage', status: 'not_started', position: 0 },
+          ],
+        },
+      ],
+    })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(1)
+  })
+
+  it('excludes lot where a pre-pose task is not done', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'Séjour',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'in_progress', position: 0 },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
+          ],
+        },
+      ],
+    })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
+  })
+
   it('excludes lot where pose is in_progress', () => {
     const lot = makeLot({
       pieces: [
@@ -51,41 +83,9 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done' },
-            { id: 't-2', nom: 'Phonique', status: 'done' },
-            { id: 't-3', nom: 'Pose', status: 'in_progress' },
-          ],
-        },
-      ],
-    })
-    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
-  })
-
-  it('excludes lot without ragréage tasks', () => {
-    const lot = makeLot({
-      pieces: [
-        {
-          id: 'p-1',
-          nom: 'Séjour',
-          taches: [
-            { id: 't-2', nom: 'Phonique', status: 'done' },
-            { id: 't-3', nom: 'Pose', status: 'not_started' },
-          ],
-        },
-      ],
-    })
-    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
-  })
-
-  it('excludes lot without phonique tasks', () => {
-    const lot = makeLot({
-      pieces: [
-        {
-          id: 'p-1',
-          nom: 'Séjour',
-          taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done' },
-            { id: 't-3', nom: 'Pose', status: 'not_started' },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+            { id: 't-3', nom: 'Pose', status: 'in_progress', position: 2 },
           ],
         },
       ],
@@ -100,13 +100,31 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done' },
-            { id: 't-2', nom: 'Phonique', status: 'done' },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
           ],
         },
       ],
     })
     expect(findLotsPretsACarreler([lot])).toHaveLength(0)
+  })
+
+  it('ignores post-pose tasks (joints, nettoyage)', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'Séjour',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1 },
+            { id: 't-3', nom: 'Joints', status: 'not_started', position: 2 },
+            { id: 't-4', nom: 'Nettoyage', status: 'not_started', position: 3 },
+          ],
+        },
+      ],
+    })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(1)
   })
 
   it('handles accent variants in task names', () => {
@@ -116,9 +134,8 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'ragreage', status: 'done' },
-            { id: 't-2', nom: 'PHONIQUE', status: 'done' },
-            { id: 't-3', nom: 'Pose carrelage', status: 'not_started' },
+            { id: 't-1', nom: 'ragreage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'POSE carrelage', status: 'not_started', position: 1 },
           ],
         },
       ],
@@ -126,16 +143,15 @@ describe('findLotsPretsACarreler', () => {
     expect(findLotsPretsACarreler([lot])).toHaveLength(1)
   })
 
-  it('does not false-positive on task names containing keywords as substrings', () => {
+  it('does not false-positive on task names containing pose as substring', () => {
     const lot = makeLot({
       pieces: [
         {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done' },
-            { id: 't-2', nom: 'Phonique', status: 'done' },
-            { id: 't-3', nom: 'Repose', status: 'not_started' },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Repose', status: 'not_started', position: 1 },
           ],
         },
       ],
@@ -168,6 +184,30 @@ describe('findLotsPretsACarreler', () => {
   it('includes lot when materiaux_recus is true and all task conditions met', () => {
     const lot = makeLot({ materiaux_recus: true })
     expect(findLotsPretsACarreler([lot])).toHaveLength(1)
+  })
+
+  it('excludes lot when one piece does not satisfy conditions', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'Séjour',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1 },
+          ],
+        },
+        {
+          id: 'p-2',
+          nom: 'Chambre',
+          taches: [
+            { id: 't-3', nom: 'Ragréage', status: 'in_progress', position: 0 },
+            { id: 't-4', nom: 'Pose', status: 'not_started', position: 1 },
+          ],
+        },
+      ],
+    })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
   })
 })
 

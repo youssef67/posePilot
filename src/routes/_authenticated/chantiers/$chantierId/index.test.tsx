@@ -651,6 +651,7 @@ describe('ChantierIndexPage — ChantierIndicators integration', () => {
       etage_id: 'etage-1',
       metrage_m2_total: 12.5,
       metrage_ml_total: 8.2,
+      materiaux_recus: true,
       plots: { nom: 'Plot A' },
       etages: { nom: 'RDC' },
       pieces: [
@@ -658,9 +659,9 @@ describe('ChantierIndexPage — ChantierIndicators integration', () => {
           id: 'piece-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done' },
-            { id: 't-2', nom: 'Phonique', status: 'done' },
-            { id: 't-3', nom: 'Pose', status: 'not_started' },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
           ],
         },
       ],
