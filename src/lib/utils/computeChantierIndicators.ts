@@ -40,7 +40,8 @@ export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[
       return (
         ragreage.every((t) => t.status === 'done') &&
         phonique.every((t) => t.status === 'done') &&
-        pose.every((t) => t.status === 'not_started')
+        pose.every((t) => t.status === 'not_started') &&
+        lot.materiaux_recus === true
       )
     })
     .map((lot) => ({

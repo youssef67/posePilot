@@ -215,6 +215,7 @@ const mockLot = {
   metrage_m2_total: 12.5,
   metrage_ml_total: 8.2,
   plinth_status: 'non_commandees',
+  materiaux_recus: false,
   etages: { nom: 'RDC' },
   variantes: { nom: 'Type A' },
   pieces: [{ count: 3 }],
@@ -633,5 +634,29 @@ describe('LotIndexPage — Notes integration', () => {
 
     expect(await screen.findByText('Nouvelle note')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Écrire une note...')).toBeInTheDocument()
+  })
+})
+
+describe('LotIndexPage — Matériaux reçus badge', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('shows "Matériaux reçus" badge when materiaux_recus is true', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_recus: true }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('materiaux-recus-badge')).toBeInTheDocument()
+    expect(screen.getByText('Matériaux reçus')).toBeInTheDocument()
+  })
+
+  it('does not show "Matériaux reçus" badge when materiaux_recus is false', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_recus: false }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.queryByTestId('materiaux-recus-badge')).not.toBeInTheDocument()
   })
 })

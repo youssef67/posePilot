@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote, PackageCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -565,6 +565,12 @@ function LotIndexPage() {
                   <span>{formatEUR(lot.cout_materiaux ?? 0)}</span>
                   <Pencil className="size-3" />
                 </button>
+              )}
+              {lot.materiaux_recus && (
+                <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400" data-testid="materiaux-recus-badge">
+                  <PackageCheck className="size-3.5" />
+                  Matériaux reçus
+                </span>
               )}
             </div>
             <div className="mt-2">

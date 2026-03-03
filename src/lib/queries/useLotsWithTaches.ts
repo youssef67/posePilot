@@ -21,6 +21,7 @@ export interface LotWithTaches {
   etage_id: string
   metrage_m2_total: number
   metrage_ml_total: number
+  materiaux_recus: boolean
   plots: { nom: string }
   etages: { nom: string } | null
   pieces: PieceInfo[]
@@ -33,7 +34,7 @@ export function useLotsWithTaches(chantierId: string) {
       const { data, error } = await supabase
         .from('lots')
         .select(
-          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position))',
+          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, materiaux_recus, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position))',
         )
         .eq('plots.chantier_id', chantierId)
         .order('code')

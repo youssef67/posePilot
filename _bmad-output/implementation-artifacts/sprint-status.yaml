@@ -129,3 +129,8 @@ development_status:
   10-5-livraison-mixte: done
   10-6-transfert-depot-vers-chantier: done
   10-7-satisfaire-besoin-depuis-depot: done
+
+  # Epic 11: Suivi financier matériaux
+  epic-11: in-progress
+  11-1-cout-materiaux-par-lot: done
+  11-2-reception-materiaux-par-lot: review

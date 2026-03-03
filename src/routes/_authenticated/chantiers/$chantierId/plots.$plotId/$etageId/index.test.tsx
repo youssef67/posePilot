@@ -113,6 +113,14 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
   }),
 }))
 
+const mockMutate = vi.fn()
+vi.mock('@/lib/mutations/useUpdateLotMateriauxRecus', () => ({
+  useUpdateLotMateriauxRecus: () => ({
+    mutate: mockMutate,
+    isPending: false,
+  }),
+}))
+
 vi.mock('@/components/BadgeSelector', () => ({
   BadgeSelector: () => null,
   getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
@@ -179,6 +187,7 @@ const mockLots = [
     metrage_m2_total: 25.5,
     metrage_ml_total: 16.4,
     plinth_status: 'non_commandees',
+    materiaux_recus: false,
     created_at: '2026-01-01T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type A' },
@@ -198,6 +207,7 @@ const mockLots = [
     metrage_m2_total: 0,
     metrage_ml_total: 0,
     plinth_status: 'non_commandees',
+    materiaux_recus: true,
     created_at: '2026-01-02T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type B' },
@@ -707,5 +717,56 @@ describe('EtageIndexPage — Plinth status badge (AC #3, #4)', () => {
 
     await screen.findByText('Lot 001')
     expect(screen.getByText('Faç.')).toBeInTheDocument()
+  })
+})
+
+describe('EtageIndexPage — Matériaux reçus toggle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('renders Package icon for lot with materiaux_recus = false', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByLabelText('Matériaux non reçus lot 001')).toBeInTheDocument()
+  })
+
+  it('renders PackageCheck icon for lot with materiaux_recus = true', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 002')
+    expect(screen.getByLabelText('Matériaux reçus lot 002')).toBeInTheDocument()
+  })
+
+  it('calls mutation on toggle click', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    const toggleBtn = screen.getByLabelText('Matériaux non reçus lot 001')
+    await user.click(toggleBtn)
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      { lotId: 'lot-1', plotId: 'plot-1', materiaux_recus: true },
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
+  })
+
+  it('does not show toggle in selection mode', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    // Enter selection mode
+    await user.click(screen.getByText('Sélectionner'))
+
+    expect(screen.queryByLabelText('Matériaux non reçus lot 001')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Matériaux reçus lot 002')).not.toBeInTheDocument()
   })
 })

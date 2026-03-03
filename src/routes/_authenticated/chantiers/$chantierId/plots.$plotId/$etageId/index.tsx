@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CheckSquare, Layers, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, CheckSquare, Layers, Package, PackageCheck, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,6 +44,7 @@ import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { PlinthStatus } from '@/types/enums'
+import { useUpdateLotMateriauxRecus } from '@/lib/mutations/useUpdateLotMateriauxRecus'
 import { Fab } from '@/components/Fab'
 
 export const Route = createFileRoute(
@@ -59,6 +60,7 @@ function EtageIndexPage() {
   const { data: lots, isLoading: lotsLoading } = useLots(plotId)
   useRealtimeLots(plotId)
   const deleteLots = useDeleteLots()
+  const updateMateriauxRecus = useUpdateLotMateriauxRecus()
   const { data: variantes } = useVariantes(plotId)
   const createLot = useCreateLot()
   const createBatchLots = useCreateBatchLots()
@@ -462,6 +464,34 @@ function EtageIndexPage() {
                           }
                         />
                       </div>
+                      {!selectionMode && (
+                        <button
+                          type="button"
+                          aria-label={lot.materiaux_recus ? `Matériaux reçus lot ${lot.code}` : `Matériaux non reçus lot ${lot.code}`}
+                          className="shrink-0 p-2 rounded-md active:bg-accent"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const next = !lot.materiaux_recus
+                            updateMateriauxRecus.mutate(
+                              { lotId: lot.id, plotId, materiaux_recus: next },
+                              {
+                                onSuccess: () => {
+                                  toast(next ? 'Matériaux reçus ✓' : 'Matériaux retirés')
+                                },
+                                onError: () => {
+                                  toast.error('Erreur lors de la mise à jour')
+                                },
+                              },
+                            )
+                          }}
+                        >
+                          {lot.materiaux_recus ? (
+                            <PackageCheck className="size-5 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <Package className="size-5 text-muted-foreground" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   )
                 })}

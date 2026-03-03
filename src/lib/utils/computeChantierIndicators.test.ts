@@ -12,6 +12,7 @@ function makeLot(overrides: Partial<LotWithTaches> = {}): LotWithTaches {
     etage_id: 'etage-1',
     metrage_m2_total: 12.5,
     metrage_ml_total: 8.2,
+    materiaux_recus: true,
     plots: { nom: 'Plot A' },
     etages: { nom: 'É1' },
     pieces: [
@@ -157,6 +158,16 @@ describe('findLotsPretsACarreler', () => {
     const result = findLotsPretsACarreler([lot])
     expect(result).toHaveLength(1)
     expect(result[0].etageNom).toBeNull()
+  })
+
+  it('excludes lot when materiaux_recus is false', () => {
+    const lot = makeLot({ materiaux_recus: false })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
+  })
+
+  it('includes lot when materiaux_recus is true and all task conditions met', () => {
+    const lot = makeLot({ materiaux_recus: true })
+    expect(findLotsPretsACarreler([lot])).toHaveLength(1)
   })
 })
 
