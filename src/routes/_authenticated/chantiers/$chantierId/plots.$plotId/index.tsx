@@ -41,6 +41,7 @@ import { usePlots } from '@/lib/queries/usePlots'
 import { useLotsWithTaches } from '@/lib/queries/useLotsWithTaches'
 import { findLotsPretsACarreler } from '@/lib/utils/computeChantierIndicators'
 import { useUpdatePlotTasks } from '@/lib/mutations/useUpdatePlotTasks'
+import { useUpdatePlotTaskConfig } from '@/lib/mutations/useUpdatePlotTaskConfig'
 import { useDeletePlot } from '@/lib/mutations/useDeletePlot'
 import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
 import { useUpdateEtage } from '@/lib/mutations/useUpdateEtage'
@@ -63,6 +64,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { getBadgeColorClasses } from '@/components/BadgeSelector'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { StatusCard, STATUS_COLORS } from '@/components/StatusCard'
 import { computeStatus } from '@/lib/utils/computeStatus'
 import { GridFilterTabs } from '@/components/GridFilterTabs'
@@ -89,6 +91,7 @@ function PlotIndexPage() {
     return findLotsPretsACarreler(lotsWithTaches.filter(l => l.plot_id === plotId))
   }, [lotsWithTaches, plotId])
   const updateTasks = useUpdatePlotTasks()
+  const updateTaskConfig = useUpdatePlotTaskConfig()
   const deletePlot = useDeletePlot()
   const { data: variantes } = useVariantes(plotId)
   const createVariante = useCreateVariante()
@@ -796,25 +799,51 @@ function PlotIndexPage() {
                   taskDefinitions: reordered.map((item) => item.task),
                 })
               }}
-              renderItem={(item, { attributes, listeners }) => (
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <button type="button" {...attributes} {...listeners} className="touch-none">
-                    <GripVertical className="size-4 text-muted-foreground shrink-0 cursor-grab" />
-                  </button>
-                  <span className="flex-1 text-sm text-foreground">{item.task}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => handleRemoveTask(
-                      plot.task_definitions.indexOf(item.task)
-                    )}
-                    aria-label={`Supprimer ${item.task}`}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              )}
+              renderItem={(item, { attributes, listeners }) => {
+                const isBloquant = plot.task_config?.[item.task]?.bloquant_pose !== false
+                return (
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <button type="button" {...attributes} {...listeners} className="touch-none">
+                      <GripVertical className="size-4 text-muted-foreground shrink-0 cursor-grab" />
+                    </button>
+                    <span className={`flex-1 text-sm ${isBloquant ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {item.task}
+                      {!isBloquant && (
+                        <span className="ml-1.5 text-xs text-muted-foreground/70">(non-bloquant)</span>
+                      )}
+                    </span>
+                    <Switch
+                      checked={isBloquant}
+                      onCheckedChange={(checked) => {
+                        const newConfig = { ...plot.task_config }
+                        if (checked) {
+                          delete newConfig[item.task]
+                        } else {
+                          newConfig[item.task] = { bloquant_pose: false }
+                        }
+                        updateTaskConfig.mutate({
+                          plotId,
+                          chantierId,
+                          taskConfig: newConfig,
+                        })
+                      }}
+                      aria-label={`Bloquant pour la pose : ${item.task}`}
+                      className="scale-75"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => handleRemoveTask(
+                        plot.task_definitions.indexOf(item.task)
+                      )}
+                      aria-label={`Supprimer ${item.task}`}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                )
+              }}
             />
           </div>
         ) : (

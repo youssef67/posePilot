@@ -61,6 +61,7 @@ export type Database = {
           chantier_id: string
           nom: string
           task_definitions: string[]
+          task_config: Record<string, { bloquant_pose: boolean }>
           created_at: string
           progress_done: number
           progress_total: number
@@ -75,6 +76,7 @@ export type Database = {
           chantier_id: string
           nom: string
           task_definitions?: string[]
+          task_config?: Record<string, { bloquant_pose: boolean }>
           created_at?: string
           progress_done?: number
           progress_total?: number
@@ -89,6 +91,7 @@ export type Database = {
           chantier_id?: string
           nom?: string
           task_definitions?: string[]
+          task_config?: Record<string, { bloquant_pose: boolean }>
           created_at?: string
           progress_done?: number
           progress_total?: number
@@ -359,6 +362,7 @@ export type Database = {
           nom: string
           status: string
           position: number
+          bloquant_pose: boolean
           created_at: string
         }
         Insert: {
@@ -367,6 +371,7 @@ export type Database = {
           nom: string
           status?: string
           position?: number
+          bloquant_pose?: boolean
           created_at?: string
         }
         Update: {
@@ -375,6 +380,7 @@ export type Database = {
           nom?: string
           status?: string
           position?: number
+          bloquant_pose?: boolean
           created_at?: string
         }
         Relationships: []

@@ -54,6 +54,13 @@ vi.mock('@/lib/mutations/useUpdatePlotTasks', () => ({
   }),
 }))
 
+vi.mock('@/lib/mutations/useUpdatePlotTaskConfig', () => ({
+  useUpdatePlotTaskConfig: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}))
+
 vi.mock('@/lib/mutations/useDeletePlot', () => ({
   useDeletePlot: () => ({
     mutate: vi.fn(),
@@ -151,6 +158,7 @@ const mockPlot = {
   chantier_id: 'chantier-1',
   nom: 'Plot A',
   task_definitions: ['Ragréage', 'Phonique', 'Pose'],
+  task_config: {},
   progress_done: 0,
   progress_total: 0,
   created_at: '2026-01-01T00:00:00Z',
@@ -1041,9 +1049,9 @@ describe('PlotIndexPage — lots prêts à carreler counter', () => {
             id: 'p-1',
             nom: 'Séjour',
             taches: [
-              { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-              { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
-              { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
+              { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+              { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
+              { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
             ],
           },
         ],

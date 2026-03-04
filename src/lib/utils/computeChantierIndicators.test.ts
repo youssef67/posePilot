@@ -20,9 +20,9 @@ function makeLot(overrides: Partial<LotWithTaches> = {}): LotWithTaches {
         id: 'piece-1',
         nom: 'Séjour',
         taches: [
-          { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-          { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
-          { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
+          { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+          { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
+          { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
         ],
       },
     ],
@@ -51,7 +51,7 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Pose carrelage', status: 'not_started', position: 0 },
+            { id: 't-1', nom: 'Pose carrelage', status: 'not_started', position: 0, bloquant_pose: true },
           ],
         },
       ],
@@ -66,9 +66,9 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'in_progress', position: 0 },
-            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
-            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2 },
+            { id: 't-1', nom: 'Ragréage', status: 'in_progress', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
+            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
           ],
         },
       ],
@@ -83,9 +83,9 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
-            { id: 't-3', nom: 'Pose', status: 'in_progress', position: 2 },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
+            { id: 't-3', nom: 'Pose', status: 'in_progress', position: 2, bloquant_pose: true },
           ],
         },
       ],
@@ -100,8 +100,8 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'Phonique', status: 'done', position: 1 },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
           ],
         },
       ],
@@ -116,10 +116,10 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1 },
-            { id: 't-3', nom: 'Joints', status: 'not_started', position: 2 },
-            { id: 't-4', nom: 'Nettoyage', status: 'not_started', position: 3 },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1, bloquant_pose: true },
+            { id: 't-3', nom: 'Joints', status: 'not_started', position: 2, bloquant_pose: true },
+            { id: 't-4', nom: 'Nettoyage', status: 'not_started', position: 3, bloquant_pose: true },
           ],
         },
       ],
@@ -134,8 +134,8 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'ragreage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'POSE carrelage', status: 'not_started', position: 1 },
+            { id: 't-1', nom: 'ragreage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'POSE carrelage', status: 'not_started', position: 1, bloquant_pose: true },
           ],
         },
       ],
@@ -150,8 +150,8 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'Repose', status: 'not_started', position: 1 },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Repose', status: 'not_started', position: 1, bloquant_pose: true },
           ],
         },
       ],
@@ -186,6 +186,67 @@ describe('findLotsPretsACarreler', () => {
     expect(findLotsPretsACarreler([lot])).toHaveLength(1)
   })
 
+  it('ignores non-bloquant pre-pose tasks (AC4)', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'SDB',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Étanchéité SDB', status: 'not_started', position: 1, bloquant_pose: false },
+            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
+          ],
+        },
+      ],
+    })
+    // Étanchéité SDB is not bloquant → lot is still ready
+    expect(findLotsPretsACarreler([lot])).toHaveLength(1)
+  })
+
+  it('excludes lot when bloquant pre-pose task is not done (AC4)', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'SDB',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'not_started', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Étanchéité SDB', status: 'not_started', position: 1, bloquant_pose: false },
+            { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
+          ],
+        },
+      ],
+    })
+    // Ragréage is bloquant and not done → lot is not ready
+    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
+  })
+
+  it('rejects lot when a piece has no pose task (AC5 fix)', () => {
+    const lot = makeLot({
+      pieces: [
+        {
+          id: 'p-1',
+          nom: 'Séjour',
+          taches: [
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1, bloquant_pose: true },
+          ],
+        },
+        {
+          id: 'p-2',
+          nom: 'WC',
+          taches: [
+            { id: 't-3', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            // No pose task for this piece!
+          ],
+        },
+      ],
+    })
+    // WC has no pose task → lot should NOT be considered ready
+    expect(findLotsPretsACarreler([lot])).toHaveLength(0)
+  })
+
   it('excludes lot when one piece does not satisfy conditions', () => {
     const lot = makeLot({
       pieces: [
@@ -193,16 +254,16 @@ describe('findLotsPretsACarreler', () => {
           id: 'p-1',
           nom: 'Séjour',
           taches: [
-            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0 },
-            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1 },
+            { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+            { id: 't-2', nom: 'Pose', status: 'not_started', position: 1, bloquant_pose: true },
           ],
         },
         {
           id: 'p-2',
           nom: 'Chambre',
           taches: [
-            { id: 't-3', nom: 'Ragréage', status: 'in_progress', position: 0 },
-            { id: 't-4', nom: 'Pose', status: 'not_started', position: 1 },
+            { id: 't-3', nom: 'Ragréage', status: 'in_progress', position: 0, bloquant_pose: true },
+            { id: 't-4', nom: 'Pose', status: 'not_started', position: 1, bloquant_pose: true },
           ],
         },
       ],
@@ -217,12 +278,16 @@ describe('computeMetrageVsInventaire', () => {
     chantier_id: 'ch-1',
     nom: 'Plot A',
     task_definitions: [],
+    task_config: {},
     progress_done: 0,
     progress_total: 0,
     has_blocking_note: false,
+    has_open_reservation: false,
+    cout_materiaux_total: 0,
     metrage_m2_total: 100,
     metrage_ml_total: 50,
     created_at: '2026-01-01',
+    lots_count: 0,
     ...overrides,
   })
 

@@ -36,18 +36,17 @@ export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[
       if (lot.pieces.length === 0) return false
       if (lot.materiaux_recus !== true) return false
 
-      let hasAtLeastOnePose = false
-
       for (const piece of lot.pieces) {
         const taches = piece.taches
         const firstPoseIdx = taches.findIndex((t) => isPose(t.nom))
-        if (firstPoseIdx === -1) continue
 
-        hasAtLeastOnePose = true
+        // Fix AC5: every piece must have at least one pose task
+        if (firstPoseIdx === -1) return false
 
-        // All tasks before the first pose must be done
+        // AC4: only check bloquant_pose tasks before the first pose
         const prePose = taches.slice(0, firstPoseIdx)
-        if (!prePose.every((t) => t.status === 'done')) return false
+        if (!prePose.filter((t) => t.bloquant_pose).every((t) => t.status === 'done'))
+          return false
 
         // All pose tasks must be not_started
         const poseTaches = taches.filter((t) => isPose(t.nom))
@@ -56,7 +55,7 @@ export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[
         // Tasks after the last pose are ignored
       }
 
-      return hasAtLeastOnePose
+      return true
     })
     .map((lot) => ({
       id: lot.id,

@@ -6,6 +6,7 @@ export interface PlotRow {
   chantier_id: string
   nom: string
   task_definitions: string[]
+  task_config: Record<string, { bloquant_pose: boolean }>
   progress_done: number
   progress_total: number
   has_blocking_note: boolean

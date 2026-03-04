@@ -21,6 +21,7 @@ const mockLots: LotWithTaches[] = [
     etage_id: 'etage-1',
     metrage_m2_total: 12.5,
     metrage_ml_total: 8.2,
+    materiaux_recus: true,
     plots: { nom: 'Plot A' },
     etages: { nom: 'RDC' },
     pieces: [
@@ -28,9 +29,9 @@ const mockLots: LotWithTaches[] = [
         id: 'piece-1',
         nom: 'Séjour',
         taches: [
-          { id: 't-1', nom: 'Ragréage', status: 'done' },
-          { id: 't-2', nom: 'Phonique', status: 'done' },
-          { id: 't-3', nom: 'Pose', status: 'not_started' },
+          { id: 't-1', nom: 'Ragréage', status: 'done', position: 0, bloquant_pose: true },
+          { id: 't-2', nom: 'Phonique', status: 'done', position: 1, bloquant_pose: true },
+          { id: 't-3', nom: 'Pose', status: 'not_started', position: 2, bloquant_pose: true },
         ],
       },
     ],
@@ -65,15 +66,14 @@ describe('useLotsWithTaches', () => {
       wrapper: createWrapper(),
     })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockLots))
 
     expect(supabase.from).toHaveBeenCalledWith('lots')
     expect(mockSelect).toHaveBeenCalledWith(
-      'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status))',
+      'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, materiaux_recus, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position, bloquant_pose))',
     )
     expect(mockEq).toHaveBeenCalledWith('plots.chantier_id', 'chantier-1')
     expect(mockOrder).toHaveBeenCalledWith('code')
-    expect(result.current.data).toEqual(mockLots)
   })
 
   it('returns empty array when no lots exist', async () => {

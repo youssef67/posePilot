@@ -6,6 +6,7 @@ export interface TacheInfo {
   nom: string
   status: string
   position: number
+  bloquant_pose: boolean
 }
 
 export interface PieceInfo {
@@ -34,7 +35,7 @@ export function useLotsWithTaches(chantierId: string) {
       const { data, error } = await supabase
         .from('lots')
         .select(
-          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, materiaux_recus, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position))',
+          'id, code, plot_id, etage_id, metrage_m2_total, metrage_ml_total, materiaux_recus, plots!inner(nom), etages(nom), pieces(id, nom, taches(id, nom, status, position, bloquant_pose))',
         )
         .eq('plots.chantier_id', chantierId)
         .order('code')

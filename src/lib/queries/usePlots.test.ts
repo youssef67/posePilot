@@ -12,22 +12,31 @@ vi.mock('@/lib/supabase', () => ({
 import { supabase } from '@/lib/supabase'
 import { usePlots } from './usePlots'
 
-const mockPlots = [
+const mockPlotsRaw = [
   {
     id: 'plot-1',
     chantier_id: 'chantier-1',
     nom: 'Plot A',
     task_definitions: ['Ragréage', 'Pose'],
+    task_config: {},
     created_at: '2026-01-01T00:00:00Z',
+    lots: [{ count: 3 }],
   },
   {
     id: 'plot-2',
     chantier_id: 'chantier-1',
     nom: 'Plot B',
     task_definitions: ['Joints', 'Silicone'],
+    task_config: {},
     created_at: '2026-01-02T00:00:00Z',
+    lots: [{ count: 0 }],
   },
 ]
+
+const mockPlotsMapped = mockPlotsRaw.map((row) => ({
+  ...row,
+  lots_count: row.lots[0].count,
+}))
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -43,24 +52,23 @@ describe('usePlots', () => {
   })
 
   it('fetches plots for a chantier ordered by created_at ASC', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: mockPlots, error: null })
+    const mockOrder = vi.fn().mockResolvedValue({ data: mockPlotsRaw, error: null })
     const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
 
     const { result } = renderHook(() => usePlots('chantier-1'), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockPlotsMapped))
 
     expect(supabase.from).toHaveBeenCalledWith('plots')
-    expect(mockSelect).toHaveBeenCalledWith('*')
+    expect(mockSelect).toHaveBeenCalledWith('*, lots(count)')
     expect(mockEq).toHaveBeenCalledWith('chantier_id', 'chantier-1')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: true })
-    expect(result.current.data).toEqual(mockPlots)
   })
 
   it('uses query key ["plots", chantierId]', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: mockPlots, error: null })
+    const mockOrder = vi.fn().mockResolvedValue({ data: mockPlotsRaw, error: null })
     const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
     const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
@@ -73,10 +81,10 @@ describe('usePlots', () => {
 
     const { result } = renderHook(() => usePlots('chantier-1'), { wrapper })
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.data).toEqual(mockPlotsMapped))
 
     const cached = queryClient.getQueryData(['plots', 'chantier-1'])
-    expect(cached).toEqual(mockPlots)
+    expect(cached).toEqual(mockPlotsMapped)
   })
 
   it('returns error on supabase failure', async () => {

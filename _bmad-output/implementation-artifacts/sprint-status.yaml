@@ -135,3 +135,5 @@ development_status:
   11-1-cout-materiaux-par-lot: done
   11-2-reception-materiaux-par-lot: review
   11-3-inventaire-deux-niveaux-stockage-general-etage-avec-transferts: done
+  11-4-logique-pret-a-carreler-basee-sur-position-des-taches: done
+  11-5-taches-bloquant-pose-et-fix-pieces-sans-pose: done
