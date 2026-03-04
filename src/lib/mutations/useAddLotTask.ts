@@ -33,6 +33,7 @@ export function useAddLotTask() {
                       nom,
                       status: 'not_started' as const,
                       position: piece.taches.length,
+                      bloquant_pose: true,
                       created_at: new Date().toISOString(),
                     },
                   ],

@@ -42,6 +42,7 @@ export function useCreatePlot() {
             chantier_id: chantierId,
             nom,
             task_definitions: DEFAULT_TASK_DEFINITIONS,
+            task_config: {},
             created_at: new Date().toISOString(),
             progress_done: 0,
             progress_total: 0,
