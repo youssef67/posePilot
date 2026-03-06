@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 interface UpdateMemoInput {
   memoId: string
   content: string
-  entityType: 'chantier' | 'plot' | 'etage'
+  entityType: 'chantier' | 'etage'
   entityId: string
 }
 
@@ -31,6 +31,9 @@ export function useUpdateMemo() {
     },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
+      if (entityType === 'etage') {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'plot-etages'] })
+      }
       queryClient.invalidateQueries({ queryKey: ['context-memos'] })
     },
   })

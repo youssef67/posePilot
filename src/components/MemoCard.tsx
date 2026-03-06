@@ -11,8 +11,8 @@ import type { MemoWithPhotos } from '@/lib/queries/useMemos'
 
 interface MemoCardProps {
   memo: MemoWithPhotos
-  onEdit: (memo: MemoWithPhotos) => void
-  onDelete: (memo: MemoWithPhotos) => void
+  onEdit?: (memo: MemoWithPhotos) => void
+  onDelete?: (memo: MemoWithPhotos) => void
 }
 
 export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
@@ -20,21 +20,23 @@ export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
     <div className="rounded-md border border-l-4 border-l-[#3B82F6] p-3">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm whitespace-pre-wrap">{memo.content}</p>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" aria-label="Options du mémo">
-              <EllipsisVertical className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => onEdit(memo)}>
-              Modifier
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onSelect={() => onDelete(memo)}>
-              Supprimer
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {onEdit && onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" aria-label="Options du mémo">
+                <EllipsisVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => onEdit(memo)}>
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onSelect={() => onDelete(memo)}>
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       {memo.memo_photos.length > 0 && (
         <div className="mt-2 flex gap-2 overflow-x-auto">

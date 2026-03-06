@@ -14,7 +14,7 @@ import { useMemos } from './useMemos'
 
 const mockMemos = [
   {
-    id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null,
+    id: 'm1', chantier_id: 'ch-1', etage_id: null,
     content: 'Clé gardienne', created_by_email: 'a@b.com',
     created_at: '2026-02-10T00:00:00Z', updated_at: '2026-02-10T00:00:00Z',
     memo_photos: [
@@ -57,13 +57,6 @@ describe('useMemos', () => {
     const photos = result.current.data![0].memo_photos
     expect(photos[0].position).toBe(0)
     expect(photos[1].position).toBe(1)
-  })
-
-  it('fetches memos for a plot', async () => {
-    const { mockEq } = mockChain([])
-    const { result } = renderHook(() => useMemos('plot', 'p-1'), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.data).toEqual([]))
-    expect(mockEq).toHaveBeenCalledWith('plot_id', 'p-1')
   })
 
   it('fetches memos for an etage', async () => {

@@ -70,7 +70,6 @@ export type Database = {
           metrage_m2_total: number
           metrage_ml_total: number
           cout_materiaux_total: number
-          memo_count: number
         }
         Insert: {
           id?: string
@@ -86,7 +85,6 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
-          memo_count?: number
         }
         Update: {
           id?: string
@@ -102,7 +100,6 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
-          memo_count?: number
         }
         Relationships: []
       }
@@ -862,7 +859,6 @@ export type Database = {
         Row: {
           id: string
           chantier_id: string | null
-          plot_id: string | null
           etage_id: string | null
           content: string
           created_by_email: string
@@ -872,7 +868,6 @@ export type Database = {
         Insert: {
           id?: string
           chantier_id?: string | null
-          plot_id?: string | null
           etage_id?: string | null
           content: string
           created_by_email: string
@@ -882,7 +877,6 @@ export type Database = {
         Update: {
           id?: string
           chantier_id?: string | null
-          plot_id?: string | null
           etage_id?: string | null
           content?: string
           created_by_email?: string

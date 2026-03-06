@@ -116,7 +116,6 @@ export function MemoFormSheet({ open, onOpenChange, entityType, entityId, editMe
           content: trimmed,
           createdByEmail: user?.email ?? '?',
           ...(entityType === 'chantier' && { chantierId: entityId }),
-          ...(entityType === 'plot' && { plotId: entityId }),
           ...(entityType === 'etage' && { etageId: entityId }),
         })
         if (data?.id && pendingPhotos.length > 0) {

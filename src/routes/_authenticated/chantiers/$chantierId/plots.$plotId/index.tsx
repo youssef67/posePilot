@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ChevronRight, Copy, EllipsisVertical, GripVertical, Layers, Pencil, Plus, Shapes, StickyNote, Trash2, X, CheckSquare } from 'lucide-react'
+import { ArrowLeft, Copy, EllipsisVertical, GripVertical, Layers, Pencil, Plus, Shapes, Trash2, X, CheckSquare } from 'lucide-react'
 import { SortableTaskList } from '@/components/SortableTaskList'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -73,6 +73,7 @@ import { useRealtimeEtages } from '@/lib/subscriptions/useRealtimeEtages'
 import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { supabase } from '@/lib/supabase'
 import { Fab } from '@/components/Fab'
+import { EtageMemosAccordion } from '@/components/EtageMemosAccordion'
 
 const MAX_BATCH_LOTS = 8
 
@@ -696,21 +697,13 @@ function PlotIndexPage() {
         </div>
       )}
 
-      <div className="px-4 pt-3">
-        <Link
-          to="/chantiers/$chantierId/plots/$plotId/memos"
-          params={{ chantierId, plotId }}
-          className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 text-[#3B82F6]"
-        >
-          <StickyNote className="size-4 shrink-0" />
-          <span className="text-sm font-medium flex-1">
-            {plot.memo_count > 0
-              ? `${plot.memo_count} mémo${plot.memo_count > 1 ? 's' : ''}`
-              : 'Mémos'}
-          </span>
-          <ChevronRight className="size-4 shrink-0" />
-        </Link>
-      </div>
+      {etages && etages.length > 0 && (
+        <EtageMemosAccordion
+          etages={etages.map((e) => ({ id: e.id, nom: e.nom }))}
+          plotId={plotId}
+          chantierId={chantierId}
+        />
+      )}
 
       {etageCards.length > 0 && (
         <div className="p-4">

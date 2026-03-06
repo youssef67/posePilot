@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 interface DeleteMemoInput {
   memoId: string
-  entityType: 'chantier' | 'plot' | 'etage'
+  entityType: 'chantier' | 'etage'
   entityId: string
 }
 
@@ -48,10 +48,8 @@ export function useDeleteMemo() {
         queryClient.invalidateQueries({ queryKey: ['chantiers'] })
         queryClient.invalidateQueries({ queryKey: ['chantiers', entityId] })
       }
-      if (entityType === 'plot') {
-        queryClient.invalidateQueries({ queryKey: ['plots'] })
-      }
       if (entityType === 'etage') {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'plot-etages'] })
         queryClient.invalidateQueries({ queryKey: ['etages'] })
       }
     },

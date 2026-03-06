@@ -41,7 +41,6 @@ describe('useCreateMemo', () => {
     expect(supabase.from).toHaveBeenCalledWith('memos')
     expect(mockInsert).toHaveBeenCalledWith({
       chantier_id: 'ch-1',
-      plot_id: null,
       etage_id: null,
       content: 'Test',
       created_by_email: 'a@b.com',

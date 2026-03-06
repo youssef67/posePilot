@@ -74,7 +74,7 @@ describe('useDeleteMemo', () => {
     const { result } = renderHook(() => useDeleteMemo(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ memoId: 'm1', entityType: 'plot', entityId: 'p-1' })
+      result.current.mutate({ memoId: 'm1', entityType: 'etage', entityId: 'e-1' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

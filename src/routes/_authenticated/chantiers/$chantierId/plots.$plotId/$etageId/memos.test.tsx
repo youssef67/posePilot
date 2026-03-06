@@ -74,7 +74,6 @@ const mockMemos = [
   {
     id: 'memo-1',
     chantier_id: null,
-    plot_id: null,
     etage_id: 'etage-1',
     content: 'Attention humidité couloir est',
     created_by_email: 'bruno@example.com',
@@ -85,7 +84,6 @@ const mockMemos = [
   {
     id: 'memo-2',
     chantier_id: null,
-    plot_id: null,
     etage_id: 'etage-1',
     content: 'Ragréage terminé côté nord',
     created_by_email: 'youssef@example.com',

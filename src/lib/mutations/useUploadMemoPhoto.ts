@@ -7,7 +7,7 @@ interface UploadMemoPhotoInput {
   file: File
   memoId: string
   position: number
-  entityType: 'chantier' | 'plot' | 'etage'
+  entityType: 'chantier' | 'etage'
   entityId: string
   onProgress?: (percent: number) => void
 }
@@ -61,6 +61,9 @@ export function useUploadMemoPhoto() {
     },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
+      if (entityType === 'etage') {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'plot-etages'] })
+      }
     },
   })
 }

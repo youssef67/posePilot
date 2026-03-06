@@ -117,6 +117,7 @@ development_status:
   8-6-affectation-inventaire-a-un-lot: done
   8-6-memos-plot-etage-photos: done
   8-7-memos-acces-etage-lot-multi-photos: done
+  8-8-vue-agregee-memos-etages-sur-plot: done
 
   # Epic 9: Réserves & SAV
   epic-9: in-progress

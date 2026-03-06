@@ -1,24 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Memo, MemoPhoto } from '@/types/database'
+import type { MemoWithPhotos } from './useMemos'
 
-export type MemoEntityType = 'chantier' | 'etage'
-
-export type MemoWithPhotos = Memo & { memo_photos: MemoPhoto[] }
-
-const columnMap: Record<MemoEntityType, string> = {
-  chantier: 'chantier_id',
-  etage: 'etage_id',
-}
-
-export function useMemos(entityType: MemoEntityType, entityId: string) {
+export function usePlotEtageMemos(plotId: string, etageIds: string[]) {
   return useQuery({
-    queryKey: ['memos', entityType, entityId],
+    queryKey: ['memos', 'plot-etages', plotId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('memos')
         .select('*, memo_photos(*)')
-        .eq(columnMap[entityType], entityId)
+        .in('etage_id', etageIds)
         .order('created_at', { ascending: false })
       if (error) throw error
       return (data as unknown as MemoWithPhotos[]).map((memo) => ({
@@ -26,7 +17,7 @@ export function useMemos(entityType: MemoEntityType, entityId: string) {
         memo_photos: [...memo.memo_photos].sort((a, b) => a.position - b.position),
       }))
     },
-    enabled: !!entityId,
+    enabled: etageIds.length > 0,
     placeholderData: [],
   })
 }

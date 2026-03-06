@@ -51,7 +51,6 @@ export function useCreatePlot() {
             metrage_m2_total: 0,
             metrage_ml_total: 0,
             cout_materiaux_total: 0,
-            memo_count: 0,
           },
         ],
       )

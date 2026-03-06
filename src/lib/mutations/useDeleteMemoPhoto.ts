@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 interface DeleteMemoPhotoInput {
   photoId: string
   photoUrl: string
-  entityType: 'chantier' | 'plot' | 'etage'
+  entityType: 'chantier' | 'etage'
   entityId: string
 }
 
@@ -35,6 +35,9 @@ export function useDeleteMemoPhoto() {
     },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
+      if (entityType === 'etage') {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'plot-etages'] })
+      }
     },
   })
 }
