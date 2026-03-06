@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase', () => ({
 }))
 
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 import { supabase } from '@/lib/supabase'
@@ -26,9 +26,18 @@ describe('useDeleteMemo', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('deletes memo from memos table', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null })
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
-    vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as never)
+    // Mock memo_photos fetch (no photos)
+    const mockPhotosEq = vi.fn().mockResolvedValue({ data: [], error: null })
+    const mockPhotosSelect = vi.fn().mockReturnValue({ eq: mockPhotosEq })
+
+    // Mock memo delete
+    const mockDeleteEq = vi.fn().mockResolvedValue({ error: null })
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq })
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'memo_photos') return { select: mockPhotosSelect } as never
+      return { delete: mockDelete } as never
+    })
 
     const { wrapper } = createWrapper()
     const { result } = renderHook(() => useDeleteMemo(), { wrapper })
@@ -39,13 +48,24 @@ describe('useDeleteMemo', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(supabase.from).toHaveBeenCalledWith('memos')
-    expect(mockEq).toHaveBeenCalledWith('id', 'm1')
+    expect(mockDeleteEq).toHaveBeenCalledWith('id', 'm1')
   })
 
-  it('cleans up photo from storage when photoUrl is provided', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null })
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
-    vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as never)
+  it('deletes all photos from storage when memo has photos', async () => {
+    const photos = [
+      { photo_url: 'https://storage.example.com/note-photos/u1/memo_m1_1.jpg' },
+      { photo_url: 'https://storage.example.com/note-photos/u1/memo_m1_2.jpg' },
+    ]
+    const mockPhotosEq = vi.fn().mockResolvedValue({ data: photos, error: null })
+    const mockPhotosSelect = vi.fn().mockReturnValue({ eq: mockPhotosEq })
+
+    const mockDeleteEq = vi.fn().mockResolvedValue({ error: null })
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq })
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'memo_photos') return { select: mockPhotosSelect } as never
+      return { delete: mockDelete } as never
+    })
 
     const mockRemove = vi.fn().mockResolvedValue({ error: null })
     vi.mocked(supabase.storage.from).mockReturnValue({ remove: mockRemove } as never)
@@ -54,16 +74,39 @@ describe('useDeleteMemo', () => {
     const { result } = renderHook(() => useDeleteMemo(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({
-        memoId: 'm1',
-        photoUrl: 'https://storage.example.com/note-photos/u1/memo_m1_123.jpg',
-        entityType: 'plot',
-        entityId: 'p-1',
-      })
+      result.current.mutate({ memoId: 'm1', entityType: 'plot', entityId: 'p-1' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(supabase.storage.from).toHaveBeenCalledWith('note-photos')
-    expect(mockRemove).toHaveBeenCalledWith(['u1/memo_m1_123.jpg'])
+    expect(mockRemove).toHaveBeenCalledWith(['u1/memo_m1_1.jpg', 'u1/memo_m1_2.jpg'])
+  })
+
+  it('shows success toast only on success, not on error', async () => {
+    const { toast } = await import('sonner')
+
+    // Mock memo_photos fetch (no photos)
+    const mockPhotosEq = vi.fn().mockResolvedValue({ data: [], error: null })
+    const mockPhotosSelect = vi.fn().mockReturnValue({ eq: mockPhotosEq })
+
+    // Mock memo delete — fails
+    const mockDeleteEq = vi.fn().mockResolvedValue({ error: { message: 'DB error' } })
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq })
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'memo_photos') return { select: mockPhotosSelect } as never
+      return { delete: mockDelete } as never
+    })
+
+    const { wrapper } = createWrapper()
+    const { result } = renderHook(() => useDeleteMemo(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({ memoId: 'm1', entityType: 'chantier', entityId: 'ch-1' })
+    })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledWith('Erreur lors de la suppression du mémo')
   })
 })

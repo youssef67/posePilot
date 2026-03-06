@@ -18,53 +18,44 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 
 const baseMemo = {
   created_by_email: 'a@b.com',
-  photo_url: null,
   created_at: '2026-02-10T00:00:00Z',
   updated_at: '2026-02-10T00:00:00Z',
+  memo_photos: [],
 }
 
-function mockContextMemos(memos: unknown[]) {
+function mockEtageMemos(memos: unknown[]) {
   const mockOrder = vi.fn().mockResolvedValue({ data: memos, error: null })
-  const mockOr = vi.fn().mockReturnValue({ order: mockOrder })
-  const mockSelect = vi.fn().mockReturnValue({ or: mockOr })
+  const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+  const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
   vi.mocked(supabase.from).mockReturnValue({ select: mockSelect } as never)
 }
 
 describe('MemoContextSection', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('displays grouped memos by level', async () => {
-    mockContextMemos([
-      { id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null, content: 'Chantier memo', ...baseMemo },
-      { id: 'm2', chantier_id: null, plot_id: 'p-1', etage_id: null, content: 'Plot memo', ...baseMemo },
-      { id: 'm3', chantier_id: null, plot_id: null, etage_id: 'e-1', content: 'Etage memo', ...baseMemo },
+  it('displays etage memos only', async () => {
+    mockEtageMemos([
+      { id: 'm1', chantier_id: null, plot_id: null, etage_id: 'e-1', content: 'Etage memo 1', ...baseMemo },
+      { id: 'm2', chantier_id: null, plot_id: null, etage_id: 'e-1', content: 'Etage memo 2', ...baseMemo },
     ])
 
     render(
       <Wrapper>
-        <MemoContextSection
-          chantierId="ch-1" plotId="p-1" etageId="e-1"
-          chantierNom="Alpha" plotNom="Plot A" etageNom="RDC"
-        />
+        <MemoContextSection etageId="e-1" etageNom="RDC" />
       </Wrapper>,
     )
 
-    expect(await screen.findByText('Chantier memo')).toBeInTheDocument()
-    expect(screen.getByText('Plot memo')).toBeInTheDocument()
-    expect(screen.getByText('Etage memo')).toBeInTheDocument()
-    expect(screen.getByText(/Chantier — Alpha/)).toBeInTheDocument()
-    expect(screen.getByText(/Plot — Plot A/)).toBeInTheDocument()
+    expect(await screen.findByText('Etage memo 1')).toBeInTheDocument()
+    expect(screen.getByText('Etage memo 2')).toBeInTheDocument()
+    expect(screen.getByText(/Mémos étage — RDC/)).toBeInTheDocument()
   })
 
-  it('renders nothing when no memos exist', async () => {
-    mockContextMemos([])
+  it('renders nothing when no memos exist (AC #4)', async () => {
+    mockEtageMemos([])
 
     const { container } = render(
       <Wrapper>
-        <MemoContextSection
-          chantierId="ch-1" plotId="p-1" etageId="e-1"
-          chantierNom="Alpha" plotNom="Plot A" etageNom="RDC"
-        />
+        <MemoContextSection etageId="e-1" etageNom="RDC" />
       </Wrapper>,
     )
 
@@ -73,22 +64,41 @@ describe('MemoContextSection', () => {
     })
   })
 
-  it('displays photo thumbnails for memos with photos', async () => {
-    mockContextMemos([
-      { id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null, content: 'With photo', ...baseMemo, photo_url: 'https://example.com/photo.jpg' },
+  it('displays multi-photo thumbnails (AC #7)', async () => {
+    mockEtageMemos([
+      {
+        id: 'm1', chantier_id: null, plot_id: null, etage_id: 'e-1', content: 'With photos',
+        ...baseMemo,
+        memo_photos: [
+          { id: 'ph-1', memo_id: 'm1', photo_url: 'https://example.com/a.jpg', position: 0, created_at: '' },
+          { id: 'ph-2', memo_id: 'm1', photo_url: 'https://example.com/b.jpg', position: 1, created_at: '' },
+        ],
+      },
     ])
 
     render(
       <Wrapper>
-        <MemoContextSection
-          chantierId="ch-1" plotId="p-1" etageId="e-1"
-          chantierNom="Alpha" plotNom="Plot A" etageNom="RDC"
-        />
+        <MemoContextSection etageId="e-1" etageNom="RDC" />
       </Wrapper>,
     )
 
-    const img = await screen.findByAltText('Photo du mémo')
-    expect(img).toBeInTheDocument()
-    expect((img as HTMLImageElement).src).toBe('https://example.com/photo.jpg')
+    const imgs = await screen.findAllByAltText('Photo du mémo')
+    expect(imgs).toHaveLength(2)
+  })
+
+  it('does not show chantier/plot group labels (AC #3)', async () => {
+    mockEtageMemos([
+      { id: 'm1', chantier_id: null, plot_id: null, etage_id: 'e-1', content: 'Only etage', ...baseMemo },
+    ])
+
+    render(
+      <Wrapper>
+        <MemoContextSection etageId="e-1" etageNom="RDC" />
+      </Wrapper>,
+    )
+
+    await screen.findByText('Only etage')
+    expect(screen.queryByText(/Chantier —/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Plot —/)).not.toBeInTheDocument()
   })
 })

@@ -23,10 +23,15 @@ export function useUpdateMemo() {
       if (error) throw error
       return data
     },
+    onSuccess: () => {
+      toast.success('Mémo modifié')
+    },
+    onError: () => {
+      toast.error('Erreur lors de la modification du mémo')
+    },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
       queryClient.invalidateQueries({ queryKey: ['context-memos'] })
-      toast.success('Mémo modifié')
     },
   })
 }

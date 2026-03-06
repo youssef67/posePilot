@@ -16,9 +16,8 @@ import { Fab } from '@/components/Fab'
 import { MemoCard } from '@/components/MemoCard'
 import { MemoFormSheet } from '@/components/MemoFormSheet'
 import { useChantier } from '@/lib/queries/useChantier'
-import { useMemos } from '@/lib/queries/useMemos'
+import { useMemos, type MemoWithPhotos } from '@/lib/queries/useMemos'
 import { useDeleteMemo } from '@/lib/mutations/useDeleteMemo'
-import type { Memo } from '@/types/database'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/memos',
@@ -33,22 +32,22 @@ function MemosPage() {
   const deleteMemo = useDeleteMemo()
 
   const [showFormSheet, setShowFormSheet] = useState(false)
-  const [editMemo, setEditMemo] = useState<Memo | null>(null)
-  const [memoToDelete, setMemoToDelete] = useState<Memo | null>(null)
+  const [editMemo, setEditMemo] = useState<MemoWithPhotos | null>(null)
+  const [memoToDelete, setMemoToDelete] = useState<MemoWithPhotos | null>(null)
 
-  function handleEdit(memo: Memo) {
+  function handleEdit(memo: MemoWithPhotos) {
     setEditMemo(memo)
     setShowFormSheet(true)
   }
 
-  function handleDelete(memo: Memo) {
+  function handleDelete(memo: MemoWithPhotos) {
     setMemoToDelete(memo)
   }
 
   function handleConfirmDelete() {
     if (!memoToDelete) return
     deleteMemo.mutate(
-      { memoId: memoToDelete.id, photoUrl: memoToDelete.photo_url, entityType: 'chantier', entityId: chantierId },
+      { memoId: memoToDelete.id, entityType: 'chantier', entityId: chantierId },
       { onSuccess: () => setMemoToDelete(null) },
     )
   }

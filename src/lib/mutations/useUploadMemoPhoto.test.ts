@@ -29,7 +29,7 @@ function createWrapper() {
 describe('useUploadMemoPhoto', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('uploads photo and updates memo', async () => {
+  it('uploads photo and inserts into memo_photos', async () => {
     vi.mocked(supabase.auth.getUser).mockResolvedValue({
       data: { user: { id: 'u1' } },
       error: null,
@@ -42,17 +42,21 @@ describe('useUploadMemoPhoto', () => {
       getPublicUrl: mockGetPublicUrl,
     } as never)
 
-    const mockEq = vi.fn().mockResolvedValue({ error: null })
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq })
-    vi.mocked(supabase.from).mockReturnValue({ update: mockUpdate } as never)
+    const mockInsert = vi.fn().mockResolvedValue({ error: null })
+    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as never)
 
     const file = new File(['test'], 'photo.jpg', { type: 'image/jpeg' })
     const { result } = renderHook(() => useUploadMemoPhoto(), { wrapper: createWrapper() })
 
-    result.current.mutate({ file, memoId: 'memo-1', entityType: 'chantier', entityId: 'ch-1' })
+    result.current.mutate({ file, memoId: 'memo-1', position: 0, entityType: 'chantier', entityId: 'ch-1' })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(mockUpload).toHaveBeenCalled()
-    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ photo_url: 'https://example.com/photo.jpg' }))
+    expect(supabase.from).toHaveBeenCalledWith('memo_photos')
+    expect(mockInsert).toHaveBeenCalledWith({
+      memo_id: 'memo-1',
+      photo_url: 'https://example.com/photo.jpg',
+      position: 0,
+    })
   })
 })

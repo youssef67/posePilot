@@ -13,7 +13,15 @@ import { supabase } from '@/lib/supabase'
 import { useMemos } from './useMemos'
 
 const mockMemos = [
-  { id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null, content: 'Clé gardienne', created_by_email: 'a@b.com', photo_url: null, created_at: '2026-02-10T00:00:00Z', updated_at: '2026-02-10T00:00:00Z' },
+  {
+    id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null,
+    content: 'Clé gardienne', created_by_email: 'a@b.com',
+    created_at: '2026-02-10T00:00:00Z', updated_at: '2026-02-10T00:00:00Z',
+    memo_photos: [
+      { id: 'ph-2', memo_id: 'm1', photo_url: 'https://example.com/b.jpg', position: 1, created_at: '2026-02-10T00:00:00Z' },
+      { id: 'ph-1', memo_id: 'm1', photo_url: 'https://example.com/a.jpg', position: 0, created_at: '2026-02-10T00:00:00Z' },
+    ],
+  },
 ]
 
 function createWrapper() {
@@ -33,12 +41,22 @@ function mockChain(data: unknown, error: unknown = null) {
 describe('useMemos', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('fetches memos for a chantier', async () => {
-    const { mockEq } = mockChain(mockMemos)
+  it('fetches memos with memo_photos joined', async () => {
+    const { mockSelect, mockEq } = mockChain(mockMemos)
     const { result } = renderHook(() => useMemos('chantier', 'ch-1'), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.data).toEqual(mockMemos))
+    await waitFor(() => expect(result.current.data?.length).toBe(1))
     expect(supabase.from).toHaveBeenCalledWith('memos')
+    expect(mockSelect).toHaveBeenCalledWith('*, memo_photos(*)')
     expect(mockEq).toHaveBeenCalledWith('chantier_id', 'ch-1')
+  })
+
+  it('sorts memo_photos by position', async () => {
+    mockChain(mockMemos)
+    const { result } = renderHook(() => useMemos('chantier', 'ch-1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data?.length).toBe(1))
+    const photos = result.current.data![0].memo_photos
+    expect(photos[0].position).toBe(0)
+    expect(photos[1].position).toBe(1)
   })
 
   it('fetches memos for a plot', async () => {

@@ -74,6 +74,7 @@ const mockMemos = [
     created_by_email: 'jean@example.com',
     created_at: '2026-02-20T10:00:00Z',
     updated_at: '2026-02-20T10:00:00Z',
+    memo_photos: [],
   },
   {
     id: 'memo-2',
@@ -82,6 +83,7 @@ const mockMemos = [
     created_by_email: 'paul@example.com',
     created_at: '2026-02-19T08:00:00Z',
     updated_at: '2026-02-19T08:00:00Z',
+    memo_photos: [],
   },
 ]
 

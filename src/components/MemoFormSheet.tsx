@@ -13,74 +13,123 @@ import { PhotoCapture, type PhotoCaptureHandle } from '@/components/PhotoCapture
 import { useCreateMemo } from '@/lib/mutations/useCreateMemo'
 import { useUpdateMemo } from '@/lib/mutations/useUpdateMemo'
 import { useUploadMemoPhoto } from '@/lib/mutations/useUploadMemoPhoto'
+import { useDeleteMemoPhoto } from '@/lib/mutations/useDeleteMemoPhoto'
 import { useAuth } from '@/lib/auth'
-import type { Memo } from '@/types/database'
-import type { MemoEntityType } from '@/lib/queries/useMemos'
+import type { MemoEntityType, MemoWithPhotos } from '@/lib/queries/useMemos'
+
+const MAX_PHOTOS = 5
 
 interface MemoFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   entityType: MemoEntityType
   entityId: string
-  editMemo?: Memo | null
+  editMemo?: MemoWithPhotos | null
 }
 
 export function MemoFormSheet({ open, onOpenChange, entityType, entityId, editMemo }: MemoFormSheetProps) {
   const [content, setContent] = useState(editMemo?.content ?? '')
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([])
+  const [deletedPhotoIds, setDeletedPhotoIds] = useState<Set<string>>(new Set())
   const photoCaptureRef = useRef<PhotoCaptureHandle>(null)
 
   const createMemo = useCreateMemo()
   const updateMemo = useUpdateMemo()
   const uploadPhoto = useUploadMemoPhoto()
+  const deleteMemoPhoto = useDeleteMemoPhoto()
   const { user } = useAuth()
 
   const isEdit = !!editMemo
 
+  const existingPhotos = useMemo(
+    () => (editMemo?.memo_photos ?? []).filter((p) => !deletedPhotoIds.has(p.id)),
+    [editMemo, deletedPhotoIds],
+  )
+
+  const totalPhotos = existingPhotos.length + pendingPhotos.length
+  const canAddPhoto = totalPhotos < MAX_PHOTOS
+
   useEffect(() => {
     if (open) {
       setContent(editMemo?.content ?? '')
-      setPendingPhoto(null)
+      setPendingPhotos([])
+      setDeletedPhotoIds(new Set())
     }
   }, [open, editMemo])
 
-  function handleSubmit() {
-    const trimmed = content.trim()
-    if (!trimmed) return
-
-    if (isEdit && editMemo) {
-      updateMemo.mutate(
-        { memoId: editMemo.id, content: trimmed, entityType, entityId },
-        { onSuccess: () => onOpenChange(false) },
-      )
-    } else {
-      createMemo.mutate({
-        content: trimmed,
-        createdByEmail: user?.email ?? '?',
-        ...(entityType === 'chantier' && { chantierId: entityId }),
-        ...(entityType === 'plot' && { plotId: entityId }),
-        ...(entityType === 'etage' && { etageId: entityId }),
-      }, {
-        onSuccess: (data) => {
-          if (pendingPhoto && data?.id) {
-            uploadPhoto.mutate({ file: pendingPhoto, memoId: data.id, entityType, entityId })
-          }
-          onOpenChange(false)
-        },
-      })
-    }
-  }
-
-  const photoPreviewUrl = useMemo(
-    () => (pendingPhoto ? URL.createObjectURL(pendingPhoto) : null),
-    [pendingPhoto],
+  const pendingPreviewUrls = useMemo(
+    () => pendingPhotos.map((f) => URL.createObjectURL(f)),
+    [pendingPhotos],
   )
 
   useEffect(() => {
     return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+      pendingPreviewUrls.forEach((url) => URL.revokeObjectURL(url))
     }
-  }, [photoPreviewUrl])
+  }, [pendingPreviewUrls])
+
+  function handleAddPhoto(file: File) {
+    if (!canAddPhoto) return
+    setPendingPhotos((prev) => [...prev, file])
+  }
+
+  function handleRemovePending(index: number) {
+    setPendingPhotos((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function handleRemoveExisting(photoId: string) {
+    setDeletedPhotoIds((prev) => new Set(prev).add(photoId))
+  }
+
+  const isSubmitting = createMemo.isPending || updateMemo.isPending || uploadPhoto.isPending || deleteMemoPhoto.isPending
+
+  async function handleSubmit() {
+    const trimmed = content.trim()
+    if (!trimmed || isSubmitting) return
+
+    if (isEdit && editMemo) {
+      // Delete marked photos sequentially
+      for (const photoId of deletedPhotoIds) {
+        const photo = editMemo.memo_photos.find((p) => p.id === photoId)
+        if (photo) {
+          try {
+            await deleteMemoPhoto.mutateAsync({ photoId: photo.id, photoUrl: photo.photo_url, entityType, entityId })
+          } catch { /* toast shown by hook */ }
+        }
+      }
+
+      // Upload new pending photos sequentially
+      const startPosition = existingPhotos.length
+      for (let i = 0; i < pendingPhotos.length; i++) {
+        try {
+          await uploadPhoto.mutateAsync({ file: pendingPhotos[i], memoId: editMemo.id, position: startPosition + i, entityType, entityId })
+        } catch { /* toast shown by hook */ }
+      }
+
+      try {
+        await updateMemo.mutateAsync({ memoId: editMemo.id, content: trimmed, entityType, entityId })
+        onOpenChange(false)
+      } catch { /* toast shown by hook */ }
+    } else {
+      try {
+        const data = await createMemo.mutateAsync({
+          content: trimmed,
+          createdByEmail: user?.email ?? '?',
+          ...(entityType === 'chantier' && { chantierId: entityId }),
+          ...(entityType === 'plot' && { plotId: entityId }),
+          ...(entityType === 'etage' && { etageId: entityId }),
+        })
+        if (data?.id && pendingPhotos.length > 0) {
+          for (let i = 0; i < pendingPhotos.length; i++) {
+            try {
+              await uploadPhoto.mutateAsync({ file: pendingPhotos[i], memoId: data.id, position: i, entityType, entityId })
+            } catch { /* toast shown by hook */ }
+          }
+        }
+        onOpenChange(false)
+      } catch { /* toast shown by hook */ }
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -99,46 +148,66 @@ export function MemoFormSheet({ open, onOpenChange, entityType, entityId, editMe
             rows={4}
           />
 
-          {!isEdit && (
-            <>
-              {photoPreviewUrl ? (
-                <div className="relative w-fit">
+          {(existingPhotos.length > 0 || pendingPhotos.length > 0) && (
+            <div className="flex gap-2 overflow-x-auto">
+              {existingPhotos.map((photo) => (
+                <div key={photo.id} className="relative shrink-0">
                   <img
-                    src={photoPreviewUrl}
+                    src={photo.photo_url}
+                    alt="Photo existante"
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                    onClick={() => handleRemoveExisting(photo.id)}
+                    aria-label="Supprimer la photo"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+              {pendingPreviewUrls.map((url, i) => (
+                <div key={url} className="relative shrink-0">
+                  <img
+                    src={url}
                     alt="Aperçu photo"
                     className="h-20 w-20 rounded-lg object-cover"
                   />
                   <button
                     type="button"
                     className="absolute -top-2 -right-2 rounded-full bg-destructive p-1 text-destructive-foreground"
-                    onClick={() => setPendingPhoto(null)}
+                    onClick={() => handleRemovePending(i)}
                     aria-label="Supprimer la photo"
                   >
                     <X className="size-3" />
                   </button>
                 </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit"
-                  onClick={() => photoCaptureRef.current?.trigger()}
-                >
-                  <Camera className="size-4 mr-2" />
-                  Ajouter une photo
-                </Button>
-              )}
-              <PhotoCapture
-                ref={photoCaptureRef}
-                onPhotoSelected={(file) => setPendingPhoto(file)}
-              />
-            </>
+              ))}
+            </div>
           )}
+
+          {canAddPhoto && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              onClick={() => photoCaptureRef.current?.trigger()}
+            >
+              <Camera className="size-4 mr-2" />
+              Ajouter une photo
+            </Button>
+          )}
+
+          <PhotoCapture
+            ref={photoCaptureRef}
+            onPhotoSelected={handleAddPhoto}
+          />
 
           <Button
             onClick={handleSubmit}
-            disabled={!content.trim() || createMemo.isPending || updateMemo.isPending}
+            disabled={!content.trim() || isSubmitting}
           >
             {isEdit ? 'Modifier' : 'Ajouter'}
           </Button>

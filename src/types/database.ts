@@ -831,6 +831,30 @@ export type Database = {
         }
         Relationships: []
       }
+      memo_photos: {
+        Row: {
+          id: string
+          memo_id: string
+          photo_url: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          memo_id: string
+          photo_url: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          memo_id?: string
+          photo_url?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       memos: {
         Row: {
           id: string
@@ -839,7 +863,6 @@ export type Database = {
           etage_id: string | null
           content: string
           created_by_email: string
-          photo_url: string | null
           created_at: string
           updated_at: string
         }
@@ -850,7 +873,6 @@ export type Database = {
           etage_id?: string | null
           content: string
           created_by_email: string
-          photo_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -861,7 +883,6 @@ export type Database = {
           etage_id?: string | null
           content?: string
           created_by_email?: string
-          photo_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1125,6 +1146,9 @@ export type LotBadge = Database['public']['Tables']['lot_badges']['Row']
 
 // Type miroir de la table memos (048_chantier_memos.sql + 058_memos_multi_level.sql)
 export type Memo = Database['public']['Tables']['memos']['Row']
+
+// Type miroir de la table memo_photos (059_memo_photos.sql)
+export type MemoPhoto = Database['public']['Tables']['memo_photos']['Row']
 
 // Type miroir de la table chantier_caracteristiques (044_chantier_caracteristiques.sql)
 export interface Caracteristique {

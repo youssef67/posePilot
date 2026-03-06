@@ -2,18 +2,18 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoCard } from './MemoCard'
-import type { Memo } from '@/types/database'
+import type { MemoWithPhotos } from '@/lib/queries/useMemos'
 
-const memo: Memo = {
+const memo: MemoWithPhotos = {
   id: 'm1',
   chantier_id: 'ch-1',
   plot_id: null,
   etage_id: null,
   content: 'Clé chez la gardienne bât. B',
   created_by_email: 'youssef@example.com',
-  photo_url: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
+  memo_photos: [],
 }
 
 describe('MemoCard', () => {
@@ -45,16 +45,22 @@ describe('MemoCard', () => {
     expect(onDelete).toHaveBeenCalledWith(memo)
   })
 
-  it('displays photo thumbnail when photo_url is present', () => {
-    const memoWithPhoto: Memo = { ...memo, photo_url: 'https://example.com/photo.jpg' }
-    render(<MemoCard memo={memoWithPhoto} onEdit={vi.fn()} onDelete={vi.fn()} />)
-    const img = screen.getByAltText('Photo du mémo') as HTMLImageElement
-    expect(img).toBeInTheDocument()
-    expect(img.src).toBe('https://example.com/photo.jpg')
-    expect(img.className).toContain('h-20')
+  it('displays multiple photo thumbnails (AC #6)', () => {
+    const memoWithPhotos: MemoWithPhotos = {
+      ...memo,
+      memo_photos: [
+        { id: 'ph-1', memo_id: 'm1', photo_url: 'https://example.com/a.jpg', position: 0, created_at: '' },
+        { id: 'ph-2', memo_id: 'm1', photo_url: 'https://example.com/b.jpg', position: 1, created_at: '' },
+      ],
+    }
+    render(<MemoCard memo={memoWithPhotos} onEdit={vi.fn()} onDelete={vi.fn()} />)
+    const imgs = screen.getAllByAltText('Photo du mémo')
+    expect(imgs).toHaveLength(2)
+    expect((imgs[0] as HTMLImageElement).src).toBe('https://example.com/a.jpg')
+    expect((imgs[1] as HTMLImageElement).src).toBe('https://example.com/b.jpg')
   })
 
-  it('does not display photo when photo_url is null', () => {
+  it('does not display photos when memo_photos is empty', () => {
     render(<MemoCard memo={memo} onEdit={vi.fn()} onDelete={vi.fn()} />)
     expect(screen.queryByAltText('Photo du mémo')).not.toBeInTheDocument()
   })

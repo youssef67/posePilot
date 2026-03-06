@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 
 interface DeleteMemoInput {
   memoId: string
-  photoUrl?: string | null
   entityType: 'chantier' | 'plot' | 'etage'
   entityId: string
 }
@@ -13,24 +12,38 @@ export function useDeleteMemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ memoId, photoUrl }: DeleteMemoInput) => {
-      // Clean up photo from storage if exists
-      if (photoUrl) {
-        const path = photoUrl.split('/note-photos/')[1]
-        if (path) {
-          await supabase.storage.from('note-photos').remove([path])
+    mutationFn: async ({ memoId }: DeleteMemoInput) => {
+      // Fetch all photos for this memo before deletion (CASCADE will delete rows)
+      const { data: photos } = await supabase
+        .from('memo_photos')
+        .select('photo_url')
+        .eq('memo_id', memoId)
+
+      // Delete photo files from storage
+      if (photos && photos.length > 0) {
+        const paths = photos
+          .map((p) => p.photo_url.split('/note-photos/')[1])
+          .filter(Boolean) as string[]
+        if (paths.length > 0) {
+          await supabase.storage.from('note-photos').remove(paths)
         }
       }
 
+      // Delete memo (CASCADE deletes memo_photos rows)
       const { error } = await supabase
         .from('memos')
         .delete()
         .eq('id', memoId)
       if (error) throw error
     },
+    onSuccess: () => {
+      toast.success('Mémo supprimé')
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression du mémo')
+    },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
-      queryClient.invalidateQueries({ queryKey: ['context-memos'] })
       if (entityType === 'chantier') {
         queryClient.invalidateQueries({ queryKey: ['chantiers'] })
         queryClient.invalidateQueries({ queryKey: ['chantiers', entityId] })
@@ -41,7 +54,6 @@ export function useDeleteMemo() {
       if (entityType === 'etage') {
         queryClient.invalidateQueries({ queryKey: ['etages'] })
       }
-      toast.success('Mémo supprimé')
     },
   })
 }

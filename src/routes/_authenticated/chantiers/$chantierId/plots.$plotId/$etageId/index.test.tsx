@@ -389,6 +389,100 @@ describe('EtageIndexPage', () => {
   })
 })
 
+describe('EtageIndexPage — memo bandeau always visible (AC #2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('shows "Mémos" when memo_count is 0', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByRole('heading', { name: 'RDC' })
+    expect(screen.getByText('Mémos')).toBeInTheDocument()
+  })
+
+  it('shows "N mémo(s)" when memo_count > 0', async () => {
+    const etagesWithMemos = [
+      { ...mockEtages[0], memo_count: 2 },
+    ]
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'chantiers') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockImplementation((_col: string, val: unknown) => {
+              if (val === 'chantier-1') {
+                return { single: vi.fn().mockResolvedValue({ data: mockChantier, error: null }) }
+              }
+              return { order: vi.fn().mockResolvedValue({ data: [], error: null }) }
+            }),
+          }),
+        } as never
+      }
+      if (table === 'plots') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [mockPlot], error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'etages') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: etagesWithMemos, error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'lots') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: mockLots, error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'variantes') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'lot_documents') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'pieces') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        } as never
+      }
+      return { select: vi.fn() } as never
+    })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByRole('heading', { name: 'RDC' })
+    expect(screen.getByText('2 mémos')).toBeInTheDocument()
+  })
+})
+
 const filterMockLots = [
   {
     id: 'lot-a',

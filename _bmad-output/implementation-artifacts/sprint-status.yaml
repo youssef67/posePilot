@@ -115,6 +115,8 @@ development_status:
   8-4-badges-personnalises-sur-les-lots: review
   8-5-memos-chantier: done
   8-6-affectation-inventaire-a-un-lot: done
+  8-6-memos-plot-etage-photos: done
+  8-7-memos-acces-etage-lot-multi-photos: done
 
   # Epic 9: Réserves & SAV
   epic-9: in-progress

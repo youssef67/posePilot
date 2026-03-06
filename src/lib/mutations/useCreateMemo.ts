@@ -29,6 +29,12 @@ export function useCreateMemo() {
       if (error) throw error
       return data
     },
+    onSuccess: () => {
+      toast.success('Mémo ajouté')
+    },
+    onError: () => {
+      toast.error('Erreur lors de la création du mémo')
+    },
     onSettled: (_data, _err, { chantierId, plotId, etageId }) => {
       if (chantierId) {
         queryClient.invalidateQueries({ queryKey: ['memos', 'chantier', chantierId] })
@@ -44,7 +50,6 @@ export function useCreateMemo() {
         queryClient.invalidateQueries({ queryKey: ['etages'] })
       }
       queryClient.invalidateQueries({ queryKey: ['context-memos'] })
-      toast.success('Mémo ajouté')
     },
   })
 }

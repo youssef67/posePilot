@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 interface UploadMemoPhotoInput {
   file: File
   memoId: string
+  position: number
   entityType: 'chantier' | 'plot' | 'etage'
   entityId: string
   onProgress?: (percent: number) => void
@@ -15,7 +16,7 @@ export function useUploadMemoPhoto() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ file, memoId, onProgress }: UploadMemoPhotoInput): Promise<string> => {
+    mutationFn: async ({ file, memoId, position, onProgress }: UploadMemoPhotoInput): Promise<string> => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non authentifié')
 
@@ -40,14 +41,13 @@ export function useUploadMemoPhoto() {
 
       const publicUrl = urlData.publicUrl
 
-      // Phase 3: Update memo record (90-100%)
-      const { error: updateError } = await supabase
-        .from('memos')
-        .update({ photo_url: publicUrl })
-        .eq('id', memoId)
-      if (updateError) {
+      // Phase 3: Insert into memo_photos (90-100%)
+      const { error: insertError } = await supabase
+        .from('memo_photos')
+        .insert({ memo_id: memoId, photo_url: publicUrl, position })
+      if (insertError) {
         await supabase.storage.from('note-photos').remove([filePath])
-        throw updateError
+        throw insertError
       }
 
       onProgress?.(100)
@@ -61,7 +61,6 @@ export function useUploadMemoPhoto() {
     },
     onSettled: (_data, _err, { entityType, entityId }) => {
       queryClient.invalidateQueries({ queryKey: ['memos', entityType, entityId] })
-      queryClient.invalidateQueries({ queryKey: ['context-memos'] })
     },
   })
 }

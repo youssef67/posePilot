@@ -7,12 +7,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
-import type { Memo } from '@/types/database'
+import type { MemoWithPhotos } from '@/lib/queries/useMemos'
 
 interface MemoCardProps {
-  memo: Memo
-  onEdit: (memo: Memo) => void
-  onDelete: (memo: Memo) => void
+  memo: MemoWithPhotos
+  onEdit: (memo: MemoWithPhotos) => void
+  onDelete: (memo: MemoWithPhotos) => void
 }
 
 export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
@@ -36,12 +36,17 @@ export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {memo.photo_url && (
-        <img
-          src={memo.photo_url}
-          alt="Photo du mémo"
-          className="mt-2 h-20 w-20 rounded-lg object-cover"
-        />
+      {memo.memo_photos.length > 0 && (
+        <div className="mt-2 flex gap-2 overflow-x-auto">
+          {memo.memo_photos.map((photo) => (
+            <img
+              key={photo.id}
+              src={photo.photo_url}
+              alt="Photo du mémo"
+              className="h-20 w-20 rounded-lg object-cover shrink-0"
+            />
+          ))}
+        </div>
       )}
       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
         <span>{memo.created_by_email.split('@')[0]}</span>

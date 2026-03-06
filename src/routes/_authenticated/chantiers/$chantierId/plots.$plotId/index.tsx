@@ -696,21 +696,21 @@ function PlotIndexPage() {
         </div>
       )}
 
-      {plot.memo_count > 0 && (
-        <div className="px-4 pt-3">
-          <Link
-            to="/chantiers/$chantierId/plots/$plotId/memos"
-            params={{ chantierId, plotId }}
-            className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 text-[#3B82F6]"
-          >
-            <StickyNote className="size-4 shrink-0" />
-            <span className="text-sm font-medium flex-1">
-              {plot.memo_count} mémo{plot.memo_count > 1 ? 's' : ''}
-            </span>
-            <ChevronRight className="size-4 shrink-0" />
-          </Link>
-        </div>
-      )}
+      <div className="px-4 pt-3">
+        <Link
+          to="/chantiers/$chantierId/plots/$plotId/memos"
+          params={{ chantierId, plotId }}
+          className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 text-[#3B82F6]"
+        >
+          <StickyNote className="size-4 shrink-0" />
+          <span className="text-sm font-medium flex-1">
+            {plot.memo_count > 0
+              ? `${plot.memo_count} mémo${plot.memo_count > 1 ? 's' : ''}`
+              : 'Mémos'}
+          </span>
+          <ChevronRight className="size-4 shrink-0" />
+        </Link>
+      </div>
 
       {etageCards.length > 0 && (
         <div className="p-4">

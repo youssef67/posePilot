@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoFormSheet } from './MemoFormSheet'
+import type { MemoWithPhotos } from '@/lib/queries/useMemos'
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -36,6 +37,18 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 }
 
+const baseMemo: MemoWithPhotos = {
+  id: 'm1',
+  chantier_id: 'ch-1',
+  plot_id: null,
+  etage_id: null,
+  content: 'Test memo',
+  created_by_email: 'a@b.com',
+  created_at: '',
+  updated_at: '',
+  memo_photos: [],
+}
+
 describe('MemoFormSheet', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -50,10 +63,9 @@ describe('MemoFormSheet', () => {
   })
 
   it('renders edit form when editMemo is provided', () => {
-    const memo = { id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null, content: 'Test', created_by_email: 'a@b.com', photo_url: null, created_at: '', updated_at: '' }
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" editMemo={memo} />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" editMemo={baseMemo} />
       </Wrapper>,
     )
     expect(screen.getByText('Modifier le mémo')).toBeInTheDocument()
@@ -88,11 +100,42 @@ describe('MemoFormSheet', () => {
     expect(screen.getByText('Ajouter une photo')).toBeInTheDocument()
   })
 
-  it('hides photo capture button in edit mode', () => {
-    const memo = { id: 'm1', chantier_id: null, plot_id: 'p-1', etage_id: null, content: 'Test', created_by_email: 'a@b.com', photo_url: null, created_at: '', updated_at: '' }
+  it('shows photo capture button in edit mode when under 5 photos (AC #8)', () => {
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="plot" entityId="p-1" editMemo={memo} />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="plot" entityId="p-1" editMemo={baseMemo} />
+      </Wrapper>,
+    )
+    expect(screen.getByText('Ajouter une photo')).toBeInTheDocument()
+  })
+
+  it('shows existing photos in edit mode (AC #8)', () => {
+    const memoWithPhotos: MemoWithPhotos = {
+      ...baseMemo,
+      memo_photos: [
+        { id: 'ph-1', memo_id: 'm1', photo_url: 'https://example.com/a.jpg', position: 0, created_at: '' },
+        { id: 'ph-2', memo_id: 'm1', photo_url: 'https://example.com/b.jpg', position: 1, created_at: '' },
+      ],
+    }
+    render(
+      <Wrapper>
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" editMemo={memoWithPhotos} />
+      </Wrapper>,
+    )
+    const imgs = screen.getAllByAltText('Photo existante')
+    expect(imgs).toHaveLength(2)
+  })
+
+  it('hides photo button when max photos reached (AC #5)', () => {
+    const memoWith5Photos: MemoWithPhotos = {
+      ...baseMemo,
+      memo_photos: Array.from({ length: 5 }, (_, i) => ({
+        id: `ph-${i}`, memo_id: 'm1', photo_url: `https://example.com/${i}.jpg`, position: i, created_at: '',
+      })),
+    }
+    render(
+      <Wrapper>
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" editMemo={memoWith5Photos} />
       </Wrapper>,
     )
     expect(screen.queryByText('Ajouter une photo')).not.toBeInTheDocument()
