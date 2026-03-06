@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import {
@@ -89,17 +90,25 @@ function renderWithProviders(memos: MemoWithPhotos[]) {
 describe('EtageMemosAccordion', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('displays section heading and etages with memos grouped by etage', async () => {
+  it('displays section heading and etages collapsed by default', async () => {
     renderWithProviders(mockMemos)
     expect(await screen.findByRole('heading', { name: 'Mémos' })).toBeInTheDocument()
     expect(screen.getByText('RDC')).toBeInTheDocument()
     expect(screen.getByText('Étage 1')).toBeInTheDocument()
     expect(screen.getByText('2 mémos')).toBeInTheDocument()
     expect(screen.getByText('1 mémo')).toBeInTheDocument()
+    // Memo content is NOT visible by default (accordion collapsed)
+    expect(screen.queryByText('Dalle fragile hall')).not.toBeInTheDocument()
   })
 
-  it('shows memo content, author, date and photos within accordion', async () => {
+  it('shows memo content, author, date and photos when expanded', async () => {
+    const user = userEvent.setup()
     renderWithProviders(mockMemos)
+    // Expand RDC accordion
+    await user.click(await screen.findByText('RDC'))
+    // Expand Étage 1 accordion
+    await user.click(screen.getByText('Étage 1'))
+
     expect(await screen.findByText('Dalle fragile hall')).toBeInTheDocument()
     expect(screen.getByText('Vérifier compteur')).toBeInTheDocument()
     expect(screen.getByText('Clé gardienne étage 1')).toBeInTheDocument()
@@ -119,8 +128,12 @@ describe('EtageMemosAccordion', () => {
     expect(screen.queryByText('Étage 2')).not.toBeInTheDocument()
   })
 
-  it('renders links to etage memos pages', async () => {
+  it('renders links to etage memos pages when expanded', async () => {
+    const user = userEvent.setup()
     renderWithProviders(mockMemos)
+    await user.click(await screen.findByText('RDC'))
+    await user.click(screen.getByText('Étage 1'))
+
     await screen.findByText('Dalle fragile hall')
     const links = screen.getAllByRole('link')
     const memoLinks = links.filter((l) => l.getAttribute('href')?.includes('/memos'))
@@ -135,7 +148,9 @@ describe('EtageMemosAccordion', () => {
   })
 
   it('does not show edit/delete dropdown on memo cards', async () => {
+    const user = userEvent.setup()
     renderWithProviders(mockMemos)
+    await user.click(await screen.findByText('RDC'))
     await screen.findByText('Dalle fragile hall')
     expect(screen.queryByLabelText('Options du mémo')).not.toBeInTheDocument()
   })

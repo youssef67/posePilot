@@ -35,7 +35,7 @@ export function EtageMemosAccordion({ etages, plotId, chantierId }: EtageMemosAc
   return (
     <div className="px-4 pt-3">
       <h2 className="text-base font-semibold text-foreground mb-3">Mémos</h2>
-      <Accordion type="multiple" defaultValue={etagesWithMemos.map((e) => e.id)}>
+      <Accordion type="multiple">
         {etagesWithMemos.map((etage) => {
           const etageMemos = memosByEtage[etage.id]
           return (
