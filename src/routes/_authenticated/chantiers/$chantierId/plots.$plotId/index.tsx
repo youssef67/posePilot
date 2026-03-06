@@ -50,6 +50,7 @@ import { useDuplicatePlot } from '@/lib/mutations/useDuplicatePlot'
 import { useVariantes } from '@/lib/queries/useVariantes'
 import { useCreateVariante } from '@/lib/mutations/useCreateVariante'
 import { useLots } from '@/lib/queries/useLots'
+import { useIntervenants } from '@/lib/queries/useIntervenants'
 import { useEtages } from '@/lib/queries/useEtages'
 import { useCreateLot } from '@/lib/mutations/useCreateLot'
 import { useCreateBatchLots } from '@/lib/mutations/useCreateBatchLots'
@@ -139,6 +140,9 @@ function PlotIndexPage() {
   const [renameEtageNom, setRenameEtageNom] = useState('')
   const [renameEtageError, setRenameEtageError] = useState('')
   const [deleteEtageTarget, setDeleteEtageTarget] = useState<{ id: string; nom: string; lotCount: number } | null>(null)
+
+  const { data: intervenants = [] } = useIntervenants()
+  const [intervenantFilter, setIntervenantFilter] = useState<string>('tous')
 
   const plot = plots?.find((p) => p.id === plotId)
 
@@ -501,17 +505,23 @@ function PlotIndexPage() {
     )
   }
 
-  const lotsGroupedByEtage = lots
-    ? lots.reduce(
-        (acc, lot) => {
-          const etageNom = lot.etages?.nom ?? 'Sans étage'
-          if (!acc[etageNom]) acc[etageNom] = []
-          acc[etageNom].push(lot)
-          return acc
-        },
-        {} as Record<string, typeof lots>,
-      )
-    : {}
+  const filteredLots = lots
+    ? intervenantFilter === 'tous'
+      ? lots
+      : intervenantFilter === '__none__'
+        ? lots.filter((l) => !l.intervenant_id)
+        : lots.filter((l) => l.intervenant_id === intervenantFilter)
+    : []
+
+  const lotsGroupedByEtage = filteredLots.reduce(
+    (acc, lot) => {
+      const etageNom = lot.etages?.nom ?? 'Sans étage'
+      if (!acc[etageNom]) acc[etageNom] = []
+      acc[etageNom].push(lot)
+      return acc
+    },
+    {} as Record<string, typeof filteredLots>,
+  )
 
   const etageCards = useMemo(() => {
     if (!etages || !lots) return []
@@ -911,7 +921,7 @@ function PlotIndexPage() {
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-foreground">
-            Lots{lots && lots.length > 0 ? ` (${lots.length})` : ''}
+            Lots{lots && lots.length > 0 ? ` (${intervenantFilter !== 'tous' ? `${filteredLots.length}/` : ''}${lots.length})` : ''}
           </h2>
           {lots && lots.length > 0 && (
             selectionMode ? (
@@ -942,7 +952,29 @@ function PlotIndexPage() {
           )}
         </div>
 
+        {intervenants.length > 0 && lots && lots.length > 0 && (
+          <div className="mb-3">
+            <Select value={intervenantFilter} onValueChange={setIntervenantFilter}>
+              <SelectTrigger className="h-8 text-sm w-full" aria-label="Filtrer par intervenant">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Tous les intervenants</SelectItem>
+                <SelectItem value="__none__">Non assigné</SelectItem>
+                {intervenants.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>{i.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {lots && lots.length > 0 ? (
+          filteredLots.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Aucun lot pour cet intervenant
+            </p>
+          ) : (
           <div className="space-y-4 mb-4">
             {Object.entries(lotsGroupedByEtage).map(([etageNom, etageLots]) => (
               <div key={etageNom}>
@@ -986,6 +1018,7 @@ function PlotIndexPage() {
               </div>
             ))}
           </div>
+          )
         ) : (
           <p className="text-sm text-muted-foreground mb-4">
             Aucun lot créé — Ajoutez des lots pour lancer la pose.
