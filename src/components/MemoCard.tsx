@@ -6,41 +6,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import type { ChantierMemo } from '@/types/database'
+import { formatRelativeTime } from '@/lib/utils/formatRelativeTime'
+import type { Memo } from '@/types/database'
 
 interface MemoCardProps {
-  memo: ChantierMemo
-  onEdit: (memo: ChantierMemo) => void
-  onDelete: (memo: ChantierMemo) => void
-}
-
-const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' })
-
-function formatRelativeTime(dateStr: string): string {
-  const now = Date.now()
-  const date = new Date(dateStr).getTime()
-  const diffSeconds = Math.round((date - now) / 1000)
-
-  const units: [Intl.RelativeTimeFormatUnit, number][] = [
-    ['year', 60 * 60 * 24 * 365],
-    ['month', 60 * 60 * 24 * 30],
-    ['week', 60 * 60 * 24 * 7],
-    ['day', 60 * 60 * 24],
-    ['hour', 60 * 60],
-    ['minute', 60],
-  ]
-
-  for (const [unit, seconds] of units) {
-    if (Math.abs(diffSeconds) >= seconds) {
-      return rtf.format(Math.round(diffSeconds / seconds), unit)
-    }
-  }
-
-  return rtf.format(diffSeconds, 'second')
-}
-
-function extractAuthorName(email: string): string {
-  return email.split('@')[0]
+  memo: Memo
+  onEdit: (memo: Memo) => void
+  onDelete: (memo: Memo) => void
 }
 
 export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
@@ -64,8 +36,15 @@ export function MemoCard({ memo, onEdit, onDelete }: MemoCardProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {memo.photo_url && (
+        <img
+          src={memo.photo_url}
+          alt="Photo du mémo"
+          className="mt-2 h-20 w-20 rounded-lg object-cover"
+        />
+      )}
       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{extractAuthorName(memo.created_by_email)}</span>
+        <span>{memo.created_by_email.split('@')[0]}</span>
         <span>·</span>
         <span>{formatRelativeTime(memo.created_at)}</span>
       </div>

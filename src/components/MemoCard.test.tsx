@@ -2,13 +2,16 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoCard } from './MemoCard'
-import type { ChantierMemo } from '@/types/database'
+import type { Memo } from '@/types/database'
 
-const memo: ChantierMemo = {
+const memo: Memo = {
   id: 'm1',
   chantier_id: 'ch-1',
+  plot_id: null,
+  etage_id: null,
   content: 'Clé chez la gardienne bât. B',
   created_by_email: 'youssef@example.com',
+  photo_url: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -40,5 +43,19 @@ describe('MemoCard', () => {
     await userEvent.click(screen.getByLabelText('Options du mémo'))
     await userEvent.click(screen.getByText('Supprimer'))
     expect(onDelete).toHaveBeenCalledWith(memo)
+  })
+
+  it('displays photo thumbnail when photo_url is present', () => {
+    const memoWithPhoto: Memo = { ...memo, photo_url: 'https://example.com/photo.jpg' }
+    render(<MemoCard memo={memoWithPhoto} onEdit={vi.fn()} onDelete={vi.fn()} />)
+    const img = screen.getByAltText('Photo du mémo') as HTMLImageElement
+    expect(img).toBeInTheDocument()
+    expect(img.src).toBe('https://example.com/photo.jpg')
+    expect(img.className).toContain('h-20')
+  })
+
+  it('does not display photo when photo_url is null', () => {
+    render(<MemoCard memo={memo} onEdit={vi.fn()} onDelete={vi.fn()} />)
+    expect(screen.queryByAltText('Photo du mémo')).not.toBeInTheDocument()
   })
 })

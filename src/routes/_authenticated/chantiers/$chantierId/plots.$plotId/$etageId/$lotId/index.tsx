@@ -64,6 +64,9 @@ import { useRealtimeNotes } from '@/lib/subscriptions/useRealtimeNotes'
 import { useRealtimeLotPhotos } from '@/lib/subscriptions/useRealtimeLotPhotos'
 import { useRealtimeReservations } from '@/lib/subscriptions/useRealtimeReservations'
 import { useReservations } from '@/lib/queries/useReservations'
+import { useChantier } from '@/lib/queries/useChantier'
+import { usePlots } from '@/lib/queries/usePlots'
+import { MemoContextSection } from '@/components/MemoContextSection'
 
 export const Route = createFileRoute(
   '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/$lotId/',
@@ -91,6 +94,10 @@ function LotIndexPage() {
   const updateLot = useUpdateLot()
   const { data: variantes } = useVariantes(plotId)
   const { data: allEtages } = useEtages(plotId)
+  const { data: chantier } = useChantier(chantierId)
+  const { data: allPlots } = usePlots(chantierId)
+  const currentPlot = allPlots?.find((p) => p.id === plotId)
+  const currentEtage = allEtages?.find((e) => e.id === etageId)
 
   const uploadLotPhoto = useUploadLotPhoto()
   const [photoUploadProgress, setPhotoUploadProgress] = useState<number | undefined>(undefined)
@@ -439,6 +446,19 @@ function LotIndexPage() {
       </header>
 
       <BreadcrumbNav />
+
+      {chantier && currentPlot && currentEtage && (
+        <div className="px-4 pt-3">
+          <MemoContextSection
+            chantierId={chantierId}
+            plotId={plotId}
+            etageId={etageId}
+            chantierNom={chantier.nom}
+            plotNom={currentPlot.nom}
+            etageNom={currentEtage.nom}
+          />
+        </div>
+      )}
 
       <div className="px-4 py-2">
         {editMode ? (

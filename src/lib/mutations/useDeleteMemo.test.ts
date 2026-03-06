@@ -6,6 +6,7 @@ import { createElement } from 'react'
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn(),
+    storage: { from: vi.fn() },
   },
 }))
 
@@ -24,7 +25,7 @@ function createWrapper() {
 describe('useDeleteMemo', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('deletes memo from chantier_memos', async () => {
+  it('deletes memo from memos table', async () => {
     const mockEq = vi.fn().mockResolvedValue({ error: null })
     const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
     vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as never)
@@ -33,11 +34,36 @@ describe('useDeleteMemo', () => {
     const { result } = renderHook(() => useDeleteMemo(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ memoId: 'm1', chantierId: 'ch-1' })
+      result.current.mutate({ memoId: 'm1', entityType: 'chantier', entityId: 'ch-1' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(supabase.from).toHaveBeenCalledWith('chantier_memos')
+    expect(supabase.from).toHaveBeenCalledWith('memos')
     expect(mockEq).toHaveBeenCalledWith('id', 'm1')
+  })
+
+  it('cleans up photo from storage when photoUrl is provided', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null })
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
+    vi.mocked(supabase.from).mockReturnValue({ delete: mockDelete } as never)
+
+    const mockRemove = vi.fn().mockResolvedValue({ error: null })
+    vi.mocked(supabase.storage.from).mockReturnValue({ remove: mockRemove } as never)
+
+    const { wrapper } = createWrapper()
+    const { result } = renderHook(() => useDeleteMemo(), { wrapper })
+
+    await act(async () => {
+      result.current.mutate({
+        memoId: 'm1',
+        photoUrl: 'https://storage.example.com/note-photos/u1/memo_m1_123.jpg',
+        entityType: 'plot',
+        entityId: 'p-1',
+      })
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(supabase.storage.from).toHaveBeenCalledWith('note-photos')
+    expect(mockRemove).toHaveBeenCalledWith(['u1/memo_m1_123.jpg'])
   })
 })

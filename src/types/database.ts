@@ -70,6 +70,7 @@ export type Database = {
           metrage_m2_total: number
           metrage_ml_total: number
           cout_materiaux_total: number
+          memo_count: number
         }
         Insert: {
           id?: string
@@ -85,6 +86,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
+          memo_count?: number
         }
         Update: {
           id?: string
@@ -100,6 +102,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
+          memo_count?: number
         }
         Relationships: []
       }
@@ -188,6 +191,7 @@ export type Database = {
           metrage_m2_total: number
           metrage_ml_total: number
           cout_materiaux_total: number
+          memo_count: number
         }
         Insert: {
           id?: string
@@ -201,6 +205,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
+          memo_count?: number
         }
         Update: {
           id?: string
@@ -214,6 +219,7 @@ export type Database = {
           metrage_m2_total?: number
           metrage_ml_total?: number
           cout_materiaux_total?: number
+          memo_count?: number
         }
         Relationships: []
       }
@@ -825,28 +831,37 @@ export type Database = {
         }
         Relationships: []
       }
-      chantier_memos: {
+      memos: {
         Row: {
           id: string
-          chantier_id: string
+          chantier_id: string | null
+          plot_id: string | null
+          etage_id: string | null
           content: string
           created_by_email: string
+          photo_url: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          chantier_id: string
+          chantier_id?: string | null
+          plot_id?: string | null
+          etage_id?: string | null
           content: string
           created_by_email: string
+          photo_url?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          chantier_id?: string
+          chantier_id?: string | null
+          plot_id?: string | null
+          etage_id?: string | null
           content?: string
           created_by_email?: string
+          photo_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1108,8 +1123,8 @@ export interface Besoin {
 // Type miroir de la table lot_badges (046_lot_badges.sql)
 export type LotBadge = Database['public']['Tables']['lot_badges']['Row']
 
-// Type miroir de la table chantier_memos (048_chantier_memos.sql)
-export type ChantierMemo = Database['public']['Tables']['chantier_memos']['Row']
+// Type miroir de la table memos (048_chantier_memos.sql + 058_memos_multi_level.sql)
+export type Memo = Database['public']['Tables']['memos']['Row']
 
 // Type miroir de la table chantier_caracteristiques (044_chantier_caracteristiques.sql)
 export interface Caracteristique {

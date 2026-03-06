@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Boxes, CheckSquare, Layers, Package, PackageCheck, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Boxes, CheckSquare, ChevronRight, Layers, Package, PackageCheck, Plus, StickyNote, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -372,6 +372,22 @@ function EtageIndexPage() {
       </header>
 
       <BreadcrumbNav />
+
+      {etage.memo_count > 0 && (
+        <div className="px-4 pt-3">
+          <Link
+            to="/chantiers/$chantierId/plots/$plotId/$etageId/memos"
+            params={{ chantierId, plotId, etageId }}
+            className="flex items-center gap-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 p-3 text-[#3B82F6]"
+          >
+            <StickyNote className="size-4 shrink-0" />
+            <span className="text-sm font-medium flex-1">
+              {etage.memo_count} mémo{etage.memo_count > 1 ? 's' : ''}
+            </span>
+            <ChevronRight className="size-4 shrink-0" />
+          </Link>
+        </div>
+      )}
 
       <div className="p-4 pb-36">
         <div className="flex items-center justify-between mb-3">

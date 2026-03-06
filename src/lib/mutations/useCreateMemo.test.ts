@@ -24,7 +24,7 @@ function createWrapper() {
 describe('useCreateMemo', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('inserts memo into chantier_memos', async () => {
+  it('inserts memo into memos table', async () => {
     const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'm1', chantier_id: 'ch-1', content: 'Test', created_by_email: 'a@b.com' }, error: null })
     const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
     const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
@@ -38,7 +38,13 @@ describe('useCreateMemo', () => {
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(supabase.from).toHaveBeenCalledWith('chantier_memos')
-    expect(mockInsert).toHaveBeenCalledWith({ chantier_id: 'ch-1', content: 'Test', created_by_email: 'a@b.com' })
+    expect(supabase.from).toHaveBeenCalledWith('memos')
+    expect(mockInsert).toHaveBeenCalledWith({
+      chantier_id: 'ch-1',
+      plot_id: null,
+      etage_id: null,
+      content: 'Test',
+      created_by_email: 'a@b.com',
+    })
   })
 })

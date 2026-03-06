@@ -35,10 +35,10 @@ describe('useUpdateMemo', () => {
     const { result } = renderHook(() => useUpdateMemo(), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ memoId: 'm1', content: 'Updated', chantierId: 'ch-1' })
+      result.current.mutate({ memoId: 'm1', content: 'Updated', entityType: 'chantier', entityId: 'ch-1' })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(supabase.from).toHaveBeenCalledWith('chantier_memos')
+    expect(supabase.from).toHaveBeenCalledWith('memos')
   })
 })

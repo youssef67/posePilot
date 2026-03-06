@@ -30,10 +30,9 @@ vi.mock('@/lib/mutations/useDeleteMemo', () => ({
   }),
 }))
 
-const mockCreateMutate = vi.fn()
 vi.mock('@/lib/mutations/useCreateMemo', () => ({
   useCreateMemo: () => ({
-    mutate: mockCreateMutate,
+    mutate: vi.fn(),
     isPending: false,
   }),
 }))
@@ -54,34 +53,48 @@ vi.mock('@/lib/mutations/useUploadMemoPhoto', () => ({
 
 import { supabase } from '@/lib/supabase'
 
-const mockChantier = {
-  id: 'abc-123',
-  nom: 'Résidence Alpha',
-  type: 'complet' as const,
-  status: 'active' as const,
-  progress_done: 3,
-  progress_total: 10,
-  memo_count: 2,
-  created_at: '2026-01-01T00:00:00Z',
-  created_by: 'user-1',
-}
+const mockPlots = [
+  {
+    id: 'plot-1',
+    chantier_id: 'ch-1',
+    nom: 'Résidence Lumière',
+    task_definitions: [],
+    task_config: {},
+    progress_done: 0,
+    progress_total: 0,
+    has_blocking_note: false,
+    has_open_reservation: false,
+    metrage_m2_total: 0,
+    metrage_ml_total: 0,
+    cout_materiaux_total: 0,
+    memo_count: 2,
+    created_at: '2026-01-01T00:00:00Z',
+    lots: [{ count: 0 }],
+  },
+]
 
 const mockMemos = [
   {
     id: 'memo-1',
-    chantier_id: 'abc-123',
-    content: 'Attention au plancher fragile étage 3',
-    created_by_email: 'jean@example.com',
-    created_at: '2026-02-20T10:00:00Z',
-    updated_at: '2026-02-20T10:00:00Z',
+    chantier_id: null,
+    plot_id: 'plot-1',
+    etage_id: null,
+    content: 'Dalle fragile hall RDC',
+    created_by_email: 'bruno@example.com',
+    photo_url: null,
+    created_at: '2026-02-12T10:00:00Z',
+    updated_at: '2026-02-12T10:00:00Z',
   },
   {
     id: 'memo-2',
-    chantier_id: 'abc-123',
-    content: 'Code portail: 4589B',
-    created_by_email: 'paul@example.com',
-    created_at: '2026-02-19T08:00:00Z',
-    updated_at: '2026-02-19T08:00:00Z',
+    chantier_id: null,
+    plot_id: 'plot-1',
+    etage_id: null,
+    content: 'Clé chez gardienne bât B',
+    created_by_email: 'youssef@example.com',
+    photo_url: null,
+    created_at: '2026-02-10T08:00:00Z',
+    updated_at: '2026-02-10T08:00:00Z',
   },
 ]
 
@@ -103,7 +116,7 @@ function renderRoute() {
   const auth = createMockAuth()
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/chantiers/abc-123/memos'] }),
+    history: createMemoryHistory({ initialEntries: ['/chantiers/ch-1/plots/plot-1/memos'] }),
     context: { auth },
   })
 
@@ -118,11 +131,11 @@ function renderRoute() {
 
 function mockSupabaseWith(memos: typeof mockMemos) {
   vi.mocked(supabase.from).mockImplementation((table: string) => {
-    if (table === 'chantiers') {
+    if (table === 'plots') {
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockChantier, error: null }),
+            order: vi.fn().mockResolvedValue({ data: mockPlots, error: null }),
           }),
         }),
       } as never
@@ -146,7 +159,7 @@ function mockSupabaseWith(memos: typeof mockMemos) {
   })
 }
 
-describe('MemosPage', () => {
+describe('PlotMemosPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(supabase.channel).mockReturnValue({
@@ -159,55 +172,33 @@ describe('MemosPage', () => {
   it('renders page heading "Mémos"', async () => {
     mockSupabaseWith(mockMemos)
     renderRoute()
-
     expect(await screen.findByRole('heading', { name: 'Mémos' })).toBeInTheDocument()
   })
 
-  it('displays chantier name as subtitle', async () => {
+  it('displays plot name as subtitle', async () => {
     mockSupabaseWith(mockMemos)
     renderRoute()
-
-    expect(await screen.findByText('Résidence Alpha')).toBeInTheDocument()
+    expect(await screen.findByText('Résidence Lumière')).toBeInTheDocument()
   })
 
   it('renders memo cards with content', async () => {
     mockSupabaseWith(mockMemos)
     renderRoute()
-
-    expect(await screen.findByText('Attention au plancher fragile étage 3')).toBeInTheDocument()
-    expect(screen.getByText('Code portail: 4589B')).toBeInTheDocument()
+    expect(await screen.findByText('Dalle fragile hall RDC')).toBeInTheDocument()
+    expect(screen.getByText('Clé chez gardienne bât B')).toBeInTheDocument()
   })
 
   it('shows empty state when no memos', async () => {
     mockSupabaseWith([])
     renderRoute()
-
-    expect(await screen.findByText('Aucun mémo pour ce chantier')).toBeInTheDocument()
+    expect(await screen.findByText('Aucun mémo pour ce plot')).toBeInTheDocument()
   })
 
-  it('has a back link to chantier page', async () => {
+  it('has a back link to plot page', async () => {
     mockSupabaseWith(mockMemos)
     renderRoute()
-
     const backLink = await screen.findByRole('link', { name: 'Retour' })
-    expect(backLink).toHaveAttribute('href', '/chantiers/abc-123')
-  })
-
-  it('opens delete confirmation dialog', async () => {
-    const user = userEvent.setup()
-    mockSupabaseWith(mockMemos)
-    renderRoute()
-
-    await screen.findByText('Attention au plancher fragile étage 3')
-
-    // Open dropdown on first memo card
-    const menuButtons = screen.getAllByRole('button', { name: 'Options du mémo' })
-    await user.click(menuButtons[0])
-
-    await user.click(await screen.findByRole('menuitem', { name: /Supprimer/i }))
-
-    expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
-    expect(screen.getByText('Supprimer ce mémo ?')).toBeInTheDocument()
+    expect(backLink).toHaveAttribute('href', '/chantiers/ch-1/plots/plot-1')
   })
 
   it('calls delete mutation when confirming deletion', async () => {
@@ -215,8 +206,7 @@ describe('MemosPage', () => {
     mockSupabaseWith(mockMemos)
     renderRoute()
 
-    await screen.findByText('Attention au plancher fragile étage 3')
-
+    await screen.findByText('Dalle fragile hall RDC')
     const menuButtons = screen.getAllByRole('button', { name: 'Options du mémo' })
     await user.click(menuButtons[0])
     await user.click(await screen.findByRole('menuitem', { name: /Supprimer/i }))
@@ -225,7 +215,7 @@ describe('MemosPage', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Supprimer' }))
 
     expect(mockDeleteMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ memoId: 'memo-1', entityType: 'chantier', entityId: 'abc-123' }),
+      expect.objectContaining({ memoId: 'memo-1', entityType: 'plot', entityId: 'plot-1' }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })

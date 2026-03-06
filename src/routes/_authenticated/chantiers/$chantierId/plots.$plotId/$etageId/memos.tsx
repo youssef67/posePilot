@@ -15,21 +15,22 @@ import { Button } from '@/components/ui/button'
 import { Fab } from '@/components/Fab'
 import { MemoCard } from '@/components/MemoCard'
 import { MemoFormSheet } from '@/components/MemoFormSheet'
-import { useChantier } from '@/lib/queries/useChantier'
+import { useEtages } from '@/lib/queries/useEtages'
 import { useMemos } from '@/lib/queries/useMemos'
 import { useDeleteMemo } from '@/lib/mutations/useDeleteMemo'
 import type { Memo } from '@/types/database'
 
 export const Route = createFileRoute(
-  '/_authenticated/chantiers/$chantierId/memos',
+  '/_authenticated/chantiers/$chantierId/plots/$plotId/$etageId/memos',
 )({
-  component: MemosPage,
+  component: EtageMemosPage,
 })
 
-function MemosPage() {
-  const { chantierId } = Route.useParams()
-  const { data: chantier } = useChantier(chantierId)
-  const { data: memos, isLoading } = useMemos('chantier', chantierId)
+function EtageMemosPage() {
+  const { chantierId, plotId, etageId } = Route.useParams()
+  const { data: etages } = useEtages(plotId)
+  const etage = etages?.find((e) => e.id === etageId)
+  const { data: memos, isLoading } = useMemos('etage', etageId)
   const deleteMemo = useDeleteMemo()
 
   const [showFormSheet, setShowFormSheet] = useState(false)
@@ -48,7 +49,7 @@ function MemosPage() {
   function handleConfirmDelete() {
     if (!memoToDelete) return
     deleteMemo.mutate(
-      { memoId: memoToDelete.id, photoUrl: memoToDelete.photo_url, entityType: 'chantier', entityId: chantierId },
+      { memoId: memoToDelete.id, photoUrl: memoToDelete.photo_url, entityType: 'etage', entityId: etageId },
       { onSuccess: () => setMemoToDelete(null) },
     )
   }
@@ -63,8 +64,8 @@ function MemosPage() {
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <Button variant="ghost" size="icon" asChild>
           <Link
-            to="/chantiers/$chantierId"
-            params={{ chantierId }}
+            to="/chantiers/$chantierId/plots/$plotId/$etageId"
+            params={{ chantierId, plotId, etageId }}
             aria-label="Retour"
           >
             <ArrowLeft className="size-5" />
@@ -72,8 +73,8 @@ function MemosPage() {
         </Button>
         <div>
           <h1 className="text-lg font-semibold text-foreground">Mémos</h1>
-          {chantier && (
-            <p className="text-sm text-muted-foreground truncate">{chantier.nom}</p>
+          {etage && (
+            <p className="text-sm text-muted-foreground truncate">{etage.nom}</p>
           )}
         </div>
       </header>
@@ -99,10 +100,7 @@ function MemosPage() {
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
             <StickyNote className="size-12" />
-            <p>Aucun mémo pour ce chantier</p>
-            <p className="text-sm text-center">
-              Ajoutez des mémos pour centraliser les infos importantes (accès, contacts, consignes...)
-            </p>
+            <p>Aucun mémo pour cet étage</p>
           </div>
         )}
       </div>
@@ -113,8 +111,8 @@ function MemosPage() {
         key={editMemo?.id ?? 'new'}
         open={showFormSheet}
         onOpenChange={setShowFormSheet}
-        entityType="chantier"
-        entityId={chantierId}
+        entityType="etage"
+        entityId={etageId}
         editMemo={editMemo}
       />
 

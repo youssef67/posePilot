@@ -42,7 +42,7 @@ describe('MemoFormSheet', () => {
   it('renders creation form when no editMemo', () => {
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} chantierId="ch-1" />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" />
       </Wrapper>,
     )
     expect(screen.getByText('Nouveau mémo')).toBeInTheDocument()
@@ -50,10 +50,10 @@ describe('MemoFormSheet', () => {
   })
 
   it('renders edit form when editMemo is provided', () => {
-    const memo = { id: 'm1', chantier_id: 'ch-1', content: 'Test', created_by_email: 'a@b.com', created_at: '', updated_at: '' }
+    const memo = { id: 'm1', chantier_id: 'ch-1', plot_id: null, etage_id: null, content: 'Test', created_by_email: 'a@b.com', photo_url: null, created_at: '', updated_at: '' }
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} chantierId="ch-1" editMemo={memo} />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" editMemo={memo} />
       </Wrapper>,
     )
     expect(screen.getByText('Modifier le mémo')).toBeInTheDocument()
@@ -63,7 +63,7 @@ describe('MemoFormSheet', () => {
   it('disables button when content is empty', () => {
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} chantierId="ch-1" />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" />
       </Wrapper>,
     )
     expect(screen.getByText('Ajouter')).toBeDisabled()
@@ -72,10 +72,29 @@ describe('MemoFormSheet', () => {
   it('enables button when content is entered', async () => {
     render(
       <Wrapper>
-        <MemoFormSheet open={true} onOpenChange={vi.fn()} chantierId="ch-1" />
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="chantier" entityId="ch-1" />
       </Wrapper>,
     )
     await userEvent.type(screen.getByPlaceholderText('Écrire un mémo...'), 'Nouveau mémo test')
     expect(screen.getByText('Ajouter')).not.toBeDisabled()
+  })
+
+  it('shows photo capture button in creation mode', () => {
+    render(
+      <Wrapper>
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="plot" entityId="p-1" />
+      </Wrapper>,
+    )
+    expect(screen.getByText('Ajouter une photo')).toBeInTheDocument()
+  })
+
+  it('hides photo capture button in edit mode', () => {
+    const memo = { id: 'm1', chantier_id: null, plot_id: 'p-1', etage_id: null, content: 'Test', created_by_email: 'a@b.com', photo_url: null, created_at: '', updated_at: '' }
+    render(
+      <Wrapper>
+        <MemoFormSheet open={true} onOpenChange={vi.fn()} entityType="plot" entityId="p-1" editMemo={memo} />
+      </Wrapper>,
+    )
+    expect(screen.queryByText('Ajouter une photo')).not.toBeInTheDocument()
   })
 })

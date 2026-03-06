@@ -12,6 +12,7 @@ export interface EtageRow {
   metrage_m2_total: number
   metrage_ml_total: number
   cout_materiaux_total: number
+  memo_count: number
   created_at: string
 }
 

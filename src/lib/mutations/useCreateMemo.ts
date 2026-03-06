@@ -2,23 +2,48 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
+interface CreateMemoInput {
+  chantierId?: string
+  plotId?: string
+  etageId?: string
+  content: string
+  createdByEmail: string
+}
+
 export function useCreateMemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ chantierId, content, createdByEmail }: { chantierId: string; content: string; createdByEmail: string }) => {
+    mutationFn: async ({ chantierId, plotId, etageId, content, createdByEmail }: CreateMemoInput) => {
       const { data, error } = await supabase
-        .from('chantier_memos')
-        .insert({ chantier_id: chantierId, content, created_by_email: createdByEmail })
+        .from('memos')
+        .insert({
+          chantier_id: chantierId ?? null,
+          plot_id: plotId ?? null,
+          etage_id: etageId ?? null,
+          content,
+          created_by_email: createdByEmail,
+        })
         .select('*')
         .single()
       if (error) throw error
       return data
     },
-    onSettled: (_data, _err, { chantierId }) => {
-      queryClient.invalidateQueries({ queryKey: ['chantier-memos', { chantierId }] })
-      queryClient.invalidateQueries({ queryKey: ['chantiers'] })
-      queryClient.invalidateQueries({ queryKey: ['chantiers', chantierId] })
+    onSettled: (_data, _err, { chantierId, plotId, etageId }) => {
+      if (chantierId) {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'chantier', chantierId] })
+        queryClient.invalidateQueries({ queryKey: ['chantiers'] })
+        queryClient.invalidateQueries({ queryKey: ['chantiers', chantierId] })
+      }
+      if (plotId) {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'plot', plotId] })
+        queryClient.invalidateQueries({ queryKey: ['plots'] })
+      }
+      if (etageId) {
+        queryClient.invalidateQueries({ queryKey: ['memos', 'etage', etageId] })
+        queryClient.invalidateQueries({ queryKey: ['etages'] })
+      }
+      queryClient.invalidateQueries({ queryKey: ['context-memos'] })
       toast.success('Mémo ajouté')
     },
   })
