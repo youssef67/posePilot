@@ -28,8 +28,11 @@ export function useTransferInventaire() {
       })
       if (error) throw error
     },
-    onSettled: (_data, _error, { chantierId }) => {
+    onSettled: (_data, _error, { chantierId, targetPlotId }) => {
       queryClient.invalidateQueries({ queryKey: ['inventaire', chantierId] })
+      if (targetPlotId) {
+        queryClient.invalidateQueries({ queryKey: ['lots', targetPlotId] })
+      }
     },
   })
 }
