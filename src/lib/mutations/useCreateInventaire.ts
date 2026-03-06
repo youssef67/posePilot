@@ -51,6 +51,7 @@ export function useCreateInventaire() {
         lot_id: lotId,
         designation: designation.trim(),
         quantite,
+        source: null,
         created_at: new Date().toISOString(),
         created_by: null,
         plots: plotId ? { nom: '' } : null,

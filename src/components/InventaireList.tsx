@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRightLeft, Boxes, Minus, Pencil, Plus } from 'lucide-react'
+import { ArrowRightLeft, Boxes, Minus, PackagePlus, Pencil, Plus } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -57,6 +58,8 @@ interface InventaireListProps {
   onDelete: (item: InventaireWithLocation) => void
   onTransfer?: (item: InventaireWithLocation) => void
   transferLabel?: string
+  onTransferToLot?: (item: InventaireWithLocation) => void
+  showSourceBadge?: boolean
 }
 
 export function InventaireList({
@@ -70,6 +73,8 @@ export function InventaireList({
   onDelete,
   onTransfer,
   transferLabel = 'Transférer',
+  onTransferToLot,
+  showSourceBadge = false,
 }: InventaireListProps) {
   const [deleteTarget, setDeleteTarget] = useState<InventaireWithLocation | null>(null)
 
@@ -144,6 +149,17 @@ export function InventaireList({
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
         )}
+        {onTransferToLot && item.lot_id === null && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 min-w-[48px]"
+            onClick={() => onTransferToLot(item)}
+            aria-label={`Transférer ${item.designation} vers un lot`}
+          >
+            <PackagePlus className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -194,8 +210,11 @@ export function InventaireList({
               <div className="space-y-2">
                 {group.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between pl-2">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       {getLocationLabel(item)} : {item.quantite}
+                      {showSourceBadge && item.source === 'transfer' && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">Stock</Badge>
+                      )}
                     </span>
                     {renderItemControls(item)}
                   </div>
@@ -217,8 +236,11 @@ export function InventaireList({
           <div key={item.id} className="rounded-lg border border-border p-4">
             <p className="text-sm font-medium text-foreground">{item.designation}</p>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
                 {getLocationLabel(item)}
+                {showSourceBadge && item.source === 'transfer' && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">Stock</Badge>
+                )}
               </span>
               {renderItemControls(item)}
             </div>

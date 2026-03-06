@@ -26,6 +26,7 @@ const mockItem: InventaireWithLocation = {
   lot_id: null,
   designation: 'Colle faïence 20kg',
   quantite: 10,
+  source: null,
   created_at: '2026-02-10T10:00:00Z',
   created_by: 'user-1',
   plots: null,
@@ -137,5 +138,41 @@ describe('TransferSheet', () => {
   it('returns null when item is null', () => {
     const { container } = renderSheet({ item: null })
     expect(container.innerHTML).toBe('')
+  })
+
+  describe('direction to-lot', () => {
+    const toLotProps = {
+      direction: 'to-lot' as const,
+      plotId: 'p1',
+      etageId: 'e1',
+      etageName: 'RDC',
+      item: { ...mockItem, plot_id: 'p1', etage_id: 'e1', plots: { nom: 'Plot A' }, etages: { nom: 'RDC' } },
+    }
+
+    it('renders title "Transférer vers un lot"', () => {
+      renderSheet(toLotProps)
+      expect(screen.getByText('Transférer vers un lot')).toBeInTheDocument()
+    })
+
+    it('shows étage name in description', () => {
+      renderSheet(toLotProps)
+      expect(screen.getByText('Colle faïence 20kg (10 en stock sur RDC)')).toBeInTheDocument()
+    })
+
+    it('shows lot selector', () => {
+      renderSheet(toLotProps)
+      expect(screen.getByLabelText('Sélectionner un lot')).toBeInTheDocument()
+    })
+
+    it('hides plot/étage selectors', () => {
+      renderSheet(toLotProps)
+      expect(screen.queryByLabelText('Sélectionner un plot')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Sélectionner un étage')).not.toBeInTheDocument()
+    })
+
+    it('disables submit when no lot is selected', () => {
+      renderSheet(toLotProps)
+      expect(screen.getByRole('button', { name: /Transférer 1 unité$/ })).toBeDisabled()
+    })
   })
 })

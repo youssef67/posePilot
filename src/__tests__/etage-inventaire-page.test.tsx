@@ -53,11 +53,31 @@ const mockInventaireEtage = [
     lot_id: null,
     designation: 'Carrelage 60x60',
     quantite: 20,
+    source: null,
     created_at: '2026-02-10T10:00:00Z',
     created_by: 'user-1',
     plots: { nom: 'Plot A' },
     etages: { nom: 'RDC' },
     lots: null,
+  },
+]
+
+const mockInventaireWithLot = [
+  ...mockInventaireEtage,
+  {
+    id: 'inv2',
+    chantier_id: 'ch1',
+    plot_id: 'p1',
+    etage_id: 'e1',
+    lot_id: 'lot1',
+    designation: 'Carrelage 60x60',
+    quantite: 5,
+    source: 'transfer',
+    created_at: '2026-02-10T11:00:00Z',
+    created_by: 'user-1',
+    plots: { nom: 'Plot A' },
+    etages: { nom: 'RDC' },
+    lots: { code: '101' },
   },
 ]
 
@@ -172,5 +192,39 @@ describe('EtageInventairePage', () => {
     expect(screen.getByLabelText('Désignation')).toBeInTheDocument()
     expect(screen.getByLabelText('Quantité')).toBeInTheDocument()
     expect(screen.getByLabelText('Sélectionner un lot')).toBeInTheDocument()
+  })
+
+  it('shows "Transférer vers un lot" button on items without lot', async () => {
+    setupMocks(mockInventaireEtage)
+    renderRoute('/chantiers/ch1/plots/p1/e1/inventaire')
+
+    await screen.findByText('Carrelage 60x60')
+    expect(screen.getByRole('button', { name: /Transférer Carrelage 60x60 vers un lot/ })).toBeInTheDocument()
+  })
+
+  it('does NOT show "Transférer vers un lot" button on items with lot', async () => {
+    setupMocks(mockInventaireWithLot)
+    renderRoute('/chantiers/ch1/plots/p1/e1/inventaire')
+
+    await screen.findByText('Carrelage 60x60')
+    const transferButtons = screen.getAllByRole('button', { name: /Transférer Carrelage 60x60 vers un lot/ })
+    // Only one button (for the item without lot), not two
+    expect(transferButtons).toHaveLength(1)
+  })
+
+  it('shows "Stock" badge on items with source=transfer', async () => {
+    setupMocks(mockInventaireWithLot)
+    renderRoute('/chantiers/ch1/plots/p1/e1/inventaire')
+
+    await screen.findByText('Carrelage 60x60')
+    expect(screen.getByText('Stock')).toBeInTheDocument()
+  })
+
+  it('does NOT show "Stock" badge on items without source', async () => {
+    setupMocks(mockInventaireEtage)
+    renderRoute('/chantiers/ch1/plots/p1/e1/inventaire')
+
+    await screen.findByText('Carrelage 60x60')
+    expect(screen.queryByText('Stock')).not.toBeInTheDocument()
   })
 })

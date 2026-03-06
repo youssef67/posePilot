@@ -681,6 +681,7 @@ export type Database = {
           lot_id: string | null
           designation: string
           quantite: number
+          source: string | null
           created_at: string
           created_by: string | null
         }
@@ -692,6 +693,7 @@ export type Database = {
           lot_id?: string | null
           designation: string
           quantite?: number
+          source?: string | null
           created_at?: string
           created_by?: string | null
         }
@@ -703,6 +705,7 @@ export type Database = {
           lot_id?: string | null
           designation?: string
           quantite?: number
+          source?: string | null
           created_at?: string
           created_by?: string | null
         }
@@ -974,6 +977,7 @@ export type Database = {
           p_quantity: number
           p_target_plot_id: string | null
           p_target_etage_id: string | null
+          p_target_lot_id: string | null
         }
         Returns: undefined
       }
@@ -1074,7 +1078,7 @@ export interface LotPhoto {
   created_at: string
 }
 
-// Type miroir de la table inventaire (018_inventaire.sql + 026_stockage_general + 050_inventaire_lot)
+// Type miroir de la table inventaire (018_inventaire.sql + 026_stockage_general + 050_inventaire_lot + 060_transfer_inventaire_lot)
 export interface Inventaire {
   id: string
   chantier_id: string
@@ -1083,6 +1087,7 @@ export interface Inventaire {
   lot_id: string | null
   designation: string
   quantite: number
+  source: string | null
   created_at: string
   created_by: string | null
 }

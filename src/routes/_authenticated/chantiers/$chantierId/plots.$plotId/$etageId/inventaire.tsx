@@ -61,6 +61,7 @@ function EtageInventairePage() {
   const [errors, setErrors] = useState<{ designation?: string; quantite?: string }>({})
   const [transferItem, setTransferItem] = useState<InventaireWithLocation | null>(null)
   const [showTransferSheet, setShowTransferSheet] = useState(false)
+  const [transferDirection, setTransferDirection] = useState<'to-general' | 'to-lot'>('to-general')
 
   function handleOpenSheet() {
     setEditingItem(null)
@@ -162,6 +163,13 @@ function EtageInventairePage() {
   }
 
   function handleTransfer(item: InventaireWithLocation) {
+    setTransferDirection('to-general')
+    setTransferItem(item)
+    setShowTransferSheet(true)
+  }
+
+  function handleTransferToLot(item: InventaireWithLocation) {
+    setTransferDirection('to-lot')
     setTransferItem(item)
     setShowTransferSheet(true)
   }
@@ -205,6 +213,8 @@ function EtageInventairePage() {
           onDelete={handleDelete}
           onTransfer={handleTransfer}
           transferLabel="Retourner"
+          onTransferToLot={handleTransferToLot}
+          showSourceBadge={true}
         />
 
         <Fab onClick={handleOpenSheet} />
@@ -294,8 +304,11 @@ function EtageInventairePage() {
         open={showTransferSheet}
         onOpenChange={setShowTransferSheet}
         item={transferItem}
-        direction="to-general"
+        direction={transferDirection}
         chantierId={chantierId}
+        plotId={plotId}
+        etageId={etageId}
+        etageName={etage?.nom}
       />
     </div>
   )

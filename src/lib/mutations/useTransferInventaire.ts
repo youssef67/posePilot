@@ -10,11 +10,13 @@ export function useTransferInventaire() {
       quantity,
       targetPlotId,
       targetEtageId,
+      targetLotId = null,
     }: {
       sourceId: string
       quantity: number
       targetPlotId: string | null
       targetEtageId: string | null
+      targetLotId?: string | null
       chantierId: string
     }) => {
       const { error } = await supabase.rpc('transfer_inventaire', {
@@ -22,6 +24,7 @@ export function useTransferInventaire() {
         p_quantity: quantity,
         p_target_plot_id: targetPlotId,
         p_target_etage_id: targetEtageId,
+        p_target_lot_id: targetLotId,
       })
       if (error) throw error
     },

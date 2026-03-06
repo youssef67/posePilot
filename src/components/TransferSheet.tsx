@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { usePlots } from '@/lib/queries/usePlots'
 import { useEtages } from '@/lib/queries/useEtages'
+import { useLots } from '@/lib/queries/useLots'
 import { useTransferInventaire } from '@/lib/mutations/useTransferInventaire'
 import type { InventaireWithLocation } from '@/lib/queries/useInventaire'
 
@@ -26,8 +27,11 @@ interface TransferSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   item: InventaireWithLocation | null
-  direction: 'to-etage' | 'to-general'
+  direction: 'to-etage' | 'to-general' | 'to-lot'
   chantierId: string
+  plotId?: string
+  etageId?: string
+  etageName?: string
 }
 
 export function TransferSheet({
@@ -36,14 +40,21 @@ export function TransferSheet({
   item,
   direction,
   chantierId,
+  plotId,
+  etageId,
+  etageName,
 }: TransferSheetProps) {
   const [selectedPlotId, setSelectedPlotId] = useState('')
   const [selectedEtageId, setSelectedEtageId] = useState('')
+  const [selectedLotId, setSelectedLotId] = useState('')
   const [quantity, setQuantity] = useState('1')
   const transfer = useTransferInventaire()
 
   const { data: plots } = usePlots(chantierId)
   const { data: etages } = useEtages(selectedPlotId)
+  const { data: allLots } = useLots(plotId ?? '')
+  const etageLots = allLots?.filter((l) => l.etage_id === etageId) ?? []
+  const selectedLot = etageLots.find((l) => l.id === selectedLotId)
 
   const maxQty = item?.quantite ?? 0
   const qty = parseInt(quantity, 10)
@@ -51,12 +62,15 @@ export function TransferSheet({
   const canSubmit =
     direction === 'to-general'
       ? isValidQty
-      : isValidQty && !!selectedPlotId && !!selectedEtageId
+      : direction === 'to-lot'
+        ? isValidQty && !!selectedLotId
+        : isValidQty && !!selectedPlotId && !!selectedEtageId
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
       setSelectedPlotId('')
       setSelectedEtageId('')
+      setSelectedLotId('')
       setQuantity('1')
     }
     onOpenChange(nextOpen)
@@ -70,8 +84,11 @@ export function TransferSheet({
   function handleSubmit() {
     if (!item || !canSubmit) return
 
-    const targetPlotId = direction === 'to-general' ? null : selectedPlotId
-    const targetEtageId = direction === 'to-general' ? null : selectedEtageId
+    const targetPlotId =
+      direction === 'to-general' ? null : direction === 'to-lot' ? plotId! : selectedPlotId
+    const targetEtageId =
+      direction === 'to-general' ? null : direction === 'to-lot' ? etageId! : selectedEtageId
+    const targetLotId = direction === 'to-lot' ? selectedLotId : null
 
     transfer.mutate(
       {
@@ -79,15 +96,17 @@ export function TransferSheet({
         quantity: qty,
         targetPlotId,
         targetEtageId,
+        targetLotId,
         chantierId,
       },
       {
         onSuccess: () => {
-          const etageName = etages?.find((e) => e.id === selectedEtageId)?.nom
           const msg =
-            direction === 'to-etage'
-              ? `${qty}× ${item.designation} transférés vers ${etageName}`
-              : `${qty}× ${item.designation} retournés au stock général`
+            direction === 'to-lot'
+              ? `${qty}× ${item.designation} transférés vers Lot ${selectedLot?.code}`
+              : direction === 'to-etage'
+                ? `${qty}× ${item.designation} transférés vers ${etages?.find((e) => e.id === selectedEtageId)?.nom}`
+                : `${qty}× ${item.designation} retournés au stock général`
           toast(msg)
           handleOpenChange(false)
         },
@@ -103,12 +122,16 @@ export function TransferSheet({
       <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle>
-            {direction === 'to-etage'
-              ? 'Transférer vers un étage'
-              : 'Retourner au stockage général'}
+            {direction === 'to-lot'
+              ? 'Transférer vers un lot'
+              : direction === 'to-etage'
+                ? 'Transférer vers un étage'
+                : 'Retourner au stockage général'}
           </SheetTitle>
           <SheetDescription>
-            {item.designation} ({maxQty} en stock)
+            {direction === 'to-lot'
+              ? `${item.designation} (${maxQty} en stock sur ${etageName ?? ''})`
+              : `${item.designation} (${maxQty} en stock)`}
           </SheetDescription>
         </SheetHeader>
         <div className="px-4 space-y-4">
@@ -149,6 +172,23 @@ export function TransferSheet({
                 </Select>
               </div>
             </>
+          )}
+          {direction === 'to-lot' && (
+            <div>
+              <label className="text-sm font-medium text-foreground">Lot</label>
+              <Select value={selectedLotId} onValueChange={setSelectedLotId}>
+                <SelectTrigger aria-label="Sélectionner un lot">
+                  <SelectValue placeholder="Sélectionner un lot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {etageLots.map((lot) => (
+                    <SelectItem key={lot.id} value={lot.id}>
+                      Lot {lot.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
           <div>
             <label htmlFor="transfer-qty" className="text-sm font-medium text-foreground">
@@ -191,9 +231,11 @@ export function TransferSheet({
             disabled={!canSubmit || transfer.isPending}
             className="w-full"
           >
-            {direction === 'to-etage'
-              ? `Transférer ${isValidQty ? qty : ''} unité${qty > 1 ? 's' : ''}`
-              : `Retourner ${isValidQty ? qty : ''} unité${qty > 1 ? 's' : ''}`}
+            {direction === 'to-lot'
+              ? `Transférer ${isValidQty ? qty : ''} unité${qty > 1 ? 's' : ''}${selectedLot ? ` vers Lot ${selectedLot.code}` : ''}`
+              : direction === 'to-etage'
+                ? `Transférer ${isValidQty ? qty : ''} unité${qty > 1 ? 's' : ''}`
+                : `Retourner ${isValidQty ? qty : ''} unité${qty > 1 ? 's' : ''}`}
           </Button>
         </SheetFooter>
       </SheetContent>
