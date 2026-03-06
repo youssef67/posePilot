@@ -57,12 +57,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Re-attach trigger on renamed table
+-- Re-attach triggers on renamed table (separate INSERT/DELETE for WHEN clause compatibility)
 DROP TRIGGER IF EXISTS trg_chantier_memo_count ON public.memos;
-CREATE TRIGGER trg_chantier_memo_count
-AFTER INSERT OR DELETE ON public.memos
+CREATE TRIGGER trg_chantier_memo_count_insert
+AFTER INSERT ON public.memos
 FOR EACH ROW
-WHEN (NEW.chantier_id IS NOT NULL OR OLD.chantier_id IS NOT NULL)
+WHEN (NEW.chantier_id IS NOT NULL)
+EXECUTE FUNCTION update_chantier_memo_count();
+
+CREATE TRIGGER trg_chantier_memo_count_delete
+AFTER DELETE ON public.memos
+FOR EACH ROW
+WHEN (OLD.chantier_id IS NOT NULL)
 EXECUTE FUNCTION update_chantier_memo_count();
 
 -- =====================
@@ -85,10 +91,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_plot_memo_count
-AFTER INSERT OR DELETE ON public.memos
+CREATE TRIGGER trg_plot_memo_count_insert
+AFTER INSERT ON public.memos
 FOR EACH ROW
-WHEN (NEW.plot_id IS NOT NULL OR OLD.plot_id IS NOT NULL)
+WHEN (NEW.plot_id IS NOT NULL)
+EXECUTE FUNCTION update_plot_memo_count();
+
+CREATE TRIGGER trg_plot_memo_count_delete
+AFTER DELETE ON public.memos
+FOR EACH ROW
+WHEN (OLD.plot_id IS NOT NULL)
 EXECUTE FUNCTION update_plot_memo_count();
 
 -- =====================
@@ -111,13 +123,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_etage_memo_count
-AFTER INSERT OR DELETE ON public.memos
+CREATE TRIGGER trg_etage_memo_count_insert
+AFTER INSERT ON public.memos
 FOR EACH ROW
-WHEN (NEW.etage_id IS NOT NULL OR OLD.etage_id IS NOT NULL)
+WHEN (NEW.etage_id IS NOT NULL)
+EXECUTE FUNCTION update_etage_memo_count();
+
+CREATE TRIGGER trg_etage_memo_count_delete
+AFTER DELETE ON public.memos
+FOR EACH ROW
+WHEN (OLD.etage_id IS NOT NULL)
 EXECUTE FUNCTION update_etage_memo_count();
 
 -- =====================
--- RLS: apply_rls_policy on renamed table
+-- RLS: policy already exists from renamed table, no action needed
 -- =====================
-SELECT public.apply_rls_policy('memos');
+-- Policy "Authenticated users have full access" was inherited from chantier_memos rename
