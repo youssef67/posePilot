@@ -17,6 +17,7 @@ export type LotWithRelations = LotRow & {
   has_missing_docs: boolean
   has_inventaire: boolean
   lot_badge_assignments: LotBadgeAssignment[]
+  intervenants: { nom: string } | null
 }
 
 export function useLots(plotId: string) {
@@ -25,7 +26,7 @@ export function useLots(plotId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lots')
-        .select('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*))')
+        .select('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*)), intervenants(nom)')
         .eq('plot_id', plotId)
         .order('position', { ascending: true })
       if (error) throw error

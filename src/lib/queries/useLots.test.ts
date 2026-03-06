@@ -63,7 +63,7 @@ describe('useLots', () => {
     await waitFor(() => expect(result.current.data).toEqual(mockLots))
 
     expect(supabase.from).toHaveBeenCalledWith('lots')
-    expect(mockSelect).toHaveBeenCalledWith('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*))')
+    expect(mockSelect).toHaveBeenCalledWith('*, etages(nom), variantes(nom), pieces(count), lot_badge_assignments(badge_id, lot_badges(*)), intervenants(nom)')
     expect(mockEq).toHaveBeenCalledWith('plot_id', 'plot-1')
     expect(mockOrder).toHaveBeenCalledWith('position', { ascending: true })
   })

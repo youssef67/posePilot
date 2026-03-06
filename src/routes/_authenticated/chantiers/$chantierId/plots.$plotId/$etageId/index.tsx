@@ -46,6 +46,7 @@ import { formatMetrage } from '@/lib/utils/formatMetrage'
 import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { PlinthStatus } from '@/types/enums'
 import { useUpdateLotMateriauxRecus } from '@/lib/mutations/useUpdateLotMateriauxRecus'
+import { useIntervenants } from '@/lib/queries/useIntervenants'
 import { Fab } from '@/components/Fab'
 
 export const Route = createFileRoute(
@@ -80,6 +81,8 @@ function EtageIndexPage() {
   const [batchCodeError, setBatchCodeError] = useState('')
   const [batchVarianteError, setBatchVarianteError] = useState('')
 
+  const { data: intervenants = [] } = useIntervenants()
+  const [intervenantFilter, setIntervenantFilter] = useState<string>('tous')
   const { data: inventaireItems } = useInventaire(chantierId, { type: 'etage', etageId })
   const hasInventaire = (inventaireItems?.length ?? 0) > 0
 
@@ -414,9 +417,31 @@ function EtageIndexPage() {
               emptyMessage="Aucun lot"
               className="mb-3"
             />
-            {filteredLots.length > 0 && (
+            {intervenants.length > 0 && (
+              <div className="mb-3">
+                <Select value={intervenantFilter} onValueChange={setIntervenantFilter}>
+                  <SelectTrigger className="h-8 text-sm w-full" aria-label="Filtrer par intervenant">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tous">Tous les intervenants</SelectItem>
+                    <SelectItem value="__none__">Non assigné</SelectItem>
+                    {intervenants.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>{i.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {(() => {
+              const displayedLots = intervenantFilter === 'tous'
+                ? filteredLots
+                : intervenantFilter === '__none__'
+                  ? filteredLots.filter((l) => !l.intervenant_id)
+                  : filteredLots.filter((l) => l.intervenant_id === intervenantFilter)
+              return displayedLots.length > 0 ? (
               <div className="flex flex-col gap-2">
-                {filteredLots.map((lot) => {
+                {displayedLots.map((lot) => {
                   const pieceCount = lot.pieces?.[0]?.count ?? 0
                   return (
                     <div key={lot.id} className="flex items-center gap-2">
@@ -470,6 +495,17 @@ function EtageIndexPage() {
                                       : 'Non cmd'}
                                 </Badge>
                               )}
+                              {lot.intervenants && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] border-indigo-500 text-indigo-500"
+                                  data-testid={`intervenant-badge-${lot.id}`}
+                                >
+                                  {lot.intervenants.nom.length <= 5
+                                    ? lot.intervenants.nom
+                                    : lot.intervenants.nom.split(/\s+/).map((w) => w[0]).join('').toUpperCase()}
+                                </Badge>
+                              )}
                             </>
                           }
                           onClick={selectionMode
@@ -513,7 +549,8 @@ function EtageIndexPage() {
                   )
                 })}
               </div>
-            )}
+            ) : null
+              })()}
           </>
         ) : (
           <p className="text-sm text-muted-foreground py-6 text-center">

@@ -144,6 +144,12 @@ vi.mock('@/components/BadgeSelector', () => ({
   BadgeSelector: () => null,
 }))
 
+vi.mock('@/components/IntervenantCombobox', () => ({
+  IntervenantCombobox: ({ currentIntervenantId }: { currentIntervenantId: string | null }) => (
+    <div data-testid="intervenant-combobox">{currentIntervenantId ?? 'aucun'}</div>
+  ),
+}))
+
 const mockUpdatePlinthStatus = vi.fn()
 vi.mock('@/lib/mutations/useUpdatePlinthStatus', () => ({
   useUpdatePlinthStatus: () => ({
@@ -216,6 +222,7 @@ const mockLot = {
   metrage_ml_total: 8.2,
   plinth_status: 'non_commandees',
   materiaux_recus: false,
+  intervenant_id: null,
   etages: { nom: 'RDC' },
   variantes: { nom: 'Type A' },
   pieces: [{ count: 3 }],
@@ -658,5 +665,44 @@ describe('LotIndexPage — Matériaux reçus badge', () => {
 
     await screen.findByRole('heading', { name: 'Lot 203' })
     expect(screen.queryByTestId('materiaux-recus-badge')).not.toBeInTheDocument()
+  })
+})
+
+describe('LotIndexPage — Intervenant combobox (AC #2, #3, #4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('renders IntervenantCombobox on lot page', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('intervenant-combobox')).toBeInTheDocument()
+  })
+
+  it('passes currentIntervenantId to combobox', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, intervenant_id: 'i-42' }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('intervenant-combobox')).toHaveTextContent('i-42')
+  })
+
+  it('shows "aucun" when no intervenant is assigned', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, intervenant_id: null }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('intervenant-combobox')).toHaveTextContent('aucun')
+  })
+
+  it('shows "Intervenant pose" label', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByText('Intervenant pose')).toBeInTheDocument()
   })
 })

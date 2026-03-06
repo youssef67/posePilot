@@ -3,6 +3,20 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupChannelMock, renderRoute } from '@/test/route-test-utils'
 
+// Polyfill for Radix UI Select — methods not available in JSDOM
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {}
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {}
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 vi.mock('sonner', () => {
   const toast = vi.fn() as ReturnType<typeof vi.fn> & { error: ReturnType<typeof vi.fn> }
   toast.error = vi.fn()
@@ -126,6 +140,11 @@ vi.mock('@/components/BadgeSelector', () => ({
   getBadgeColorClasses: () => 'border-amber-500 text-amber-500',
 }))
 
+let mockIntervenants: Array<{ id: string; nom: string; created_by: string; created_at: string }> = []
+vi.mock('@/lib/queries/useIntervenants', () => ({
+  useIntervenants: () => ({ data: mockIntervenants }),
+}))
+
 vi.mock('@/lib/mutations/useAddLotPiece', () => ({
   useAddLotPiece: () => ({
     mutate: vi.fn(),
@@ -188,6 +207,8 @@ const mockLots = [
     metrage_ml_total: 16.4,
     plinth_status: 'non_commandees',
     materiaux_recus: false,
+    intervenant_id: null,
+    intervenants: null,
     created_at: '2026-01-01T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type A' },
@@ -208,6 +229,8 @@ const mockLots = [
     metrage_ml_total: 0,
     plinth_status: 'non_commandees',
     materiaux_recus: true,
+    intervenant_id: null,
+    intervenants: null,
     created_at: '2026-01-02T00:00:00Z',
     etages: { nom: 'RDC' },
     variantes: { nom: 'Type B' },
@@ -768,5 +791,118 @@ describe('EtageIndexPage — Matériaux reçus toggle', () => {
 
     expect(screen.queryByLabelText('Matériaux non reçus lot 001')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Matériaux reçus lot 002')).not.toBeInTheDocument()
+  })
+})
+
+describe('EtageIndexPage — Intervenant badge on lot card (AC #5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('shows short intervenant name as badge when <= 5 chars', async () => {
+    const lotsWithIntervenant = [
+      { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
+    ]
+    setupMockSupabase(lotsWithIntervenant)
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByTestId('intervenant-badge-lot-1')).toHaveTextContent('A2M')
+  })
+
+  it('shows initials for long intervenant name', async () => {
+    const lotsWithIntervenant = [
+      { ...mockLots[0], intervenant_id: 'i2', intervenants: { nom: 'Martin Dupont' } },
+    ]
+    setupMockSupabase(lotsWithIntervenant)
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByTestId('intervenant-badge-lot-1')).toHaveTextContent('MD')
+  })
+
+  it('does not show intervenant badge when no intervenant assigned', async () => {
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.queryByTestId('intervenant-badge-lot-1')).not.toBeInTheDocument()
+  })
+})
+
+describe('EtageIndexPage — Intervenant filter (AC #6)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase)
+  })
+
+  it('shows intervenant filter when intervenants exist', async () => {
+    mockIntervenants = [
+      { id: 'i1', nom: 'A2M', created_by: 'u1', created_at: '2026-03-01T00:00:00Z' },
+    ]
+    const lotsWithIntervenant = [
+      { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
+      { ...mockLots[1], intervenant_id: null, intervenants: null },
+    ]
+    setupMockSupabase(lotsWithIntervenant)
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByLabelText('Filtrer par intervenant')).toBeInTheDocument()
+  })
+
+  it('does not show intervenant filter when no intervenants exist', async () => {
+    mockIntervenants = []
+    setupMockSupabase()
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.queryByLabelText('Filtrer par intervenant')).not.toBeInTheDocument()
+  })
+
+  it('filters lots by intervenant when filter is active', async () => {
+    const user = userEvent.setup()
+    mockIntervenants = [
+      { id: 'i1', nom: 'A2M', created_by: 'u1', created_at: '2026-03-01T00:00:00Z' },
+    ]
+    const lotsWithIntervenant = [
+      { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
+      { ...mockLots[1], intervenant_id: null, intervenants: null },
+    ]
+    setupMockSupabase(lotsWithIntervenant)
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByText('Lot 002')).toBeInTheDocument()
+
+    // Open the intervenant filter select
+    await user.click(screen.getByLabelText('Filtrer par intervenant'))
+    await user.click(screen.getByRole('option', { name: 'A2M' }))
+
+    // Only lot with intervenant A2M should be visible
+    expect(screen.getByText('Lot 001')).toBeInTheDocument()
+    expect(screen.queryByText('Lot 002')).not.toBeInTheDocument()
+  })
+
+  it('shows only unassigned lots with "Non assigné" filter', async () => {
+    const user = userEvent.setup()
+    mockIntervenants = [
+      { id: 'i1', nom: 'A2M', created_by: 'u1', created_at: '2026-03-01T00:00:00Z' },
+    ]
+    const lotsWithIntervenant = [
+      { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
+      { ...mockLots[1], intervenant_id: null, intervenants: null },
+    ]
+    setupMockSupabase(lotsWithIntervenant)
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+
+    await user.click(screen.getByLabelText('Filtrer par intervenant'))
+    await user.click(screen.getByRole('option', { name: 'Non assigné' }))
+
+    expect(screen.queryByText('Lot 001')).not.toBeInTheDocument()
+    expect(screen.getByText('Lot 002')).toBeInTheDocument()
   })
 })

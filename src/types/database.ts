@@ -237,6 +237,7 @@ export type Database = {
           has_inventaire: boolean
           cout_materiaux: number
           materiaux_recus: boolean
+          intervenant_id: string | null
         }
         Insert: {
           id?: string
@@ -257,6 +258,7 @@ export type Database = {
           has_inventaire?: boolean
           cout_materiaux?: number
           materiaux_recus?: boolean
+          intervenant_id?: string | null
         }
         Update: {
           id?: string
@@ -277,6 +279,28 @@ export type Database = {
           has_inventaire?: boolean
           cout_materiaux?: number
           materiaux_recus?: boolean
+          intervenant_id?: string | null
+        }
+        Relationships: []
+      }
+      intervenants: {
+        Row: {
+          id: string
+          nom: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          nom: string
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nom?: string
+          created_by?: string
+          created_at?: string
         }
         Relationships: []
       }
@@ -1096,6 +1120,9 @@ export interface Caracteristique {
   position: number
   created_at: string
 }
+
+// Type miroir de la table intervenants (057_intervenants.sql)
+export type Intervenant = Database['public']['Tables']['intervenants']['Row']
 
 // Status history entry for livraison timeline
 export interface StatusHistoryEntry {

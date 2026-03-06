@@ -19,6 +19,7 @@ import { useLotDocuments } from '@/lib/queries/useLotDocuments'
 import { useLotPhotos } from '@/lib/queries/useLotPhotos'
 import { useLotBadgeAssignments } from '@/lib/queries/useLotBadgeAssignments'
 import { BadgeSelector } from '@/components/BadgeSelector'
+import { IntervenantCombobox } from '@/components/IntervenantCombobox'
 import { useUpdatePlinthStatus } from '@/lib/mutations/useUpdatePlinthStatus'
 import { PlinthStatus } from '@/types/enums'
 import { useAddLotPiece } from '@/lib/mutations/useAddLotPiece'
@@ -579,6 +580,14 @@ function LotIndexPage() {
                 chantierId={chantierId}
                 plotId={plotId}
                 assignedBadges={badgeAssignments}
+              />
+            </div>
+            <div className="mt-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Intervenant pose</label>
+              <IntervenantCombobox
+                lotId={lotId}
+                plotId={plotId}
+                currentIntervenantId={lot.intervenant_id}
               />
             </div>
             {lot.metrage_ml_total > 0 && (
