@@ -22,7 +22,8 @@ export const PhotoCapture = forwardRef<PhotoCaptureHandle, PhotoCaptureProps>(
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
       const file = e.target.files?.[0]
       if (!file) return
-      if (!file.type.startsWith('image/')) return
+      // On mobile (especially iOS), HEIC files may report an empty MIME type
+      if (file.type && !file.type.startsWith('image/')) return
       onPhotoSelected(file)
       // Reset input so the same file can be selected again
       e.target.value = ''
@@ -32,8 +33,7 @@ export const PhotoCapture = forwardRef<PhotoCaptureHandle, PhotoCaptureProps>(
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
         className="hidden"
         onChange={handleChange}
         disabled={disabled}

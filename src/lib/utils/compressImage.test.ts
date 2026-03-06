@@ -20,7 +20,7 @@ describe('compressPhoto', () => {
     expect(mockImageCompression).toHaveBeenCalledWith(inputFile, {
       maxSizeMB: 1,
       maxWidthOrHeight: 1200,
-      useWebWorker: true,
+      useWebWorker: false,
       initialQuality: 0.7,
       fileType: 'image/jpeg',
       onProgress: undefined,

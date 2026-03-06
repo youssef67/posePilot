@@ -24,7 +24,12 @@ export function useCreateReservation() {
       let photoUrl: string | null = null
 
       if (photo) {
-        const compressed = await compressPhoto(photo)
+        let compressed: File
+        try {
+          compressed = await compressPhoto(photo)
+        } catch {
+          throw new Error('Impossible de compresser la photo. Essayez avec une autre image.')
+        }
         const filePath = `reservations/${lotId}/${reservationId}.jpg`
         const { error: uploadError } = await supabase.storage
           .from('note-photos')
@@ -78,7 +83,8 @@ export function useCreateReservation() {
     },
     onError: (_err, _input, context) => {
       if (context) queryClient.setQueryData(context.queryKey, context.previous)
-      toast.error('Erreur lors de la création de la réserve')
+      const message = _err instanceof Error ? _err.message : 'Erreur lors de la création de la réserve'
+      toast.error(message)
     },
     onSuccess: () => {
       toast.success('Réserve créée')

@@ -134,7 +134,7 @@ describe('useCreateReservation', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true))
 
-    expect(toast.error).toHaveBeenCalledWith('Erreur lors de la création de la réserve')
+    expect(toast.error).toHaveBeenCalledWith('Insert failed')
     const cached = queryClient.getQueryData(['reservations', { lotId: 'lot-1' }])
     expect(cached).toEqual(previous)
   })

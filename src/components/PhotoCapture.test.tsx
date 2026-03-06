@@ -5,13 +5,13 @@ import { createRef } from 'react'
 import { PhotoCapture, type PhotoCaptureHandle } from './PhotoCapture'
 
 describe('PhotoCapture', () => {
-  it('renders a hidden file input with capture="environment"', () => {
+  it('renders a hidden file input accepting common image formats', () => {
     render(<PhotoCapture onPhotoSelected={vi.fn()} />)
     const input = screen.getByTestId('photo-capture-input') as HTMLInputElement
     expect(input).toBeInTheDocument()
     expect(input.type).toBe('file')
-    expect(input.accept).toBe('image/*')
-    expect(input.getAttribute('capture')).toBe('environment')
+    expect(input.accept).toBe('image/jpeg,image/png,image/heic,image/heif,image/webp')
+    expect(input.getAttribute('capture')).toBeNull()
     expect(input.className).toContain('hidden')
   })
 
