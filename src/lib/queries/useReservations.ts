@@ -10,11 +10,14 @@ export function useReservations(lotId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*, pieces(nom)')
+        .select('*, pieces(nom), reservation_photos(*)')
         .eq('lot_id', lotId)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data as unknown as Reservation[]
+      return (data as unknown as Reservation[]).map((r) => ({
+        ...r,
+        reservation_photos: [...(r.reservation_photos ?? [])].sort((a, b) => a.position - b.position),
+      }))
     },
     enabled: !!lotId,
     placeholderData: [],

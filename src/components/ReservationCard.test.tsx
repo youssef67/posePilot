@@ -30,13 +30,15 @@ const openReservation: Reservation = {
   lot_id: 'lot-1',
   piece_id: 'piece-1',
   description: 'Fissure au niveau du plafond dans le séjour',
-  photo_url: 'https://example.com/photo.jpg',
   status: 'ouvert',
   resolved_at: null,
   created_by: 'user-1',
   created_by_email: 'test@test.fr',
   created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   pieces: { nom: 'Séjour' },
+  reservation_photos: [
+    { id: 'photo-1', reservation_id: 'res-1', photo_url: 'https://example.com/photo.jpg', position: 0, created_at: new Date().toISOString() },
+  ],
 }
 
 const resolvedReservation: Reservation = {
@@ -82,8 +84,8 @@ describe('ReservationCard', () => {
     expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg')
   })
 
-  it('does not render photo when photo_url is null', () => {
-    renderCard({ ...openReservation, photo_url: null })
+  it('does not render photo when reservation_photos is empty', () => {
+    renderCard({ ...openReservation, reservation_photos: [] })
     expect(screen.queryByAltText('Photo réserve')).not.toBeInTheDocument()
   })
 

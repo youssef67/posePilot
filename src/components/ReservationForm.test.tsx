@@ -17,10 +17,6 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('@/lib/utils/compressImage', () => ({
-  compressPhoto: vi.fn().mockResolvedValue(new File(['c'], 'c.jpg', { type: 'image/jpeg' })),
-}))
-
 import { supabase } from '@/lib/supabase'
 
 const mockPieces = [

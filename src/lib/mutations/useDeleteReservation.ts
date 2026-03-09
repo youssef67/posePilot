@@ -1,33 +1,30 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import type { Reservation } from '@/types/database'
+import type { Reservation, ReservationPhoto } from '@/types/database'
 
 interface DeleteReservationInput {
   reservationId: string
   lotId: string
-  photoUrl: string | null
-}
-
-function extractStoragePath(photoUrl: string): string | null {
-  const marker = 'note-photos/'
-  const idx = photoUrl.indexOf(marker)
-  if (idx === -1) return null
-  return photoUrl.substring(idx + marker.length)
+  photos: ReservationPhoto[]
 }
 
 export function useDeleteReservation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ reservationId, photoUrl }: DeleteReservationInput) => {
-      if (photoUrl) {
-        const filePath = extractStoragePath(photoUrl)
-        if (filePath) {
-          await supabase.storage.from('note-photos').remove([filePath]).catch(() => {})
+    mutationFn: async ({ reservationId, photos }: DeleteReservationInput) => {
+      // Clean up storage files (best-effort)
+      if (photos.length > 0) {
+        const paths = photos
+          .map((p) => p.photo_url.split('/note-photos/')[1])
+          .filter(Boolean) as string[]
+        if (paths.length > 0) {
+          await supabase.storage.from('note-photos').remove(paths).catch(() => {})
         }
       }
 
+      // Delete reservation (cascade deletes reservation_photos rows)
       const { error } = await supabase
         .from('reservations')
         .delete()

@@ -11,10 +11,6 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-vi.mock('@/lib/utils/compressImage', () => ({
-  compressPhoto: vi.fn().mockResolvedValue(new Blob(['photo'], { type: 'image/jpeg' })),
-}))
-
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -58,8 +54,8 @@ describe('useCreateReservation', () => {
       piece_id: 'piece-1',
       description: 'Fissure',
       status: 'ouvert',
-      photo_url: null,
       pieces: { nom: 'Séjour' },
+      reservation_photos: [],
     })
 
     const { result } = renderHook(() => useCreateReservation(), { wrapper: createWrapper() })

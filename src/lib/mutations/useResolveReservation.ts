@@ -20,7 +20,7 @@ export function useResolveReservation() {
           resolved_at: new Date().toISOString(), // Client-side for now; trigger sets server-side
         })
         .eq('id', reservationId)
-        .select('*, pieces(nom)')
+        .select('*, pieces(nom), reservation_photos(*)')
         .single()
       if (error) throw error
       return data as unknown as Reservation

@@ -18,26 +18,28 @@ const mockReservations = [
     lot_id: 'lot-1',
     piece_id: 'piece-1',
     description: 'Fissure au plafond',
-    photo_url: null,
     status: 'ouvert',
     resolved_at: null,
     created_by: 'user-1',
     created_by_email: 'bruno@test.fr',
     created_at: '2026-02-20T10:00:00Z',
     pieces: { nom: 'Séjour' },
+    reservation_photos: [],
   },
   {
     id: 'res-2',
     lot_id: 'lot-1',
     piece_id: 'piece-2',
     description: 'Joint silicone à refaire',
-    photo_url: 'https://example.com/photo.jpg',
     status: 'resolu',
     resolved_at: '2026-02-21T10:00:00Z',
     created_by: 'user-1',
     created_by_email: 'bruno@test.fr',
     created_at: '2026-02-19T08:00:00Z',
     pieces: { nom: 'SDB' },
+    reservation_photos: [
+      { id: 'p1', reservation_id: 'res-2', photo_url: 'https://example.com/photo.jpg', position: 0, created_at: '2026-02-19T08:00:00Z' },
+    ],
   },
 ]
 
@@ -65,7 +67,7 @@ describe('useReservations', () => {
     await waitFor(() => expect(result.current.data).toEqual(mockReservations))
 
     expect(supabase.from).toHaveBeenCalledWith('reservations')
-    expect(mockSelect).toHaveBeenCalledWith('*, pieces(nom)')
+    expect(mockSelect).toHaveBeenCalledWith('*, pieces(nom), reservation_photos(*)')
     expect(mockEq).toHaveBeenCalledWith('lot_id', 'lot-1')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
   })

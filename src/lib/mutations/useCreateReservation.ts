@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { compressPhoto } from '@/lib/utils/compressImage'
 import { toast } from 'sonner'
 import type { Reservation } from '@/types/database'
 
@@ -9,52 +8,27 @@ interface CreateReservationInput {
   pieceId: string
   pieceName: string
   description: string
-  photo?: File
 }
 
 export function useCreateReservation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ lotId, pieceId, description, photo }: CreateReservationInput) => {
+    mutationFn: async ({ lotId, pieceId, description }: CreateReservationInput) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non authentifié')
-
-      const reservationId = crypto.randomUUID()
-      let photoUrl: string | null = null
-
-      if (photo) {
-        let compressed: File
-        try {
-          compressed = await compressPhoto(photo)
-        } catch {
-          throw new Error('Impossible de compresser la photo. Essayez avec une autre image.')
-        }
-        const filePath = `reservations/${lotId}/${reservationId}.jpg`
-        const { error: uploadError } = await supabase.storage
-          .from('note-photos')
-          .upload(filePath, compressed, { contentType: 'image/jpeg' })
-        if (uploadError) throw uploadError
-
-        const { data: urlData } = supabase.storage
-          .from('note-photos')
-          .getPublicUrl(filePath)
-        photoUrl = urlData.publicUrl
-      }
 
       const { data, error } = await supabase
         .from('reservations')
         .insert({
-          id: reservationId,
           lot_id: lotId,
           piece_id: pieceId,
           description,
-          photo_url: photoUrl,
           status: 'ouvert' as const,
           created_by: user.id,
           created_by_email: user.email,
         })
-        .select('*, pieces(nom)')
+        .select('*, pieces(nom), reservation_photos(*)')
         .single()
       if (error) throw error
       return data as unknown as Reservation
@@ -69,13 +43,13 @@ export function useCreateReservation() {
           lot_id: input.lotId,
           piece_id: input.pieceId,
           description: input.description,
-          photo_url: null,
           status: 'ouvert' as const,
           resolved_at: null,
           created_by: '',
           created_by_email: 'vous',
           created_at: new Date().toISOString(),
           pieces: { nom: input.pieceName },
+          reservation_photos: [],
         } satisfies Reservation,
         ...(old ?? []),
       ])

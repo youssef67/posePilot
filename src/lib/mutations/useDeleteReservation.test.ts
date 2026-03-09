@@ -42,13 +42,13 @@ describe('useDeleteReservation', () => {
     vi.clearAllMocks()
   })
 
-  it('deletes reservation without photo', async () => {
+  it('deletes reservation without photos', async () => {
     const { mockEq } = mockSupabaseDelete()
 
     const { result } = renderHook(() => useDeleteReservation(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photoUrl: null })
+      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photos: [] })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -58,7 +58,7 @@ describe('useDeleteReservation', () => {
     expect(supabase.storage.from).not.toHaveBeenCalled()
   })
 
-  it('deletes photo from storage before deleting reservation', async () => {
+  it('deletes photos from storage before deleting reservation', async () => {
     mockSupabaseDelete()
     const mockRemove = vi.fn().mockResolvedValue({ error: null })
     vi.mocked(supabase.storage.from).mockReturnValue({ remove: mockRemove } as never)
@@ -69,7 +69,9 @@ describe('useDeleteReservation', () => {
       result.current.mutate({
         reservationId: 'res-1',
         lotId: 'lot-1',
-        photoUrl: 'https://example.com/storage/v1/object/public/note-photos/reservations/lot-1/res-1.jpg',
+        photos: [
+          { id: 'p1', reservation_id: 'res-1', photo_url: 'https://example.com/storage/v1/object/public/note-photos/reservations/lot-1/res-1.jpg', position: 0, created_at: '' },
+        ],
       })
     })
 
@@ -85,7 +87,7 @@ describe('useDeleteReservation', () => {
     const { result } = renderHook(() => useDeleteReservation(), { wrapper: createWrapper() })
 
     await act(async () => {
-      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photoUrl: null })
+      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photos: [] })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -106,7 +108,7 @@ describe('useDeleteReservation', () => {
     })
 
     await act(async () => {
-      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photoUrl: null })
+      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photos: [] })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
@@ -127,7 +129,7 @@ describe('useDeleteReservation', () => {
     })
 
     await act(async () => {
-      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photoUrl: null })
+      result.current.mutate({ reservationId: 'res-1', lotId: 'lot-1', photos: [] })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

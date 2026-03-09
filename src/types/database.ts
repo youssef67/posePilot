@@ -855,6 +855,30 @@ export type Database = {
         }
         Relationships: []
       }
+      reservation_photos: {
+        Row: {
+          id: string
+          reservation_id: string
+          photo_url: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reservation_id: string
+          photo_url: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reservation_id?: string
+          photo_url?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       memos: {
         Row: {
           id: string
@@ -1086,20 +1110,23 @@ export interface Inventaire {
   created_by: string | null
 }
 
-// Type miroir de la table reservations (036_reservations.sql)
+// Type miroir de la table reservations (036_reservations.sql + 062_reservation_photos.sql)
 export interface Reservation {
   id: string
   lot_id: string
   piece_id: string
   description: string
-  photo_url: string | null
   status: 'ouvert' | 'resolu'
   resolved_at: string | null
   created_by: string
   created_by_email: string | null
   created_at: string
   pieces?: { nom: string }
+  reservation_photos: ReservationPhoto[]
 }
+
+// Type miroir de la table reservation_photos (062_reservation_photos.sql)
+export type ReservationPhoto = Database['public']['Tables']['reservation_photos']['Row']
 
 // Type miroir de la table depot_articles (038_depot_entreprise.sql)
 export interface DepotArticle {

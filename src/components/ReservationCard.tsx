@@ -67,6 +67,8 @@ export function ReservationCard({ reservation, lotId }: ReservationCardProps) {
 
   const pieceName = reservation.pieces?.nom ?? '—'
   const isOpen = reservation.status === 'ouvert'
+  const photos = reservation.reservation_photos ?? []
+  const firstPhoto = photos[0] ?? null
 
   function handleResolve() {
     resolveReservation.mutate(
@@ -77,7 +79,7 @@ export function ReservationCard({ reservation, lotId }: ReservationCardProps) {
 
   function handleDelete() {
     deleteReservation.mutate(
-      { reservationId: reservation.id, lotId, photoUrl: reservation.photo_url },
+      { reservationId: reservation.id, lotId, photos },
       { onSuccess: () => { setDeleteConfirmOpen(false); setDetailOpen(false) } },
     )
   }
@@ -91,9 +93,9 @@ export function ReservationCard({ reservation, lotId }: ReservationCardProps) {
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDetailOpen(true) }}
         className="flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors active:bg-muted/50"
       >
-        {reservation.photo_url && (
+        {firstPhoto && (
           <img
-            src={reservation.photo_url}
+            src={firstPhoto.photo_url}
             alt="Photo réserve"
             className="h-12 w-12 shrink-0 rounded object-cover"
           />
@@ -132,12 +134,17 @@ export function ReservationCard({ reservation, lotId }: ReservationCardProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {reservation.photo_url && (
-              <img
-                src={reservation.photo_url}
-                alt="Photo réserve"
-                className="w-full rounded-lg object-cover"
-              />
+            {photos.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto">
+                {photos.map((photo) => (
+                  <img
+                    key={photo.id}
+                    src={photo.photo_url}
+                    alt="Photo réserve"
+                    className="h-40 w-40 shrink-0 rounded-lg object-cover"
+                  />
+                ))}
+              </div>
             )}
             <p className="text-sm">{reservation.description}</p>
             <div className="text-xs text-muted-foreground">
