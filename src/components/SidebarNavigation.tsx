@@ -1,5 +1,5 @@
-import { Link, useRouterState } from '@tanstack/react-router'
-import { Home, ClipboardList, Truck, Warehouse, Bell } from 'lucide-react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Home, ClipboardList, Truck, Warehouse, Bell, LogOut } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useUnreadActivityCount } from '@/lib/queries/useUnreadActivityCount'
 import { useAllPendingBesoinsCount } from '@/lib/queries/useAllPendingBesoinsCount'
@@ -17,7 +17,8 @@ const tabs = [
 export function SidebarNavigation() {
   const routerState = useRouterState()
   const pathname = routerState.location.pathname
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const userId = user?.id ?? ''
   const { data: unreadCount } = useUnreadActivityCount(userId)
   const { data: pendingBesoinsCount } = useAllPendingBesoinsCount()
@@ -80,6 +81,18 @@ export function SidebarNavigation() {
           )
         })}
       </nav>
+      <div className="absolute bottom-0 left-0 w-full border-t border-sidebar-border p-2">
+        <button
+          onClick={async () => {
+            await signOut()
+            navigate({ to: '/login' })
+          }}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span>Se déconnecter</span>
+        </button>
+      </div>
     </aside>
   )
 }
