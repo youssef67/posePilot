@@ -63,7 +63,7 @@ import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllB
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
-import { formatEURCompact } from '@/lib/utils/formatEUR'
+import { formatEUR, formatEURCompact } from '@/lib/utils/formatEUR'
 import type { Besoin } from '@/types/database'
 
 export const Route = createFileRoute(
@@ -179,13 +179,15 @@ function ChantierIndexPage() {
   const [finSousTraitance, setFinSousTraitance] = useState('')
 
   function handleOpenFinancesSheet() {
-    setFinAjustement(String(chantier?.ajustement_depenses ?? 0))
+    setFinAjustement('')
     setFinSousTraitance(String(chantier?.cout_sous_traitance ?? 0))
     setShowFinancesSheet(true)
   }
 
   function handleSaveFinances() {
-    const ajustement = parseFloat(finAjustement) || 0
+    const ajoutMontant = parseFloat(finAjustement) || 0
+    const currentAjustement = chantier?.ajustement_depenses ?? 0
+    const ajustement = currentAjustement + ajoutMontant
     const sousTraitance = Math.max(0, parseFloat(finSousTraitance) || 0)
     updateFinances.mutate(
       { chantierId, ajustement_depenses: ajustement, cout_sous_traitance: sousTraitance },
@@ -941,15 +943,18 @@ function ChantierIndexPage() {
       <Sheet open={showFinancesSheet} onOpenChange={setShowFinancesSheet}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>Modifier les finances</SheetTitle>
+            <SheetTitle>Finances du chantier</SheetTitle>
             <SheetDescription>
-              Ajustez le montant des dépenses et la sous-traitance pour ce chantier.
+              Ajoutez un montant aux dépenses ou modifiez la sous-traitance.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 flex flex-col gap-4">
             <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Ajustement actuel : <span className="font-semibold text-foreground">{formatEUR.format(chantier?.ajustement_depenses ?? 0)}</span>
+              </p>
               <label htmlFor="fin-ajustement" className="text-sm font-medium mb-1 block">
-                Ajustement dépenses
+                Montant à ajouter
               </label>
               <Input
                 id="fin-ajustement"
@@ -957,7 +962,7 @@ function ChantierIndexPage() {
                 step="any"
                 value={finAjustement}
                 onChange={(e) => setFinAjustement(e.target.value)}
-                aria-label="Ajustement dépenses"
+                aria-label="Montant à ajouter"
                 placeholder="0"
               />
               <p className="text-xs text-muted-foreground mt-1">
