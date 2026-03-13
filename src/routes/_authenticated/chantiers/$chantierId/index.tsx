@@ -951,7 +951,7 @@ function ChantierIndexPage() {
           <div className="px-4 flex flex-col gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">
-                Ajustement actuel : <span className="font-semibold text-foreground">{formatEUR.format(chantier?.ajustement_depenses ?? 0)}</span>
+                Ajustement actuel : <span className="font-semibold text-foreground">{formatEUR(chantier?.ajustement_depenses ?? 0)}</span>
               </p>
               <label htmlFor="fin-ajustement" className="text-sm font-medium mb-1 block">
                 Montant à ajouter
