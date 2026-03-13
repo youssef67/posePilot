@@ -63,7 +63,7 @@ import { useAllBesoinsForChantier, buildBesoinsMap } from '@/lib/queries/useAllB
 import { useLivraisonActions } from '@/lib/hooks/useLivraisonActions'
 import { useChantiers } from '@/lib/queries/useChantiers'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
-import { formatEUR, formatEURCompact } from '@/lib/utils/formatEUR'
+import { formatEURCompact } from '@/lib/utils/formatEUR'
 import type { Besoin } from '@/types/database'
 
 export const Route = createFileRoute(
@@ -950,9 +950,6 @@ function ChantierIndexPage() {
           </SheetHeader>
           <div className="px-4 flex flex-col gap-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Ajustement actuel : <span className="font-semibold text-foreground">{formatEUR(chantier?.ajustement_depenses ?? 0)}</span>
-              </p>
               <label htmlFor="fin-ajustement" className="text-sm font-medium mb-1 block">
                 Montant à ajouter
               </label>
