@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote, PackageCheck } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote, PackageCheck, PackageMinus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -578,11 +578,22 @@ function LotIndexPage() {
                   <Pencil className="size-3" />
                 </button>
               )}
-              {lot.materiaux_recus && (
+              {lot.materiaux_statut === 'recu' && (
                 <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400" data-testid="materiaux-recus-badge">
                   <PackageCheck className="size-3.5" />
                   Matériaux reçus
                 </span>
+              )}
+              {lot.materiaux_statut === 'partiel' && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" data-testid="materiaux-partiel-badge">
+                  <PackageMinus className="size-3.5" />
+                  Matériaux partiels
+                </span>
+              )}
+              {lot.materiaux_note && (
+                <p className="text-xs text-muted-foreground mt-1" data-testid="materiaux-note-text">
+                  {lot.materiaux_note}
+                </p>
               )}
             </div>
             <div className="mt-2">

@@ -221,7 +221,8 @@ const mockLot = {
   metrage_m2_total: 12.5,
   metrage_ml_total: 8.2,
   plinth_status: 'non_commandees',
-  materiaux_recus: false,
+  materiaux_statut: 'non_recu',
+  materiaux_note: null,
   intervenant_id: null,
   etages: { nom: 'RDC' },
   variantes: { nom: 'Type A' },
@@ -650,8 +651,8 @@ describe('LotIndexPage — Matériaux reçus badge', () => {
     setupChannelMock(supabase)
   })
 
-  it('shows "Matériaux reçus" badge when materiaux_recus is true', async () => {
-    setupMockSupabase({ lots: [{ ...mockLot, materiaux_recus: true }] })
+  it('shows "Matériaux reçus" badge when materiaux_statut is recu', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'recu' }] })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
 
     await screen.findByRole('heading', { name: 'Lot 203' })
@@ -659,12 +660,30 @@ describe('LotIndexPage — Matériaux reçus badge', () => {
     expect(screen.getByText('Matériaux reçus')).toBeInTheDocument()
   })
 
-  it('does not show "Matériaux reçus" badge when materiaux_recus is false', async () => {
-    setupMockSupabase({ lots: [{ ...mockLot, materiaux_recus: false }] })
+  it('shows "Matériaux partiels" badge when materiaux_statut is partiel', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'partiel' }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('materiaux-partiel-badge')).toBeInTheDocument()
+    expect(screen.getByText('Matériaux partiels')).toBeInTheDocument()
+  })
+
+  it('does not show materiaux badge when materiaux_statut is non_recu', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'non_recu' }] })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
 
     await screen.findByRole('heading', { name: 'Lot 203' })
     expect(screen.queryByTestId('materiaux-recus-badge')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('materiaux-partiel-badge')).not.toBeInTheDocument()
+  })
+
+  it('shows materiaux note text when note is present', async () => {
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'partiel', materiaux_note: 'Manque colle et joint' }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    expect(screen.getByTestId('materiaux-note-text')).toHaveTextContent('Manque colle et joint')
   })
 })
 

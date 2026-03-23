@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Boxes, CheckSquare, ChevronRight, Layers, Package, PackageCheck, Plus, StickyNote, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Boxes, CheckSquare, ChevronRight, Layers, MessageSquareText, Package, PackageCheck, PackageMinus, Plus, StickyNote, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,7 +45,9 @@ import { useRealtimeLots } from '@/lib/subscriptions/useRealtimeLots'
 import { formatMetrage } from '@/lib/utils/formatMetrage'
 import { formatEURCompact } from '@/lib/utils/formatEUR'
 import { PlinthStatus } from '@/types/enums'
-import { useUpdateLotMateriauxRecus } from '@/lib/mutations/useUpdateLotMateriauxRecus'
+import { useUpdateLotMateriaux } from '@/lib/mutations/useUpdateLotMateriaux'
+import type { MateriauxStatut } from '@/lib/mutations/useUpdateLotMateriaux'
+import { MateriauxSheet } from '@/components/MateriauxSheet'
 import { useIntervenants } from '@/lib/queries/useIntervenants'
 import { Fab } from '@/components/Fab'
 
@@ -62,7 +64,8 @@ function EtageIndexPage() {
   const { data: lots, isLoading: lotsLoading } = useLots(plotId)
   useRealtimeLots(plotId)
   const deleteLots = useDeleteLots()
-  const updateMateriauxRecus = useUpdateLotMateriauxRecus()
+  const updateMateriaux = useUpdateLotMateriaux()
+  const [materiauxSheetLot, setMateriauxSheetLot] = useState<{ id: string; code: string; statut: MateriauxStatut; note: string | null } | null>(null)
   const { data: variantes } = useVariantes(plotId)
   const createLot = useCreateLot()
   const createBatchLots = useCreateBatchLots()
@@ -534,32 +537,50 @@ function EtageIndexPage() {
                         />
                       </div>
                       {!selectionMode && (
-                        <button
-                          type="button"
-                          aria-label={lot.materiaux_recus ? `Matériaux reçus lot ${lot.code}` : `Matériaux non reçus lot ${lot.code}`}
-                          className="shrink-0 p-2 rounded-md active:bg-accent"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            const next = !lot.materiaux_recus
-                            updateMateriauxRecus.mutate(
-                              { lotId: lot.id, plotId, materiaux_recus: next },
-                              {
-                                onSuccess: () => {
-                                  toast(next ? 'Matériaux reçus ✓' : 'Matériaux retirés')
-                                },
-                                onError: () => {
-                                  toast.error('Erreur lors de la mise à jour')
-                                },
-                              },
-                            )
-                          }}
-                        >
-                          {lot.materiaux_recus ? (
-                            <PackageCheck className="size-5 text-green-600 dark:text-green-400" />
-                          ) : (
-                            <Package className="size-5 text-muted-foreground" />
+                        <div className="flex items-center shrink-0">
+                          {lot.materiaux_note && (
+                            <button
+                              type="button"
+                              aria-label={`Note matériaux lot ${lot.code}`}
+                              className="p-1 cursor-pointer"
+                              title={lot.materiaux_note}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setMateriauxSheetLot({ id: lot.id, code: lot.code, statut: (lot.materiaux_statut as MateriauxStatut) ?? 'non_recu', note: lot.materiaux_note })
+                              }}
+                              data-testid={`materiaux-note-${lot.id}`}
+                            >
+                              <MessageSquareText className="size-4 text-muted-foreground" />
+                            </button>
                           )}
-                        </button>
+                          {lot.materiaux_statut === 'partiel' && (
+                            <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-500 mr-1" data-testid={`materiaux-partiel-${lot.id}`}>
+                              Partiel
+                            </Badge>
+                          )}
+                          <button
+                            type="button"
+                            aria-label={
+                              lot.materiaux_statut === 'recu' ? `Matériaux reçus lot ${lot.code}`
+                                : lot.materiaux_statut === 'partiel' ? `Matériaux partiels lot ${lot.code}`
+                                : `Matériaux non reçus lot ${lot.code}`
+                            }
+                            className="shrink-0 p-2 rounded-md cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setMateriauxSheetLot({ id: lot.id, code: lot.code, statut: (lot.materiaux_statut as MateriauxStatut) ?? 'non_recu', note: lot.materiaux_note })
+                            }}
+                            data-testid={`materiaux-btn-${lot.id}`}
+                          >
+                            {lot.materiaux_statut === 'recu' ? (
+                              <PackageCheck className="size-5 text-green-600 dark:text-green-400" />
+                            ) : lot.materiaux_statut === 'partiel' ? (
+                              <PackageMinus className="size-5 text-amber-600 dark:text-amber-400" />
+                            ) : (
+                              <Package className="size-5 text-muted-foreground" />
+                            )}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -754,6 +775,32 @@ function EtageIndexPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <MateriauxSheet
+        open={!!materiauxSheetLot}
+        onOpenChange={(open) => { if (!open) setMateriauxSheetLot(null) }}
+        lotCode={materiauxSheetLot?.code ?? ''}
+        currentStatut={materiauxSheetLot?.statut ?? 'non_recu'}
+        currentNote={materiauxSheetLot?.note ?? null}
+        onSubmit={(statut, note) => {
+          if (!materiauxSheetLot) return
+          updateMateriaux.mutate(
+            { lotId: materiauxSheetLot.id, plotId, materiaux_statut: statut, materiaux_note: note },
+            {
+              onSuccess: () => {
+                toast(
+                  statut === 'recu' ? 'Matériaux reçus ✓'
+                    : statut === 'partiel' ? 'Matériaux partiels'
+                    : 'Matériaux non reçus',
+                )
+              },
+              onError: () => {
+                toast.error('Erreur lors de la mise à jour')
+              },
+            },
+          )
+        }}
+      />
 
       {variantes && variantes.length > 0 && (
         <Fab

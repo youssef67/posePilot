@@ -28,13 +28,13 @@ export interface MetrageVsInventaire {
  * - Tâches APRÈS la dernière "pose" → ignorées
  *
  * Le lot est prêt si toutes ses pièces satisfont cette condition,
- * qu'il a au moins 1 tâche "pose", et que materiaux_recus === true.
+ * qu'il a au moins 1 tâche "pose", et que materiaux_statut === 'recu'.
  */
 export function findLotsPretsACarreler(lots: LotWithTaches[]): LotPretACarreler[] {
   return lots
     .filter((lot) => {
       if (lot.pieces.length === 0) return false
-      if (lot.materiaux_recus !== true) return false
+      if (lot.materiaux_statut !== 'recu') return false
 
       for (const piece of lot.pieces) {
         const taches = piece.taches

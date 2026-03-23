@@ -128,8 +128,8 @@ vi.mock('@/lib/mutations/useCreateBatchLots', () => ({
 }))
 
 const mockMutate = vi.fn()
-vi.mock('@/lib/mutations/useUpdateLotMateriauxRecus', () => ({
-  useUpdateLotMateriauxRecus: () => ({
+vi.mock('@/lib/mutations/useUpdateLotMateriaux', () => ({
+  useUpdateLotMateriaux: () => ({
     mutate: mockMutate,
     isPending: false,
   }),
@@ -206,7 +206,8 @@ const mockLots = [
     metrage_m2_total: 25.5,
     metrage_ml_total: 16.4,
     plinth_status: 'non_commandees',
-    materiaux_recus: false,
+    materiaux_statut: 'non_recu',
+    materiaux_note: null,
     intervenant_id: null,
     intervenants: null,
     created_at: '2026-01-01T00:00:00Z',
@@ -228,7 +229,8 @@ const mockLots = [
     metrage_m2_total: 0,
     metrage_ml_total: 0,
     plinth_status: 'non_commandees',
-    materiaux_recus: true,
+    materiaux_statut: 'recu',
+    materiaux_note: null,
     intervenant_id: null,
     intervenants: null,
     created_at: '2026-01-02T00:00:00Z',
@@ -238,7 +240,10 @@ const mockLots = [
   },
 ]
 
-function setupMockSupabase(lots: typeof mockLots = mockLots) {
+function setupMockSupabase({ lots: lotsArg, lotOverrides }: { lots?: typeof mockLots; lotOverrides?: Partial<(typeof mockLots)[0]>[] } = {}) {
+  const lots = lotsArg ?? (lotOverrides
+    ? mockLots.map((l, i) => (lotOverrides[i] ? { ...l, ...lotOverrides[i] } : l))
+    : mockLots)
   vi.mocked(supabase.from).mockImplementation((table: string) => {
     if (table === 'chantiers') {
       return {
@@ -332,7 +337,7 @@ describe('EtageIndexPage', () => {
   })
 
   it('shows "Aucun lot" when no lots for this etage', async () => {
-    setupMockSupabase([])
+    setupMockSupabase({ lots: [] })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     expect(await screen.findByText('Aucun lot sur cet étage')).toBeInTheDocument()
@@ -569,7 +574,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
   })
 
   it('shows filter tabs when lots exist (AC #1)', async () => {
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     expect(await screen.findByRole('tablist')).toBeInTheDocument()
@@ -580,7 +585,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
   })
 
   it('"Tous" is active by default and shows all lots (AC #6)', async () => {
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 101')
@@ -593,7 +598,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
   })
 
   it('shows counts on each tab (AC #5)', async () => {
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -605,7 +610,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
 
   it('"En cours" filter shows only partially completed lots (AC #2)', async () => {
     const user = userEvent.setup()
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -620,7 +625,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
 
   it('"Terminés" filter shows only fully completed lots (AC #3)', async () => {
     const user = userEvent.setup()
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -634,7 +639,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
 
   it('"Alertes" shows no results — no alert data yet (AC #4)', async () => {
     const user = userEvent.setup()
-    setupMockSupabase(filterMockLots)
+    setupMockSupabase({ lots: filterMockLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -648,7 +653,7 @@ describe('EtageIndexPage — GridFilterTabs integration', () => {
   })
 
   it('does not show filter tabs when no lots', async () => {
-    setupMockSupabase([])
+    setupMockSupabase({ lots: [] })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Aucun lot sur cet étage')
@@ -724,7 +729,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
 
   it('"Alertes" shows lots with has_missing_docs OR has_blocking_note', async () => {
     const user = userEvent.setup()
-    setupMockSupabase(alertLots)
+    setupMockSupabase({ lots: alertLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -736,7 +741,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
   })
 
   it('shows correct alert count including missing docs', async () => {
-    setupMockSupabase(alertLots)
+    setupMockSupabase({ lots: alertLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByRole('tablist')
@@ -744,7 +749,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
   })
 
   it('shows FileWarning icon on lot card with has_missing_docs', async () => {
-    setupMockSupabase(alertLots)
+    setupMockSupabase({ lots: alertLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 201')
@@ -771,7 +776,7 @@ describe('EtageIndexPage — has_missing_docs in alerts filter (AC #4)', () => {
         pieces: [{ count: 1 }],
       },
     ]
-    setupMockSupabase(noMissingLots)
+    setupMockSupabase({ lots: noMissingLots })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 301')
@@ -792,7 +797,7 @@ describe('EtageIndexPage — Plinth status badge (AC #3, #4)', () => {
         plinth_status: 'commandees',
       },
     ]
-    setupMockSupabase(lotsWithPlinth)
+    setupMockSupabase({ lots: lotsWithPlinth })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -806,7 +811,7 @@ describe('EtageIndexPage — Plinth status badge (AC #3, #4)', () => {
         plinth_status: 'commandees',
       },
     ]
-    setupMockSupabase(lotsNoMl)
+    setupMockSupabase({ lots: lotsNoMl })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 002')
@@ -829,7 +834,7 @@ describe('EtageIndexPage — Plinth status badge (AC #3, #4)', () => {
         plinth_status: 'faconnees',
       },
     ]
-    setupMockSupabase(lotsWithFac)
+    setupMockSupabase({ lots: lotsWithFac })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -837,13 +842,13 @@ describe('EtageIndexPage — Plinth status badge (AC #3, #4)', () => {
   })
 })
 
-describe('EtageIndexPage — Matériaux reçus toggle', () => {
+describe('EtageIndexPage — Matériaux statut', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupChannelMock(supabase)
   })
 
-  it('renders Package icon for lot with materiaux_recus = false', async () => {
+  it('renders Package icon for lot with materiaux_statut = non_recu', async () => {
     setupMockSupabase()
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
@@ -851,7 +856,7 @@ describe('EtageIndexPage — Matériaux reçus toggle', () => {
     expect(screen.getByLabelText('Matériaux non reçus lot 001')).toBeInTheDocument()
   })
 
-  it('renders PackageCheck icon for lot with materiaux_recus = true', async () => {
+  it('renders PackageCheck icon for lot with materiaux_statut = recu', async () => {
     setupMockSupabase()
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
@@ -859,32 +864,45 @@ describe('EtageIndexPage — Matériaux reçus toggle', () => {
     expect(screen.getByLabelText('Matériaux reçus lot 002')).toBeInTheDocument()
   })
 
-  it('calls mutation on toggle click', async () => {
+  it('opens bottom sheet on materiaux button click', async () => {
     const user = userEvent.setup()
     setupMockSupabase()
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
-    const toggleBtn = screen.getByLabelText('Matériaux non reçus lot 001')
-    await user.click(toggleBtn)
+    const btn = screen.getByLabelText('Matériaux non reçus lot 001')
+    await user.click(btn)
 
-    expect(mockMutate).toHaveBeenCalledWith(
-      { lotId: 'lot-1', plotId: 'plot-1', materiaux_recus: true },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    )
+    expect(screen.getByText('Matériaux — Lot 001')).toBeInTheDocument()
   })
 
-  it('does not show toggle in selection mode', async () => {
+  it('does not show materiaux button in selection mode', async () => {
     const user = userEvent.setup()
     setupMockSupabase()
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
-    // Enter selection mode
     await user.click(screen.getByText('Sélectionner'))
 
     expect(screen.queryByLabelText('Matériaux non reçus lot 001')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Matériaux reçus lot 002')).not.toBeInTheDocument()
+  })
+
+  it('renders PackageMinus icon and Partiel badge for lot with materiaux_statut = partiel', async () => {
+    setupMockSupabase({ lotOverrides: [{ materiaux_statut: 'partiel', materiaux_note: null }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByLabelText('Matériaux partiels lot 001')).toBeInTheDocument()
+    expect(screen.getByTestId('materiaux-partiel-lot-1')).toBeInTheDocument()
+  })
+
+  it('renders note icon when materiaux_note is present', async () => {
+    setupMockSupabase({ lotOverrides: [{ materiaux_note: 'Manque colle' }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
+
+    await screen.findByText('Lot 001')
+    expect(screen.getByTestId('materiaux-note-lot-1')).toBeInTheDocument()
   })
 })
 
@@ -898,7 +916,7 @@ describe('EtageIndexPage — Intervenant badge on lot card (AC #5)', () => {
     const lotsWithIntervenant = [
       { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
     ]
-    setupMockSupabase(lotsWithIntervenant)
+    setupMockSupabase({ lots: lotsWithIntervenant })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -909,7 +927,7 @@ describe('EtageIndexPage — Intervenant badge on lot card (AC #5)', () => {
     const lotsWithIntervenant = [
       { ...mockLots[0], intervenant_id: 'i2', intervenants: { nom: 'Martin Dupont' } },
     ]
-    setupMockSupabase(lotsWithIntervenant)
+    setupMockSupabase({ lots: lotsWithIntervenant })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -939,7 +957,7 @@ describe('EtageIndexPage — Intervenant filter (AC #6)', () => {
       { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
       { ...mockLots[1], intervenant_id: null, intervenants: null },
     ]
-    setupMockSupabase(lotsWithIntervenant)
+    setupMockSupabase({ lots: lotsWithIntervenant })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -964,7 +982,7 @@ describe('EtageIndexPage — Intervenant filter (AC #6)', () => {
       { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
       { ...mockLots[1], intervenant_id: null, intervenants: null },
     ]
-    setupMockSupabase(lotsWithIntervenant)
+    setupMockSupabase({ lots: lotsWithIntervenant })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')
@@ -988,7 +1006,7 @@ describe('EtageIndexPage — Intervenant filter (AC #6)', () => {
       { ...mockLots[0], intervenant_id: 'i1', intervenants: { nom: 'A2M' } },
       { ...mockLots[1], intervenant_id: null, intervenants: null },
     ]
-    setupMockSupabase(lotsWithIntervenant)
+    setupMockSupabase({ lots: lotsWithIntervenant })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1')
 
     await screen.findByText('Lot 001')

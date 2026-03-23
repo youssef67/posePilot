@@ -39,7 +39,8 @@ const mockLots = [
     metrage_ml_total: 0,
     plinth_status: 'non_commandees',
     cout_materiaux: 0,
-    materiaux_recus: false,
+    materiaux_statut: 'non_recu',
+    materiaux_note: null,
     created_at: '2026-01-01',
   },
 ]

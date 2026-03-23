@@ -239,7 +239,8 @@ export type Database = {
           plinth_status: string
           has_inventaire: boolean
           cout_materiaux: number
-          materiaux_recus: boolean
+          materiaux_statut: string
+          materiaux_note: string | null
           intervenant_id: string | null
         }
         Insert: {
@@ -260,7 +261,8 @@ export type Database = {
           plinth_status?: string
           has_inventaire?: boolean
           cout_materiaux?: number
-          materiaux_recus?: boolean
+          materiaux_statut?: string
+          materiaux_note?: string | null
           intervenant_id?: string | null
         }
         Update: {
@@ -281,7 +283,8 @@ export type Database = {
           plinth_status?: string
           has_inventaire?: boolean
           cout_materiaux?: number
-          materiaux_recus?: boolean
+          materiaux_statut?: string
+          materiaux_note?: string | null
           intervenant_id?: string | null
         }
         Relationships: []

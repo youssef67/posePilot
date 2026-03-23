@@ -1041,7 +1041,8 @@ describe('PlotIndexPage — lots prêts à carreler counter', () => {
         etage_id: 'etage-1',
         metrage_m2_total: 12,
         metrage_ml_total: 8,
-        materiaux_recus: true,
+        materiaux_statut: 'recu',
+        materiaux_note: null,
         plots: { nom: 'Plot A' },
         etages: { nom: 'RDC' },
         pieces: [

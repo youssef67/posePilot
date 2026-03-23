@@ -1,20 +1,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
-interface UpdateLotMateriauxRecusParams {
+export type MateriauxStatut = 'non_recu' | 'partiel' | 'recu'
+
+interface UpdateLotMateriauxParams {
   lotId: string
   plotId: string
-  materiaux_recus: boolean
+  materiaux_statut: MateriauxStatut
+  materiaux_note: string | null
 }
 
-export function useUpdateLotMateriauxRecus() {
+export function useUpdateLotMateriaux() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ lotId, materiaux_recus }: UpdateLotMateriauxRecusParams) => {
+    mutationFn: async ({ lotId, materiaux_statut, materiaux_note }: UpdateLotMateriauxParams) => {
       const { data, error } = await supabase
         .from('lots')
-        .update({ materiaux_recus })
+        .update({ materiaux_statut, materiaux_note })
         .eq('id', lotId)
         .select()
         .single()
