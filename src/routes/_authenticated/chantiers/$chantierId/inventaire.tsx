@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,9 @@ import { useCreateInventaire } from '@/lib/mutations/useCreateInventaire'
 import { useUpdateInventaire } from '@/lib/mutations/useUpdateInventaire'
 import { useDeleteInventaire } from '@/lib/mutations/useDeleteInventaire'
 import { useInventaire } from '@/lib/queries/useInventaire'
+import { useSearchInventaire } from '@/lib/queries/useSearchInventaire'
 import { useChantier } from '@/lib/queries/useChantier'
+import { useDebounce } from '@/lib/useDebounce'
 import type { InventaireWithLocation } from '@/lib/queries/useInventaire'
 
 export const Route = createFileRoute(
@@ -37,6 +39,11 @@ function InventairePage() {
   const createInventaire = useCreateInventaire()
   const updateInventaire = useUpdateInventaire()
   const deleteInventaire = useDeleteInventaire()
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 300)
+  const isSearchMode = debouncedSearch.trim().length >= 2
+  const { data: searchResults, isLoading: isSearchLoading, isFetching: isSearchFetching } = useSearchInventaire(chantierId, debouncedSearch)
 
   const [showSheet, setShowSheet] = useState(false)
   const [editingItem, setEditingItem] = useState<InventaireWithLocation | null>(null)
@@ -169,24 +176,71 @@ function InventairePage() {
       </header>
 
       <div className="flex-1 p-4">
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un matériau…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-9"
+            aria-label="Rechercher un matériau"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Effacer la recherche"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <h2 className="text-base font-semibold text-foreground mb-3">
-          {items && items.length > 0
-            ? `${uniqueDesignations} matériaux enregistrés`
-            : 'Inventaire'}
+          {isSearchMode
+            ? `${searchResults?.length ?? 0} résultat${(searchResults?.length ?? 0) !== 1 ? 's' : ''} sur tout le chantier`
+            : items && items.length > 0
+              ? `${uniqueDesignations} matériaux enregistrés`
+              : 'Inventaire'}
         </h2>
 
-        <InventaireList
-          items={items}
-          isLoading={isLoading}
-          aggregated={true}
-          onOpenSheet={handleOpenSheet}
-          onEdit={handleEdit}
-          onIncrement={handleIncrement}
-          onDecrement={handleDecrement}
-          onDelete={handleDelete}
-          onTransfer={handleTransfer}
-          transferLabel="Transférer"
-        />
+        {isSearchMode ? (
+          searchResults && searchResults.length === 0 && !isSearchLoading && !isSearchFetching ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-16">
+              <Search className="h-10 w-10 text-muted-foreground opacity-40" />
+              <p className="text-muted-foreground">
+                Aucun matériau trouvé pour «&nbsp;{debouncedSearch.trim()}&nbsp;»
+              </p>
+            </div>
+          ) : (
+            <InventaireList
+              items={searchResults}
+              isLoading={isSearchLoading}
+              aggregated={true}
+              onOpenSheet={handleOpenSheet}
+              onEdit={handleEdit}
+              onIncrement={handleIncrement}
+              onDecrement={handleDecrement}
+              onDelete={handleDelete}
+              onTransfer={handleTransfer}
+              transferLabel="Transférer"
+            />
+          )
+        ) : (
+          <InventaireList
+            items={items}
+            isLoading={isLoading}
+            aggregated={true}
+            onOpenSheet={handleOpenSheet}
+            onEdit={handleEdit}
+            onIncrement={handleIncrement}
+            onDecrement={handleDecrement}
+            onDelete={handleDelete}
+            onTransfer={handleTransfer}
+            transferLabel="Transférer"
+          />
+        )}
 
         <Fab onClick={handleOpenSheet} />
       </div>

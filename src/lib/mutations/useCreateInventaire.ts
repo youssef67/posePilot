@@ -59,6 +59,7 @@ export function useCreateInventaire() {
         lots: lotId ? { code: '' } : null,
       }
       for (const [key] of previousEntries) {
+        if (Array.isArray(key) && key.includes('search')) continue
         queryClient.setQueryData<InventaireWithLocation[]>(key, (old) => [
           ...(old ?? []),
           newItem,

@@ -45,6 +45,7 @@ const mockInventaireGeneral = [
     lot_id: null,
     designation: 'Colle faïence 20kg',
     quantite: 12,
+    source: null,
     created_at: '2026-02-10T10:00:00Z',
     created_by: 'user-1',
     plots: null,
@@ -53,7 +54,40 @@ const mockInventaireGeneral = [
   },
 ]
 
-function setupMocks(inventaire: unknown[] = []) {
+const mockSearchResults = [
+  {
+    id: 'inv1',
+    chantier_id: 'abc-123',
+    plot_id: null,
+    etage_id: null,
+    lot_id: null,
+    designation: 'Tubes PER 16mm',
+    quantite: 20,
+    source: null,
+    created_at: '2026-03-10T10:00:00Z',
+    created_by: 'user-1',
+    plots: null,
+    etages: null,
+    lots: null,
+  },
+  {
+    id: 'inv2',
+    chantier_id: 'abc-123',
+    plot_id: 'p1',
+    etage_id: 'e1',
+    lot_id: null,
+    designation: 'Tubes PER 20mm',
+    quantite: 15,
+    source: null,
+    created_at: '2026-03-10T11:00:00Z',
+    created_by: 'user-1',
+    plots: { nom: 'Bât. A' },
+    etages: { nom: 'RDC' },
+    lots: null,
+  },
+]
+
+function setupMocks(inventaire: unknown[] = [], searchResults?: unknown[]) {
   vi.mocked(supabase.from).mockImplementation((table: string) => {
     if (table === 'chantiers') {
       return {
@@ -68,10 +102,17 @@ function setupMocks(inventaire: unknown[] = []) {
       const orderFn2 = vi.fn().mockResolvedValue({ data: inventaire, error: null })
       const orderFn1 = vi.fn().mockReturnValue({ order: orderFn2 })
       const isFn = vi.fn().mockReturnValue({ is: vi.fn().mockReturnValue({ order: orderFn1 }) })
+
+      // Search chain: eq → ilike → order → order
+      const searchOrderFn2 = vi.fn().mockResolvedValue({ data: searchResults ?? [], error: null })
+      const searchOrderFn1 = vi.fn().mockReturnValue({ order: searchOrderFn2 })
+      const ilikeFn = vi.fn().mockReturnValue({ order: searchOrderFn1 })
+
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             is: isFn,
+            ilike: ilikeFn,
             order: orderFn1,
           }),
         }),
@@ -228,5 +269,103 @@ describe('InventairePage — Transfer button', () => {
 
     await screen.findByText('Colle faïence 20kg')
     expect(screen.getByRole('button', { name: /Transférer Colle faïence/ })).toBeInTheDocument()
+  })
+})
+
+describe('InventairePage — Recherche globale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupChannelMock(supabase as unknown as { channel: ReturnType<typeof vi.fn> })
+  })
+
+  it('shows search input on page load', async () => {
+    setupMocks(mockInventaireGeneral)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    expect(await screen.findByLabelText('Rechercher un matériau')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Rechercher un matériau…')).toBeInTheDocument()
+  })
+
+  it('does not trigger search with 1 character', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'a')
+
+    // Should still show general storage items (no search mode)
+    expect(screen.getByText('1 matériaux enregistrés')).toBeInTheDocument()
+  })
+
+  it('shows cross-étage results when typing 2+ characters', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral, mockSearchResults)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'tube')
+
+    expect(await screen.findByText(/résultats sur tout le chantier/)).toBeInTheDocument()
+    expect(await screen.findByText('Tubes PER 16mm')).toBeInTheDocument()
+    expect(await screen.findByText('Tubes PER 20mm')).toBeInTheDocument()
+  })
+
+  it('shows result count in search mode', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral, mockSearchResults)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'tube')
+
+    expect(await screen.findByText('2 résultats sur tout le chantier')).toBeInTheDocument()
+  })
+
+  it('shows "no results" message when search finds nothing', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral, [])
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'xyz')
+
+    expect(await screen.findByText(/Aucun matériau trouvé pour/)).toBeInTheDocument()
+  })
+
+  it('allows editing an item in search mode (AC7)', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral, mockSearchResults)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'tube')
+    await screen.findByText('Tubes PER 16mm')
+
+    await user.click(screen.getByRole('button', { name: /Modifier Tubes PER 16mm/ }))
+
+    expect(await screen.findByText('Modifier le matériel')).toBeInTheDocument()
+    expect(screen.getByLabelText('Désignation')).toHaveValue('Tubes PER 16mm')
+  })
+
+  it('shows X button and clears search on click', async () => {
+    const user = userEvent.setup()
+    setupMocks(mockInventaireGeneral, mockSearchResults)
+    renderRoute('/chantiers/abc-123/inventaire')
+
+    await screen.findByText('Colle faïence 20kg')
+
+    await user.type(screen.getByLabelText('Rechercher un matériau'), 'tube')
+    expect(screen.getByLabelText('Effacer la recherche')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Effacer la recherche'))
+
+    // Back to general storage view
+    expect(await screen.findByText('1 matériaux enregistrés')).toBeInTheDocument()
   })
 })
