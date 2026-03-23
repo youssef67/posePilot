@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Search, X } from 'lucide-react'
+import { ArrowLeft, MapPin, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Fab } from '@/components/Fab'
 import { InventaireList } from '@/components/InventaireList'
 import { TransferSheet } from '@/components/TransferSheet'
@@ -30,6 +36,13 @@ export const Route = createFileRoute(
 )({
   component: InventairePage,
 })
+
+function getLocationLabel(item: InventaireWithLocation): string {
+  if (!item.plots) return 'Stockage général'
+  const base = `${item.plots.nom} — ${item.etages?.nom ?? ''}`
+  if (item.lots) return `${base} — Lot ${item.lots.code}`
+  return base
+}
 
 function InventairePage() {
   const { chantierId } = Route.useParams()
@@ -157,27 +170,38 @@ function InventairePage() {
   }
 
   const { elsewhereMap, elsewhereOnly } = useMemo(() => {
-    if (!allItems || isSearchMode) return { elsewhereMap: undefined, elsewhereOnly: [] }
+    if (!allItems || isSearchMode) return { elsewhereMap: undefined, elsewhereOnly: [] as { designation: string; totalQuantite: number; items: InventaireWithLocation[] }[] }
     const generalKeys = new Set(
       (items ?? []).map((i) => i.designation.trim().toLowerCase()),
     )
-    const map = new Map<string, { designation: string; quantite: number; locations: number }>()
+    const grouped = new Map<string, { designation: string; items: InventaireWithLocation[] }>()
     for (const item of allItems) {
       if (item.plot_id === null && item.etage_id === null) continue
       const key = item.designation.trim().toLowerCase()
-      const existing = map.get(key)
+      const existing = grouped.get(key)
       if (existing) {
-        existing.quantite += item.quantite
-        existing.locations += 1
+        existing.items.push(item)
       } else {
-        map.set(key, { designation: item.designation, quantite: item.quantite, locations: 1 })
+        grouped.set(key, { designation: item.designation, items: [item] })
       }
     }
-    const onlyElsewhere = Array.from(map.entries())
+    const elsewhereMapResult = new Map<string, { designation: string; quantite: number; locations: number }>()
+    for (const [key, group] of grouped) {
+      elsewhereMapResult.set(key, {
+        designation: group.designation,
+        quantite: group.items.reduce((sum, i) => sum + i.quantite, 0),
+        locations: group.items.length,
+      })
+    }
+    const onlyElsewhere = Array.from(grouped.entries())
       .filter(([key]) => !generalKeys.has(key))
-      .map(([, v]) => v)
+      .map(([, g]) => ({
+        designation: g.designation,
+        totalQuantite: g.items.reduce((sum, i) => sum + i.quantite, 0),
+        items: g.items.sort((a, b) => getLocationLabel(a).localeCompare(getLocationLabel(b))),
+      }))
       .sort((a, b) => a.designation.localeCompare(b.designation))
-    return { elsewhereMap: map, elsewhereOnly: onlyElsewhere }
+    return { elsewhereMap: elsewhereMapResult, elsewhereOnly: onlyElsewhere }
   }, [allItems, items, isSearchMode])
 
   const uniqueDesignations = items
@@ -273,19 +297,46 @@ function InventairePage() {
                 <h3 className="text-sm font-semibold text-muted-foreground mb-3">
                   Aussi sur le chantier
                 </h3>
-                <div className="space-y-2">
-                  {elsewhereOnly.map((entry) => (
-                    <div
-                      key={entry.designation}
-                      className="rounded-lg border border-border/50 bg-muted/30 px-4 py-3 flex items-center justify-between"
+                <Accordion type="multiple" className="space-y-2">
+                  {elsewhereOnly.map((group) => (
+                    <AccordionItem
+                      key={group.designation}
+                      value={group.designation}
+                      className="rounded-lg border border-border/50 bg-muted/30 px-4"
                     >
-                      <p className="text-sm text-foreground">{entry.designation}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {entry.quantite} sur {entry.locations} localisation{entry.locations > 1 ? 's' : ''}
-                      </span>
-                    </div>
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center justify-between flex-1 pr-2">
+                          <span className="text-sm text-foreground">{group.designation}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {group.totalQuantite} sur {group.items.length} localisation{group.items.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-3">
+                        <div className="space-y-1">
+                          {group.items.map((item) => (
+                            <Link
+                              key={item.id}
+                              to="/chantiers/$chantierId/plots/$plotId/$etageId/inventaire"
+                              params={{
+                                chantierId,
+                                plotId: item.plot_id!,
+                                etageId: item.etage_id!,
+                              }}
+                              className="flex items-center justify-between rounded-md px-2 py-2 hover:bg-muted/50 transition-colors"
+                            >
+                              <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <MapPin className="h-3 w-3" />
+                                {getLocationLabel(item)}
+                              </span>
+                              <span className="text-xs font-medium text-foreground">{item.quantite}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </div>
             )}
           </>
