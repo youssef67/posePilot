@@ -60,7 +60,7 @@ interface InventaireListProps {
   transferLabel?: string
   onTransferToLot?: (item: InventaireWithLocation) => void
   showSourceBadge?: boolean
-  elsewhereMap?: Map<string, { quantite: number; locations: number }>
+  elsewhereMap?: Map<string, { designation: string; quantite: number; locations: number }>
 }
 
 export function InventaireList({

@@ -156,9 +156,12 @@ function InventairePage() {
     setShowTransferSheet(true)
   }
 
-  const elsewhereMap = useMemo(() => {
-    if (!allItems || isSearchMode) return undefined
-    const map = new Map<string, { quantite: number; locations: number }>()
+  const { elsewhereMap, elsewhereOnly } = useMemo(() => {
+    if (!allItems || isSearchMode) return { elsewhereMap: undefined, elsewhereOnly: [] }
+    const generalKeys = new Set(
+      (items ?? []).map((i) => i.designation.trim().toLowerCase()),
+    )
+    const map = new Map<string, { designation: string; quantite: number; locations: number }>()
     for (const item of allItems) {
       if (item.plot_id === null && item.etage_id === null) continue
       const key = item.designation.trim().toLowerCase()
@@ -167,11 +170,15 @@ function InventairePage() {
         existing.quantite += item.quantite
         existing.locations += 1
       } else {
-        map.set(key, { quantite: item.quantite, locations: 1 })
+        map.set(key, { designation: item.designation, quantite: item.quantite, locations: 1 })
       }
     }
-    return map
-  }, [allItems, isSearchMode])
+    const onlyElsewhere = Array.from(map.entries())
+      .filter(([key]) => !generalKeys.has(key))
+      .map(([, v]) => v)
+      .sort((a, b) => a.designation.localeCompare(b.designation))
+    return { elsewhereMap: map, elsewhereOnly: onlyElsewhere }
+  }, [allItems, items, isSearchMode])
 
   const uniqueDesignations = items
     ? new Set(items.map((i) => i.designation.trim().toLowerCase())).size
@@ -247,19 +254,41 @@ function InventairePage() {
             />
           )
         ) : (
-          <InventaireList
-            items={items}
-            isLoading={isLoading}
-            aggregated={true}
-            elsewhereMap={elsewhereMap}
-            onOpenSheet={handleOpenSheet}
-            onEdit={handleEdit}
-            onIncrement={handleIncrement}
-            onDecrement={handleDecrement}
-            onDelete={handleDelete}
-            onTransfer={handleTransfer}
-            transferLabel="Transférer"
-          />
+          <>
+            <InventaireList
+              items={items}
+              isLoading={isLoading}
+              aggregated={true}
+              elsewhereMap={elsewhereMap}
+              onOpenSheet={handleOpenSheet}
+              onEdit={handleEdit}
+              onIncrement={handleIncrement}
+              onDecrement={handleDecrement}
+              onDelete={handleDelete}
+              onTransfer={handleTransfer}
+              transferLabel="Transférer"
+            />
+            {elsewhereOnly.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                  Aussi sur le chantier
+                </h3>
+                <div className="space-y-2">
+                  {elsewhereOnly.map((entry) => (
+                    <div
+                      key={entry.designation}
+                      className="rounded-lg border border-border/50 bg-muted/30 px-4 py-3 flex items-center justify-between"
+                    >
+                      <p className="text-sm text-foreground">{entry.designation}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {entry.quantite} sur {entry.locations} localisation{entry.locations > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <Fab onClick={handleOpenSheet} />
