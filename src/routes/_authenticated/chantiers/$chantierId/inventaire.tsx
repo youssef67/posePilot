@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -39,6 +39,8 @@ function InventairePage() {
   const createInventaire = useCreateInventaire()
   const updateInventaire = useUpdateInventaire()
   const deleteInventaire = useDeleteInventaire()
+
+  const { data: allItems } = useInventaire(chantierId)
 
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -154,6 +156,23 @@ function InventairePage() {
     setShowTransferSheet(true)
   }
 
+  const elsewhereMap = useMemo(() => {
+    if (!allItems || isSearchMode) return undefined
+    const map = new Map<string, { quantite: number; locations: number }>()
+    for (const item of allItems) {
+      if (item.plot_id === null && item.etage_id === null) continue
+      const key = item.designation.trim().toLowerCase()
+      const existing = map.get(key)
+      if (existing) {
+        existing.quantite += item.quantite
+        existing.locations += 1
+      } else {
+        map.set(key, { quantite: item.quantite, locations: 1 })
+      }
+    }
+    return map
+  }, [allItems, isSearchMode])
+
   const uniqueDesignations = items
     ? new Set(items.map((i) => i.designation.trim().toLowerCase())).size
     : 0
@@ -232,6 +251,7 @@ function InventairePage() {
             items={items}
             isLoading={isLoading}
             aggregated={true}
+            elsewhereMap={elsewhereMap}
             onOpenSheet={handleOpenSheet}
             onEdit={handleEdit}
             onIncrement={handleIncrement}

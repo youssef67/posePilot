@@ -60,6 +60,7 @@ interface InventaireListProps {
   transferLabel?: string
   onTransferToLot?: (item: InventaireWithLocation) => void
   showSourceBadge?: boolean
+  elsewhereMap?: Map<string, { quantite: number; locations: number }>
 }
 
 export function InventaireList({
@@ -75,6 +76,7 @@ export function InventaireList({
   transferLabel = 'Transférer',
   onTransferToLot,
   showSourceBadge = false,
+  elsewhereMap,
 }: InventaireListProps) {
   const [deleteTarget, setDeleteTarget] = useState<InventaireWithLocation | null>(null)
 
@@ -219,6 +221,14 @@ export function InventaireList({
                     {renderItemControls(item)}
                   </div>
                 ))}
+                {elsewhereMap?.get(group.designation.trim().toLowerCase()) && (() => {
+                  const elsewhere = elsewhereMap.get(group.designation.trim().toLowerCase())!
+                  return (
+                    <p className="text-xs text-muted-foreground/70 pl-2 mt-1 italic">
+                      +{elsewhere.quantite} sur {elsewhere.locations} localisation{elsewhere.locations > 1 ? 's' : ''}
+                    </p>
+                  )
+                })()}
               </div>
             </div>
           ))}
