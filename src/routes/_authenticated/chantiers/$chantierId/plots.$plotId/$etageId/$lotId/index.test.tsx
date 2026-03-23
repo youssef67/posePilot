@@ -179,6 +179,13 @@ vi.mock('@/lib/mutations/useAddLotDocument', () => ({
   }),
 }))
 
+vi.mock('@/lib/mutations/useUpdateLotMateriaux', () => ({
+  useUpdateLotMateriaux: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}))
+
 import { supabase } from '@/lib/supabase'
 
 const mockChantier = {
@@ -669,13 +676,23 @@ describe('LotIndexPage — Matériaux reçus badge', () => {
     expect(screen.getByText('Matériaux partiels')).toBeInTheDocument()
   })
 
-  it('does not show materiaux badge when materiaux_statut is non_recu', async () => {
+  it('shows "Matériaux non reçus" when materiaux_statut is non_recu', async () => {
     setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'non_recu' }] })
     renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
 
     await screen.findByRole('heading', { name: 'Lot 203' })
-    expect(screen.queryByTestId('materiaux-recus-badge')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('materiaux-partiel-badge')).not.toBeInTheDocument()
+    expect(screen.getByTestId('materiaux-non-recu-badge')).toBeInTheDocument()
+  })
+
+  it('opens MateriauxSheet when clicking materiaux button', async () => {
+    const user = userEvent.setup()
+    setupMockSupabase({ lots: [{ ...mockLot, materiaux_statut: 'non_recu' }] })
+    renderRoute('/chantiers/chantier-1/plots/plot-1/etage-1/lot-1')
+
+    await screen.findByRole('heading', { name: 'Lot 203' })
+    await user.click(screen.getByTestId('materiaux-status-btn'))
+
+    expect(screen.getByText('Matériaux — Lot 203')).toBeInTheDocument()
   })
 
   it('shows materiaux note text when note is present', async () => {

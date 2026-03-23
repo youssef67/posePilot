@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote, PackageCheck, PackageMinus } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Camera, FileWarning, Pencil, Check, X, EllipsisVertical, Trash2, Wrench, Banknote, Package, PackageCheck, PackageMinus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,9 @@ import { useDeleteLots } from '@/lib/mutations/useDeleteLots'
 import { useDeleteLotPiece } from '@/lib/mutations/useDeleteLotPiece'
 import { useUploadLotPhoto } from '@/lib/mutations/useUploadLotPhoto'
 import { useUpdateLotCoutMateriaux } from '@/lib/mutations/useUpdateLotCoutMateriaux'
+import { useUpdateLotMateriaux } from '@/lib/mutations/useUpdateLotMateriaux'
+import type { MateriauxStatut } from '@/lib/mutations/useUpdateLotMateriaux'
+import { MateriauxSheet } from '@/components/MateriauxSheet'
 import { formatEUR } from '@/lib/utils/formatEUR'
 import {
   DropdownMenu,
@@ -99,6 +102,8 @@ function LotIndexPage() {
   const deleteLots = useDeleteLots()
   const deletePiece = useDeleteLotPiece()
   const updateCoutMateriaux = useUpdateLotCoutMateriaux()
+  const updateMateriaux = useUpdateLotMateriaux()
+  const [showMateriauxSheet, setShowMateriauxSheet] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editingCout, setEditingCout] = useState(false)
   const [editCoutValue, setEditCoutValue] = useState('')
@@ -578,18 +583,30 @@ function LotIndexPage() {
                   <Pencil className="size-3" />
                 </button>
               )}
-              {lot.materiaux_statut === 'recu' && (
-                <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400" data-testid="materiaux-recus-badge">
-                  <PackageCheck className="size-3.5" />
-                  Matériaux reçus
-                </span>
-              )}
-              {lot.materiaux_statut === 'partiel' && (
-                <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" data-testid="materiaux-partiel-badge">
-                  <PackageMinus className="size-3.5" />
-                  Matériaux partiels
-                </span>
-              )}
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowMateriauxSheet(true)}
+                data-testid="materiaux-status-btn"
+              >
+                {lot.materiaux_statut === 'recu' ? (
+                  <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400" data-testid="materiaux-recus-badge">
+                    <PackageCheck className="size-3.5" />
+                    Matériaux reçus
+                  </span>
+                ) : lot.materiaux_statut === 'partiel' ? (
+                  <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400" data-testid="materiaux-partiel-badge">
+                    <PackageMinus className="size-3.5" />
+                    Matériaux partiels
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-muted-foreground" data-testid="materiaux-non-recu-badge">
+                    <Package className="size-3.5" />
+                    Matériaux non reçus
+                  </span>
+                )}
+                <Pencil className="size-3 text-muted-foreground" />
+              </button>
               {lot.materiaux_note && (
                 <p className="text-xs text-muted-foreground mt-1" data-testid="materiaux-note-text">
                   {lot.materiaux_note}
@@ -982,6 +999,31 @@ function LotIndexPage() {
         onOpenChange={setReservationFormOpen}
         lotId={lotId}
         pieces={(pieces ?? []).map((p) => ({ id: p.id, nom: p.nom }))}
+      />
+
+      <MateriauxSheet
+        open={showMateriauxSheet}
+        onOpenChange={setShowMateriauxSheet}
+        lotCode={lot.code}
+        currentStatut={(lot.materiaux_statut as MateriauxStatut) ?? 'non_recu'}
+        currentNote={lot.materiaux_note}
+        onSubmit={(statut, note) => {
+          updateMateriaux.mutate(
+            { lotId: lot.id, plotId, materiaux_statut: statut, materiaux_note: note },
+            {
+              onSuccess: () => {
+                toast(
+                  statut === 'recu' ? 'Matériaux reçus ✓'
+                    : statut === 'partiel' ? 'Matériaux partiels'
+                    : 'Matériaux non reçus',
+                )
+              },
+              onError: () => {
+                toast.error('Erreur lors de la mise à jour')
+              },
+            },
+          )
+        }}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
