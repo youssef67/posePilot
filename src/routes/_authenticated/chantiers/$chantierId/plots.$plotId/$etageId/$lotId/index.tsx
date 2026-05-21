@@ -277,8 +277,10 @@ function LotIndexPage() {
           setAddPieceError('')
           setAddPieceOpen(false)
         },
-        onError: () => {
-          toast.error("Erreur lors de l'ajout de la pièce")
+        onError: (err) => {
+          console.error('[addPiece] error', err)
+          const message = err instanceof Error ? err.message : "Erreur lors de l'ajout de la pièce"
+          toast.error(`Erreur lors de l'ajout de la pièce: ${message}`)
         },
       },
     )
